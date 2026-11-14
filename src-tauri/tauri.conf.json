@@ -1,0 +1,40 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "Nightreign Relic Planner",
+  "mainBinaryName": "nightreign-relic-planner",
+  "version": "0.1.0",
+  "identifier": "io.github.georgiyvovk.nightreign-relic-planner",
+  "build": {
+    "frontendDist": "../dist/app"
+  },
+  "app": {
+    "withGlobalTauri": true,
+    "windows": [
+      {
+        "label": "main",
+        "title": "Nightreign Relic Planner",
+        "width": 1400,
+        "height": 920,
+        "minWidth": 420,
+        "minHeight": 500,
+        "theme": "Dark",
+        "backgroundColor": "#0F1118"
+      }
+    ],
+    "security": {
+      "csp": "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data:; connect-src ipc: http://ipc.localhost"
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": ["nsis"],
+    "publisher": "GeorgiyVovk",
+    "shortDescription": "Nightreign relic planner",
+    "copyright": "MIT License",
+    "icon": ["icons/32x32.png", "icons/128x128.png", "icons/128x128@2x.png", "icons/icon.ico"],
+    "windows": {
+      "webviewInstallMode": { "type": "downloadBootstrapper" },
+      "nsis": { "installMode": "currentUser" }
+    }
+  }
+}

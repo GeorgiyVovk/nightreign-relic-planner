@@ -1,0 +1,19 @@
+{
+  "name": "nightreign-relic-planner",
+  "version": "0.1.0",
+  "private": true,
+  "license": "MIT",
+  "description": "Plan Elden Ring Nightreign relic loadouts from your own save.",
+  "scripts": {
+    "build": "node tools/build.js",
+    "tauri": "tauri",
+    "app:dev": "node tools/build.js && tauri dev",
+    "app:build": "node tools/build.js && tauri build"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "2.12.4",
+    "@fontsource/inter": "5.3.0",
+    "@fontsource/cinzel": "5.3.0",
+    "@fontsource/ibm-plex-mono": "5.3.0"
+  }
+}
