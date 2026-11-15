@@ -155,6 +155,7 @@ select{-webkit-appearance:none;appearance:none;cursor:pointer;border:1px solid v
 .fxl li.curse{color:var(--bad)}
 .fxl li.off{opacity:.35}
 .fxl li.dup{text-decoration:line-through;text-decoration-thickness:1.5px}
+.slot .fxl li > span{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;min-width:0}
 .relic{position:relative}
 .relic .inslot{position:absolute;inset:0;z-index:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;border-radius:8px;background:color-mix(in srgb,var(--surface) 78%,transparent);color:var(--fg);font-size:13px;font-weight:600;pointer-events:none}
 .relic .inslot .ck{width:12px;height:24px;border:solid currentColor;border-width:0 4px 4px 0;border-radius:1px;transform:rotate(45deg) translate(-3px,-3px)}
@@ -1097,6 +1098,47 @@ function renderPickers(){
   renderPresets();
 }
 function toggleVlist(open){ const l=$('#vlist'), b=$('#vbtn'); const o=open??l.hidden; l.hidden=!o; b.setAttribute('aria-expanded',String(o)); if(o){ const s=l.querySelector('[aria-selected="true"]')||l.querySelector('.vopt'); if(s) s.focus(); } }
+// short wording for effects sitting in slots, so a long relic doesn't stretch the slot row (full name stays in the tooltip)
+const SAB={vigor:'VIG',mind:'MND',endurance:'END',strength:'STR',dexterity:'DEX',intelligence:'INT',faith:'FTH',arcane:'ARC'};
+const sstats=(s,sign)=>s.split(/,\s*(?:and\s+)?|\s+and\s+/).map(w=>w.trim().toLowerCase()).filter(Boolean).map(w=>SAB[w]?sign+SAB[w]:null);
+function shortName(n,ch){
+  const m0=/^(\[(\w+)\]\s*)?(.*)$/.exec(n); const pre=m0[2]&&m0[2]!==ch?m0[1]:'', t0=m0[3]; let t=t0, m;
+  if((m=/^Improved (.+?), Reduced (.+)$/.exec(t))){ const a=sstats(m[1],'+'), b=sstats(m[2],'−'); if(!a.includes(null)&&!b.includes(null)) return pre+a.concat(b).join(' '); }
+  if((m=/^Reduced ([A-Za-z]+) and ([A-Za-z]+)$/.exec(t))&&SAB[m[1].toLowerCase()]&&SAB[m[2].toLowerCase()]) return pre+`−${SAB[m[1].toLowerCase()]} −${SAB[m[2].toLowerCase()]}`;
+  const R=[
+    [/^Changes compatible armament's (skill|sorcery|incantation) to (.+?) at start of expedition$/i,(_,k,x)=>`Start ${k==='incantation'?'incant':k}: ${x}`],
+    [/^Change compatible armament's skill at start of expedition$/i,()=>'Start skill changes'],
+    [/^(.+?) in possession at start of expedition$/i,(_,x)=>`Start with ${x}`],
+    [/^Starting armament (?:deals|inflicts) (.+?)(?: damage)?$/i,(_,x)=>`Start weapon: ${x}`],
+    [/^Dormant Power Helps Discover (.+)$/i,(_,x)=>`Find more ${x}`],
+    [/^Improved Attack Power with 3\+ (.+?) Equipped$/i,(_,x)=>`3+ ${x}: Atk up`],
+    [/^(Max \w+) Up with 3\+ (.+?) Equipped$/i,(_,a,x)=>`3+ ${x}: ${a} up`],
+    [/^(HP|FP) Restoration upon (.+?) Attacks$/i,(_,a,x)=>`${a} on ${x} hits`],
+    [/^Attack power up when facing (.+?)-afflicted enemy(.*)$/i,(_,x,r)=>`Atk up vs ${x}${r}`],
+    [/^(.+?) (?:increased|permanently increased) for each great enemy defeated at an? (.+)$/i,(_,x,w)=>`${x} up per ${w} boss`],
+    [/^Physical attack power increases after using grease items(.*)$/i,(_,r)=>`Phys Atk up after grease${r}`],
+    [/^Art gauge fills moderately upon critical hit(.*)$/i,(_,r)=>`Art gauge on crits${r}`],
+    [/^Art gauge charged from successful guarding(.*)$/i,(_,r)=>`Art gauge on guards${r}`],
+    [/^Defeating enemies fills more of the Art gauge(.*)$/i,(_,r)=>`Art gauge on kills${r}`],
+    [/^Critical Hit Boosts Stamina Recovery Speed(.*)$/i,(_,r)=>`Stamina regen on crits${r}`],
+    [/^HP restored when using (?:cured meats, )?medicinal boluses, etc\.(.*)$/i,(_,r)=>`HP from meat/boluses${r}`],
+    [/^Improved Glintstone and Gravity Stone Damage(.*)$/i,(_,r)=>`Glintstone/gravity stone dmg${r}`],
+    [/^Partial HP Restoration upon Post-Damage Attacks(.*)$/i,(_,r)=>`Rally HP on hits${r}`],
+    [/^Improved Stance-Breaking when (.+)$/i,(_,x)=>`Stance break: ${x.toLowerCase()}`],
+    [/^Attack power permanently increased for each evergaol prisoner defeated$/i,()=>'Atk up per evergaol boss'],
+    [/^Improved (.+?) Attack Power$/i,(_,x)=>`${x} Atk up`],
+    [/^Improved (.+?) Damage Negation(.*)$/i,(_,x,r)=>`${x} negation${r}`],
+    [/^Improved (.+?) Resistance(.*)$/i,(_,x,r)=>`${x} res${r}`],
+    [/^Taking Damage Causes (.+?) Buildup$/i,(_,x)=>`${x} buildup when hit`],
+    [/^(.+?) Buildup When Below Max HP$/i,(_,x)=>`${x} buildup at low HP`],
+    [/^Increased Maximum (\w+)(.*)$/i,(_,x,r)=>`Max ${x} up${r}`],
+  ];
+  for(const [re,f] of R){ if(re.test(t)){ t=t.replace(re,f); break; } }
+  t=t.replace(/Character Skill/g,'Skill').replace(/Ultimate Art/g,'Ult').replace(/Attack Power/gi,'Atk').replace(/Damage Negation/g,'Negation')
+     .replace(/ upon /gi,' on ').replace(/Restoration/g,'restore').replace(/ while on expedition/i,'').replace(/for self and nearby allies/i,'(team)')
+     .replace(/nearby allies/gi,'allies').replace(/^Defeating enemies/i,'Kills').replace(/\s+Equipped/i,'').replace(/ at start of expedition/i,' at start').replace(/\s+/g,' ').trim();
+  return pre+t;
+}
 function renderSlots(){
   { const dn=$('#don'); if(dn) dn.checked=!!build.don; }
   const code=vesselCode(build.char,curVessel()), slots=curSlots();
@@ -1111,7 +1153,8 @@ function renderSlots(){
     const r=slots[i]?relicById(slots[i]):null; const c=code[i]; const off=false; const act=ui.pick===i;
     const kind=i<3?'standard':'deep';
     if(!r) return `<button class="slot add c-${c} ${i>=3?'dp':''} ${act?'active':''} ${off?'off':''}" data-act="pick" data-slot="${i}" title="${COLORN[c]} · ${kind}"><span class="plus" aria-hidden="true"></span><span class="al">Add relic</span></button>`;
-    const lis=(r.effects||[]).map((e,j)=>{ const d=dead[i+':'+j]; return `<li${d?` class="off${d.dup?' dup':''}" title="${esc(d.why)}"`:''}>${esc(EBY[e]?EBY[e].n:e)}</li>`; }).join('')+(r.curses||[]).map(e=>`<li class="curse">${esc(EBY[e]?EBY[e].n:e)}</li>`).join('');
+    const nm=e=>EBY[e]?EBY[e].n:e;
+    const lis=(r.effects||[]).map((e,j)=>{ const d=dead[i+':'+j]; return `<li${d?` class="off${d.dup?' dup':''}"`:''} title="${esc(nm(e)+(d?'\n'+d.why:''))}"><span>${esc(shortName(nm(e),build.char))}</span></li>`; }).join('')+(r.curses||[]).map(e=>`<li class="curse" title="${esc(nm(e))}"><span>${esc(shortName(nm(e),build.char))}</span></li>`).join('');
     const bad=!slotOk(code,i,r);
     return `<div class="slot filled c-${r.color} ${i>=3?'dp':''} ${act?'active':''} ${off?'off':''}" title="${esc(relicTitle(r))}">${isNamed(r)?`<div class="rn">${esc(r.name)}</div>`:''}<ul class="fxl">${lis}</ul>${r.bad&&r.bad.length?`<p class="susnote" title="${esc(r.bad.join('\n'))}">Looks edited</p>`:''}${bad?'<span class="msg bad">Wrong color or type for this slot</span>':''}<div class="stabs"><button data-act="pick" data-slot="${i}">Replace</button><button class="rm" data-act="unslot" data-slot="${i}">Remove</button></div></div>`;
   };
