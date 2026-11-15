@@ -70,8 +70,22 @@ jobs:
         with:
           name: NightreignRelicPlanner-windows
           path: out/*.exe
-      - if: startsWith(github.ref, 'refs/tags/v')
+      - name: Read version
+        id: ver
+        shell: pwsh
+        run: echo "v=$((Get-Content package.json | ConvertFrom-Json).version)" >> $env:GITHUB_OUTPUT
+      - name: Publish release
+        if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v2
         with:
+          tag_name: v${{ steps.ver.outputs.v }}
+          target_commitish: ${{ github.sha }}
+          name: Nightreign Relic Planner ${{ steps.ver.outputs.v }}
+          make_latest: true
           files: out/*.exe
-          generate_release_notes: true
+          body: |
+            **NightreignRelicPlanner-Setup.exe** installs the app. **NightreignRelicPlanner-Portable.exe** runs without installing.
+
+            Windows may say "Windows protected your PC" the first time, because the app isn't signed. Click **More info**, then **Run anyway**.
+
+            The app finds your saves in `%APPDATA%\Nightreign` (NR0000.sl2 and Seamless Co-op NR0000.co2), only reads them, and updates your relics every time the game saves.
