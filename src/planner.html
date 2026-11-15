@@ -13,8 +13,7 @@
   --r:#78141A; --b:#1C2D71; --y:#845A1B; --g:#12704A; --w:#7F7C77;
   --good:#2C8549; --warn:#A86E12; --bad:#BC3A2E;
   --good-soft:#E3F2E7; --warn-soft:#F8EEDB; --bad-soft:#F8E3E0;
-  --hp:#8A3A2B; --fp:#386072; --st:#42703A; --hp-hi:#C99088; --fp-hi:#93BEBB; --st-hi:#A6C9A2;
-  --hp-t:var(--hp); --fp-t:var(--fp); --st-t:var(--st);
+  --hp:#B5473A; --fp:#4C8AA0; --st:#5A9A4C;
   --d-phys:#7A7F8C; --d-mag:#3E6BD6; --d-fire:#D25E22; --d-ltng:#C9A40E; --d-holy:#A88C4A;
   --s-poison:#3F8F3B; --s-rot:#C2492F; --s-bleed:#A51F35; --s-frost:#3E9CC8; --s-sleep:#6F5CC0; --s-mad:#D0801C; --s-blight:#5E626C;
   --deep:#231E3B; --deepbg:#E1E3EB;
@@ -33,7 +32,6 @@
     --r:#78141A; --b:#1C2D71; --y:#845A1B; --g:#12704A; --w:#7F7C77;
     --good:#5BAA78; --warn:#C9A04A; --bad:#D6503F;
     --good-soft:#13261C; --warn-soft:#2A2312; --bad-soft:#2E1716;
-    --hp-t:var(--hp-hi); --fp-t:var(--fp-hi); --st-t:var(--st-hi);
     --d-phys:#80868F; --d-mag:#4672D6; --d-fire:#D0612A; --d-ltng:#C4A01F; --d-holy:#A88E55;
     --s-poison:#469544; --s-rot:#C2512F; --s-bleed:#B02A44; --s-frost:#3F96C2; --s-sleep:#6E5BC2; --s-mad:#C77C22; --s-blight:#6F747F;
     --deep:#070A12; --deepbg:#0B111D;
@@ -49,7 +47,6 @@
   --r:#78141A; --b:#1C2D71; --y:#845A1B; --g:#12704A; --w:#7F7C77;
   --good:#5BAA78; --warn:#C9A04A; --bad:#D6503F;
   --good-soft:#13261C; --warn-soft:#2A2312; --bad-soft:#2E1716;
-  --hp-t:var(--hp-hi); --fp-t:var(--fp-hi); --st-t:var(--st-hi);
   --d-phys:#80868F; --d-mag:#4672D6; --d-fire:#D0612A; --d-ltng:#C4A01F; --d-holy:#A88E55;
   --s-poison:#469544; --s-rot:#C2512F; --s-bleed:#B02A44; --s-frost:#3F96C2; --s-sleep:#6E5BC2; --s-mad:#C77C22; --s-blight:#6F747F;
   --deep:#070A12; --deepbg:#0B111D;
@@ -127,8 +124,6 @@ select:hover,.vbtn:hover,.search:hover,.field input:hover,.efbtn:hover{border-co
 @media (max-width:620px){.slotrow{grid-template-columns:minmax(0,1fr)}}
 .slotlabel{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:12px 0 6px;font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
 .slotlabel:first-child{margin-top:0}
-.slotlabel.don{justify-content:flex-start;cursor:pointer;width:max-content}
-.slotlabel.don input{width:14px;height:14px;margin:0;accent-color:var(--accent)}
 .slot{border:1px dashed var(--line2);border-radius:8px;padding:10px;display:flex;flex-direction:column;gap:6px;min-height:92px;background:var(--surface2);min-width:0}
 .slot.filled{border:2px solid var(--c);background:var(--surface)}
 .slot.filled.active{border-color:color-mix(in srgb,var(--accent) 70%,transparent);box-shadow:0 0 14px rgba(150,182,232,.16)}
@@ -215,6 +210,17 @@ select:hover,.vbtn:hover,.search:hover,.field input:hover,.efbtn:hover{border-co
 
 /* stats */
 .lvlbox{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted)}
+.phr{display:flex;align-items:center;gap:18px;flex-wrap:wrap}
+.tgl{position:relative;display:inline-flex;align-items:center;gap:8px;font-size:12px;color:var(--muted);cursor:pointer;user-select:none}
+.tgl input{position:absolute;opacity:0;width:1px;height:1px;margin:0}
+.tgl .knob{position:relative;flex:none;width:30px;height:18px;border-radius:999px;background:var(--surface2);border:1px solid var(--line2)}
+.tgl .knob::after{content:"";position:absolute;top:2px;left:2px;width:12px;height:12px;border-radius:50%;background:var(--faint)}
+.tgl:hover .knob{border-color:var(--faint)}
+.tgl input:checked + .knob{background:var(--accent-soft);border-color:var(--accent);box-shadow:0 0 10px rgba(150,182,232,.18)}
+.tgl input:checked + .knob::after{transform:translateX(12px);background:var(--accent)}
+.tgl input:checked ~ .tt{color:var(--fg)}
+.tgl input:focus-visible + .knob{outline:2px solid var(--accent);outline-offset:2px}
+@media (prefers-reduced-motion: no-preference){ .tgl .knob,.tgl .knob::after{transition:transform .15s,background-color .15s,border-color .15s} }
 .lvlbox select{padding:0 8px;font-family:var(--f-mono);color:var(--fg)}
 .bars{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-bottom:14px}
 .bar{background:var(--surface2);border-radius:8px;padding:8px 10px;display:flex;flex-direction:column;gap:4px}
@@ -313,13 +319,13 @@ table.bt{border-collapse:collapse;width:100%;font-size:12px;min-width:600px}
 .stable{flex:1;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:0 24px}
 .scol{display:flex;flex-direction:column;min-width:0}
 .sbar{--c:var(--fg);display:flex;flex-direction:column;gap:6px;margin-bottom:18px}
-.sbar.hp{--c:var(--hp);--ch:var(--hp-hi);--ct:var(--hp-t)} .sbar.fp{--c:var(--fp);--ch:var(--fp-hi);--ct:var(--fp-t)} .sbar.st{--c:var(--st);--ch:var(--st-hi);--ct:var(--st-t)}
+.sbar.hp{--c:var(--hp)} .sbar.fp{--c:var(--fp)} .sbar.st{--c:var(--st)}
 .sbar .bk{display:flex;justify-content:space-between;align-items:baseline;font-size:11px;font-weight:700;letter-spacing:.12em}
-.sbar .bl{color:var(--ct,var(--c))}
+.sbar .bl{color:var(--c)}
 .sbar .bk .up,.sbar .bk .dn{font-family:var(--f-mono);letter-spacing:0}
 .sbar .bv{font-family:var(--f-mono);font-variant-numeric:tabular-nums;font-size:26px;font-weight:600;line-height:1}
 .sbar .track{height:6px;border-radius:3px;background:var(--surface2);overflow:hidden}
-.sbar .track i{display:block;height:100%;border-radius:3px;background:linear-gradient(180deg,var(--c) 50%,var(--ch,var(--c)))}
+.sbar .track i{display:block;height:100%;border-radius:3px;background:var(--c)}
 .scol .sh3{margin:0 0 2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .trows{display:grid;grid-template-rows:repeat(var(--n),minmax(26px,31px))}
 .tr{display:flex;align-items:center;gap:8px;min-width:0;font-size:13px}
@@ -353,6 +359,7 @@ table.bt{border-collapse:collapse;width:100%;font-size:12px;min-width:600px}
 .dlg h3{font-family:var(--f-display);font-size:20px;font-weight:600;letter-spacing:.01em;text-transform:capitalize;margin:0;line-height:1.2}
 .dlg .dh{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
 .dlg .dh .btn.ghost[data-act="close"]{color:var(--bad)}
+.dlg .dh .btn.ghost[data-act="close"]::before{content:"";width:9px;height:9px;background:currentColor;-webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 10'%3E%3Cpath d='M1 1l8 8M9 1l-8 8' stroke='%23000' stroke-width='1.8' stroke-linecap='round'/%3E%3C/svg%3E") center/contain no-repeat;mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 10'%3E%3Cpath d='M1 1l8 8M9 1l-8 8' stroke='%23000' stroke-width='1.8' stroke-linecap='round'/%3E%3C/svg%3E") center/contain no-repeat}
 .dlg .dh .btn.ghost[data-act="close"]:hover{color:var(--bad);background:var(--bad-soft)}
 .profgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
 .prof{display:flex;justify-content:space-between;align-items:center;gap:8px;min-width:0;height:var(--h);text-align:left;border:1px solid var(--line2);background:var(--surface2);border-radius:var(--r-md);padding:0 12px}
@@ -415,7 +422,7 @@ details.more summary{cursor:pointer;font-size:13px;color:var(--accent)}
 
   <div class="col">
     <section class="panel grow statsp">
-      <div class="ph"><h2>Stats</h2><div class="lvlbox"><label for="f-level">Level</label><select id="f-level"></select></div></div>
+      <div class="ph"><h2>Stats</h2><div class="phr"><label class="tgl" title="Count deep relics in the stats, as in Deep of Night"><input type="checkbox" id="don" role="switch"><span class="knob" aria-hidden="true"></span><span class="tt">Deep of Night</span></label><div class="lvlbox"><label for="f-level">Level</label><select id="f-level"></select></div></div></div>
       <div id="stats"></div>
     </section>
     <section class="panel" hidden>
@@ -1071,23 +1078,24 @@ function renderPickers(){
 }
 function toggleVlist(open){ const l=$('#vlist'), b=$('#vbtn'); const o=open??l.hidden; l.hidden=!o; b.setAttribute('aria-expanded',String(o)); if(o){ const s=l.querySelector('[aria-selected="true"]')||l.querySelector('.vopt'); if(s) s.focus(); } }
 function renderSlots(){
+  { const dn=$('#don'); if(dn) dn.checked=!!build.don; }
   const code=vesselCode(build.char,curVessel()), slots=curSlots();
   const seen=new Map(), seenG=new Map(), dead={};
-  slots.forEach((rid,i)=>{ const r=rid?relicById(rid):null; if(!r || (i>=3&&!build.don) || !slotOk(code,i,r)) return;
+  slots.forEach((rid,i)=>{ const r=rid?relicById(rid):null; if(!r || !slotOk(code,i,r)) return;
     (r.effects||[]).forEach((eid,j)=>{ const e=EBY[eid]; let why='';
       if(e&&e.ch&&e.ch!==build.char) why=`Only works on ${e.ch}`;
       else if(e&&e.xg){ if(seenG.has(e.xg)) why=`Only one ${XGN[e.xg]} works at a time, and slot ${seenG.get(e.xg)+1} already has one`; else seenG.set(e.xg,i); }
       else if(e&&!e.st){ if(seen.has(eid)) why=`Doesn't stack with the same effect in slot ${seen.get(eid)+1}`; else seen.set(eid,i); }
       if(why) dead[i+':'+j]={why,dup:!why.startsWith('Only works')}; }); });
   const one=i=>{
-    const r=slots[i]?relicById(slots[i]):null; const c=code[i]; const off=i>=3&&!build.don; const act=ui.pick===i;
+    const r=slots[i]?relicById(slots[i]):null; const c=code[i]; const off=false; const act=ui.pick===i;
     const kind=i<3?'standard':'deep';
     if(!r) return `<button class="slot add c-${c} ${i>=3?'dp':''} ${act?'active':''} ${off?'off':''}" data-act="pick" data-slot="${i}" title="${COLORN[c]} · ${kind}"><span class="plus" aria-hidden="true"></span><span class="al">Add relic</span></button>`;
     const lis=(r.effects||[]).map((e,j)=>{ const d=dead[i+':'+j]; return `<li${d?` class="off${d.dup?' dup':''}" title="${esc(d.why)}"`:''}>${esc(EBY[e]?EBY[e].n:e)}</li>`; }).join('')+(r.curses||[]).map(e=>`<li class="curse">${esc(EBY[e]?EBY[e].n:e)}</li>`).join('');
     const bad=!slotOk(code,i,r);
     return `<div class="slot filled c-${r.color} ${i>=3?'dp':''} ${act?'active':''} ${off?'off':''}" title="${esc(relicTitle(r))}">${isNamed(r)?`<div class="rn">${esc(r.name)}</div>`:''}<ul class="fxl">${lis}</ul>${r.bad&&r.bad.length?`<p class="susnote" title="${esc(r.bad.join('\n'))}">Looks edited</p>`:''}${bad?'<span class="msg bad">Wrong color or type for this slot</span>':''}<div class="stabs"><button data-act="pick" data-slot="${i}">Replace</button><button class="rm" data-act="unslot" data-slot="${i}">Remove</button></div></div>`;
   };
-  $('#slots').innerHTML = `<div class="slotlabel">Standard relics</div><div class="slotrow">${[0,1,2].map(one).join('')}</div><label class="slotlabel don"><input type="checkbox" id="don" ${build.don?'checked':''}><span>Deep relics</span></label><div class="slotrow">${[3,4,5].map(one).join('')}</div>`;
+  $('#slots').innerHTML = `<div class="slotlabel">Standard relics</div><div class="slotrow">${[0,1,2].map(one).join('')}</div><div class="slotlabel">Deep relics</div><div class="slotrow">${[3,4,5].map(one).join('')}</div>`;
   renderPresets();
 }
 function relicCard(r, pickMode, unowned){
