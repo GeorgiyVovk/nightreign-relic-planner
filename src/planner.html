@@ -330,13 +330,13 @@ table.bt{border-collapse:collapse;width:100%;font-size:12px;min-width:600px}
 .dlg .dh{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
 .dlg .dh .btn.ghost[data-act="close"]{color:var(--bad)}
 .dlg .dh .btn.ghost[data-act="close"]:hover{color:var(--bad);border-color:var(--bad)}
-.dlg.savedlg{width:min(480px,100%);height:360px;max-height:calc(100dvh - 48px);overflow-y:auto}
+.dlg.savedlg{width:min(500px,100%);height:472px;max-height:calc(100dvh - 48px);overflow-y:auto}
 .savedlg > .dh:last-child{margin-top:auto}
 .profgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
-.prof{display:flex;justify-content:space-between;align-items:baseline;gap:8px;min-width:0;text-align:left;border:1px solid var(--line2);background:var(--surface2);border-radius:7px;padding:6px 10px}
+.prof{display:flex;flex-direction:column;justify-content:center;gap:2px;min-width:0;min-height:50px;text-align:left;border:1px solid var(--line2);background:var(--surface2);border-radius:8px;padding:7px 12px}
 .prof:hover{border-color:var(--accent)}
-.prof b{font-weight:600;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.prof span{color:var(--muted);font-size:12px;white-space:nowrap;font-family:var(--f-mono)}
+.prof b{font-size:14px;font-weight:600;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.prof span{color:var(--muted);font-size:12px;white-space:nowrap}
 .prof[aria-current]{border-color:var(--accent);background:var(--accent-soft);cursor:default}
 @media (max-width:420px){.profgrid{grid-template-columns:minmax(0,1fr)}}
 .colors{display:flex;gap:8px;flex-wrap:wrap}
@@ -1347,8 +1347,8 @@ async function parseSave(buffer){
   return slots;
 }
 const profGrid = (list,cur) => `<div class="profgrid">${list.map((x,i)=>x.name===cur
-  ? `<button class="prof" aria-current="true" disabled title="Loaded now"><b>${esc(x.name)}</b><span>${x.relics.length}</span></button>`
-  : `<button class="prof" data-act="saveslot" data-i="${i}" title="${esc(x.name)} · ${x.relics.length} relics"><b>${esc(x.name)}</b><span>${x.relics.length}</span></button>`).join('')}</div>`;
+  ? `<button class="prof" aria-current="true" disabled title="Loaded now"><b>${esc(x.name)}</b><span>${x.relics.length} relics · loaded</span></button>`
+  : `<button class="prof" data-act="saveslot" data-i="${i}" title="${esc(x.name)}"><b>${esc(x.name)}</b><span>${x.relics.length} relics</span></button>`).join('')}</div>`;
 function openSaveDlg(st){
   st=st||{step:'intro'}; let body='';
   if(APP && st.step==='intro'){ openSaveDlg({step:'busy',msg:'Looking for your saves…'}); APP.listSaves().then(r=>{ appSaves=r.saves||[]; openSaveDlg({step:'applist',root:r.root}); }).catch(()=>openSaveDlg({step:'applist'})); return; }
