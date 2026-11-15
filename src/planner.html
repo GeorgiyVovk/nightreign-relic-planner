@@ -1103,7 +1103,7 @@ const SAB={vigor:'VIG',mind:'MND',endurance:'END',strength:'STR',dexterity:'DEX'
 const sstats=(s,sign)=>s.split(/,\s*(?:and\s+)?|\s+and\s+/).map(w=>w.trim().toLowerCase()).filter(Boolean).map(w=>SAB[w]?sign+SAB[w]:null);
 function shortName(n,ch){
   const m0=/^(\[(\w+)\]\s*)?(.*)$/.exec(n); const pre=m0[2]&&m0[2]!==ch?m0[1]:'', t0=m0[3]; let t=t0, m;
-  if((m=/^Improved (.+?), Reduced (.+)$/.exec(t))){ const a=sstats(m[1],'+'), b=sstats(m[2],'−'); if(!a.includes(null)&&!b.includes(null)) return pre+a.concat(b).join(' '); }
+  if((m=/^Improved (.+?), Reduced (.+)$/.exec(t))){ const a=sstats(m[1],'+'), b=sstats(m[2],'−'); if(!a.includes(null)&&!b.includes(null)) return (m0[1]||'')+a.concat(b).join(' '); } // stat swaps keep their Nightfarer tag
   if((m=/^Reduced ([A-Za-z]+) and ([A-Za-z]+)$/.exec(t))&&SAB[m[1].toLowerCase()]&&SAB[m[2].toLowerCase()]) return pre+`−${SAB[m[1].toLowerCase()]} −${SAB[m[2].toLowerCase()]}`;
   const R=[
     [/^Changes compatible armament's (skill|sorcery|incantation) to (.+?) at start of expedition$/i,(_,k,x)=>`${k==='incantation'?'Incant':k==='sorcery'?'Sorcery':'Skill'}: ${x}`],
