@@ -60,6 +60,8 @@ button{cursor:pointer}
 button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 select,input,textarea{outline:none;-webkit-tap-highlight-color:transparent}
 select:focus,input:focus,textarea:focus,select:focus-visible,input:focus-visible,textarea:focus-visible{outline:none;box-shadow:none}
+select{-webkit-appearance:none;appearance:none;cursor:pointer;background-image:linear-gradient(to top right,transparent 50%,var(--muted) 50%),linear-gradient(to top left,transparent 50%,var(--muted) 50%);background-size:5px 6px,5px 6px;background-repeat:no-repeat;background-position:right 17px center,right 12px center;padding-right:34px!important}
+.lvlbox select,.tr select{background-position:right 13px center,right 8px center;padding-right:26px!important}
 .vopt:focus-visible{outline:none}
 .num,.mono{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
 
@@ -93,8 +95,8 @@ select:focus,input:focus,textarea:focus,select:focus-visible,input:focus-visible
 /* nightfarer + vessel */
 .pickrow{display:flex;gap:10px;align-items:stretch;flex-wrap:wrap}
 .presetrow{display:flex;gap:10px;margin-top:10px}
-.presetrow select{flex:1;min-width:0;border:1px solid var(--line2);background:var(--surface2);border-radius:7px;padding:8px 10px}
-.pickrow select{flex:1 1 160px;min-width:0;border:1px solid var(--line2);background:var(--surface2);border-radius:7px;padding:8px 10px;font-weight:600}
+.presetrow select{flex:1;min-width:0;border:1px solid var(--line2);background-color:var(--surface2);border-radius:7px;padding:8px 10px}
+.pickrow select{flex:1 1 160px;min-width:0;border:1px solid var(--line2);background-color:var(--surface2);border-radius:7px;padding:8px 10px;font-weight:600}
 .vsel{position:relative;flex:0 0 auto}
 .vbtn{display:flex;align-items:center;gap:10px;height:100%;border:1px solid var(--line2);background:var(--surface2);border-radius:7px;padding:8px 12px}
 .vbtn .caret{width:0;height:0;border-left:5px solid transparent;border-right:5px solid transparent;border-top:6px solid var(--muted)}
@@ -202,7 +204,7 @@ select:focus,input:focus,textarea:focus,select:focus-visible,input:focus-visible
 
 /* stats */
 .lvlbox{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted)}
-.lvlbox select{border:1px solid var(--line2);background:var(--surface2);border-radius:6px;padding:4px 8px;font-family:var(--f-mono);color:var(--fg)}
+.lvlbox select{border:1px solid var(--line2);background-color:var(--surface2);border-radius:6px;padding:4px 8px;font-family:var(--f-mono);color:var(--fg)}
 .bars{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-bottom:14px}
 .bar{background:var(--surface2);border-radius:8px;padding:8px 10px;display:flex;flex-direction:column;gap:4px}
 .bar .bk{display:flex;justify-content:space-between;align-items:baseline;font-size:11px;font-weight:700;letter-spacing:.08em}
@@ -234,7 +236,7 @@ select:focus,input:focus,textarea:focus,select:focus-visible,input:focus-visible
 .form{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px 10px}
 .field{display:flex;flex-direction:column;gap:3px;min-width:0}
 .field label{font-size:11px;color:var(--muted)}
-.field input,.field select{border:1px solid var(--line2);background:var(--surface2);border-radius:6px;padding:6px 8px;min-width:0;width:100%}
+.field input,.field select{border:1px solid var(--line2);background-color:var(--surface2);border-radius:6px;padding:6px 8px;min-width:0;width:100%}
 .conds{display:flex;flex-wrap:wrap;gap:6px}
 .cond{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line2);border-radius:999px;padding:4px 10px;font-size:12px;background:var(--surface)}
 .cond input{accent-color:var(--accent);margin:0}
@@ -316,7 +318,7 @@ table.bt{border-collapse:collapse;width:100%;font-size:12px;min-width:600px}
 .tl i{width:8px;height:8px;border-radius:50%;background:var(--c);flex:none}
 .tv{font-family:var(--f-mono);font-variant-numeric:tabular-nums;font-weight:600}
 .td{font-family:var(--f-mono);font-size:11px;width:24px;text-align:right;flex:none}
-.tr select{border:1px solid var(--line2);background:var(--surface2);border-radius:5px;padding:1px 4px;font-family:var(--f-mono);font-size:12px;color:var(--fg)}
+.tr select{border:1px solid var(--line2);background-color:var(--surface2);border-radius:5px;padding:1px 4px;font-family:var(--f-mono);font-size:12px;color:var(--fg)}
 @media (max-width:560px){.stable{grid-template-columns:minmax(0,1fr);gap:22px}.trows{grid-template-rows:none;grid-auto-rows:31px}}
 
 .toast{position:fixed;right:max(16px,env(safe-area-inset-right,0px));bottom:max(16px,env(safe-area-inset-bottom,0px));z-index:60;max-width:min(420px,calc(100vw - 32px));background:var(--surface);border:1px solid var(--line2);border-left:3px solid var(--good);border-radius:8px;box-shadow:var(--shadow);padding:10px 14px;font-size:13px}
@@ -326,6 +328,17 @@ table.bt{border-collapse:collapse;width:100%;font-size:12px;min-width:600px}
 .dlg{background:var(--surface);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);width:min(640px,100%);padding:16px;display:flex;flex-direction:column;gap:12px}
 .dlg h3{font-family:var(--f-display);font-size:16px;letter-spacing:.05em;margin:0}
 .dlg .dh{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.dlg .dh .btn.ghost[data-act="close"]{color:var(--bad)}
+.dlg .dh .btn.ghost[data-act="close"]:hover{color:var(--bad);border-color:var(--bad)}
+.dlg.savedlg{width:min(480px,100%);height:360px;max-height:calc(100dvh - 48px);overflow-y:auto}
+.savedlg > .dh:last-child{margin-top:auto}
+.profgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+.prof{display:flex;justify-content:space-between;align-items:baseline;gap:8px;min-width:0;text-align:left;border:1px solid var(--line2);background:var(--surface2);border-radius:7px;padding:6px 10px}
+.prof:hover{border-color:var(--accent)}
+.prof b{font-weight:600;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.prof span{color:var(--muted);font-size:12px;white-space:nowrap;font-family:var(--f-mono)}
+.prof[aria-current]{border-color:var(--accent);background:var(--accent-soft);cursor:default}
+@media (max-width:420px){.profgrid{grid-template-columns:minmax(0,1fr)}}
 .colors{display:flex;gap:8px;flex-wrap:wrap}
 .colorbtn{display:inline-flex;align-items:center;gap:7px;border:1px solid var(--line2);border-radius:7px;padding:6px 10px;background:var(--surface);font-size:12px}
 .colorbtn[aria-pressed="true"]{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent);background:var(--accent-soft)}
@@ -1333,6 +1346,9 @@ async function parseSave(buffer){
   }
   return slots;
 }
+const profGrid = (list,cur) => `<div class="profgrid">${list.map((x,i)=>x.name===cur
+  ? `<button class="prof" aria-current="true" disabled title="Loaded now"><b>${esc(x.name)}</b><span>${x.relics.length}</span></button>`
+  : `<button class="prof" data-act="saveslot" data-i="${i}" title="${esc(x.name)} · ${x.relics.length} relics"><b>${esc(x.name)}</b><span>${x.relics.length}</span></button>`).join('')}</div>`;
 function openSaveDlg(st){
   st=st||{step:'intro'}; let body='';
   if(APP && st.step==='intro'){ openSaveDlg({step:'busy',msg:'Looking for your saves…'}); APP.listSaves().then(r=>{ appSaves=r.saves||[]; openSaveDlg({step:'applist',root:r.root}); }).catch(()=>openSaveDlg({step:'applist'})); return; }
@@ -1345,13 +1361,13 @@ function openSaveDlg(st){
     <div class="dh"><span></span><button class="btn pri" data-act="choosesave" data-autofocus>Choose save file</button></div>`;
   else if(st.step==='menu'){ const cur=saveInfo||{};
     body=`<p class="msg" style="margin:0">Loaded <b>${esc(cur.name||'profile')}</b>${cur.file?` from ${esc(cur.file)}`:''}${cur.at?`, ${esc(new Date(cur.at).toLocaleString())}`:''}.</p>`
-      +(lastProfiles.length>1?`<div class="field"><label>Other profiles in this save</label><div class="btns">${lastProfiles.map((x,i)=>x.name===cur.name?'':`<button class="btn" data-act="saveslot" data-i="${i}">${esc(x.name)} · ${x.relics.length} relics</button>`).join('')}</div></div>`:'')
+      +(lastProfiles.length>1?`<div class="field"><label>Profiles in this save</label>${profGrid(lastProfiles,cur.name)}</div>`:'')
       +`<div class="dh"><span class="msg">${lastProfiles.length?'':'To switch profiles, load the save again.'}</span><button class="btn pri" data-act="${APP?'loadsave':'choosesave'}" data-autofocus>Load another save</button></div>`; }
   else if(st.step==='busy') body=`<p class="msg" style="margin:0">${esc(st.msg)}</p>`;
-  else if(st.step==='pick') body=`<p class="msg" style="margin:0">This save has more than one profile. Which one?</p><div class="btns">${st.slots.map((x,i)=>`<button class="btn" data-act="saveslot" data-i="${i}">${esc(x.name)} · ${x.relics.length} relics</button>`).join('')}</div>`;
+  else if(st.step==='pick') body=`<p class="msg" style="margin:0">This save has more than one profile. Which one?</p>${profGrid(st.slots)}`;
   else if(st.step==='done') body=`<p class="msg good" style="margin:0">${esc(st.msg)}</p><div class="dh"><span></span><button class="btn pri" data-act="close" data-autofocus>Done</button></div>`;
   else body=`<p class="msg bad" style="margin:0">${esc(st.msg)}</p><div class="dh"><span></span><button class="btn" data-act="${APP?'loadsave':'choosesave'}">Pick another file</button></div>`;
-  openOv(`<div class="dlg" role="dialog" aria-modal="true" aria-label="Load save"><div class="dh"><h3>${st.step==='menu'?'Save':'Load save'}</h3>${st.step==='busy'?'':'<button class="btn sm ghost" data-act="close">Close</button>'}</div>${body}</div>`);
+  openOv(`<div class="dlg savedlg" role="dialog" aria-modal="true" aria-label="Load save"><div class="dh"><h3>${st.step==='menu'?'Save':'Load save'}</h3>${st.step==='busy'?'':'<button class="btn sm ghost" data-act="close">Close</button>'}</div>${body}</div>`);
 }
 async function onSaveFile(file){
   if(!file) return;
