@@ -370,7 +370,15 @@ table.bt{border-collapse:collapse;width:100%;font-size:12px;min-width:600px}
 .efbtn.curse b{color:var(--bad)}
 .efrow.cur{margin-left:18px;position:relative}
 .efrow.cur::before{content:"";position:absolute;left:-11px;top:-6px;height:calc(50% + 6px);width:8px;border-left:1px solid var(--line2);border-bottom:1px solid var(--line2);border-bottom-left-radius:4px}
-.pitem .cn{color:var(--bad)}
+.pitem .cn,.prow .cn{color:var(--bad)}
+.prow{display:flex;align-items:center;justify-content:space-between;gap:8px 12px;flex-wrap:wrap;border-bottom:1px solid var(--line);background:var(--surface);padding:8px 12px}
+.prow .pn{display:flex;flex-direction:column;gap:1px;min-width:0}
+.prow .pn b{font-weight:500;font-size:13px}
+.prow .pn small{color:var(--muted);font-size:11px}
+.tiers{display:flex;gap:4px;flex:none}
+.tier{min-width:44px;height:var(--h-sm);padding:0 8px;border:1px solid var(--line2);background:var(--surface2);border-radius:var(--r-sm);font-family:var(--f-mono);font-size:12px;color:var(--fg)}
+.tier.cn{color:var(--bad)}
+.tier[aria-pressed="true"]{background:var(--accent-soft);box-shadow:inset 0 0 0 1px var(--accent)}
 .plist{display:flex;flex-direction:column;max-height:min(56vh,520px);overflow-y:auto;border:1px solid var(--line);border-radius:var(--r-md)}
 .plist .grp{position:sticky;top:0;background:var(--surface2);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);padding:5px 10px;border-bottom:1px solid var(--line);z-index:1}
 .pitem{display:flex;flex-direction:column;gap:1px;text-align:left;border:0;border-bottom:1px solid var(--line);background:var(--surface);padding:8px 12px}
@@ -382,7 +390,7 @@ textarea.io{width:100%;min-height:200px;border:1px solid var(--line2);background
 details.more summary{cursor:pointer;font-size:13px;color:var(--accent)}
 @media (prefers-reduced-motion: no-preference){ .slot,.relic,.btn,.cond,.vopt,.seg button,.prof,.colorbtn,.saveitem,.efbtn,select,.vbtn,.search{transition:border-color .15s,background-color .15s,box-shadow .15s,color .15s} }
 /* hover, everywhere (kept last so no variant's own background wins over it): the fill gets a light veil; borders and text stay as they are */
-.btn:hover,.vbtn:hover,.efbtn:hover,.saveitem:hover,.prof:not([aria-current]):hover,.colorbtn:hover,.seg button:hover,.slot.add:hover,.vopt:hover{background-image:linear-gradient(var(--hov),var(--hov))}
+.btn:hover,.tier:hover,.vbtn:hover,.efbtn:hover,.saveitem:hover,.prof:not([aria-current]):hover,.colorbtn:hover,.seg button:hover,.slot.add:hover,.vopt:hover{background-image:linear-gradient(var(--hov),var(--hov))}
 select:hover{background-image:linear-gradient(to top right,transparent 50%,var(--muted) 50%),linear-gradient(to top left,transparent 50%,var(--muted) 50%),linear-gradient(var(--hov),var(--hov));background-size:5px 6px,5px 6px,100% 100%}
 </style>
 
@@ -1265,6 +1273,11 @@ function renderEditor(msg){
   </div>`);
 }
 function openPicker(kind,i){ editing.name=($('#ed-name')||{}).value??editing.name; pickerFor={kind,i}; pickerTab='all'; renderPicker(''); }
+// "Physical Attack Up", "+1", "+2"… become one row with a button per tier
+const tierOf = n => { const m=/^(.*\S)\s\+(\d+)$/.exec(n); return m?[m[1],+m[2]]:[n,0]; };
+function clusterTiers(list){ const out=[], by=new Map();
+  list.forEach(x=>{ const [base,t]=tierOf(x.n); let c=by.get(base); if(!c){ c={base,items:[]}; by.set(base,c); out.push(c); } if(!c.items.some(y=>y.t===t)) c.items.push({x,t}); });
+  out.forEach(c=>c.items.sort((a,b)=>a.t-b.t)); return out; }
 function pickerPool(){ const e=editing, k=pickerFor.kind; return EFF.filter(x=> x.hide ? false : k==='c' ? x.g==='curse' : (x.g!=='curse' && (e.deep ? (x.deep==='d'||x.deep==='b') : (x.deep==='n'||x.deep==='b')))); }
 function renderPicker(q){
   const pool=pickerPool(); const ql=q.trim().toLowerCase(); const ch=build.char;
@@ -1272,7 +1285,14 @@ function renderPicker(q){
   if(pickerTab!=='all' && pickerFor.kind!=='c') items=items.filter(x=>pickerTab==='mine' ? x.ch===ch : x.g===pickerTab);
   const groups={}; items.forEach(x=>{ (groups[x.g]=groups[x.g]||[]).push(x); });
   const tabs=pickerFor.kind==='c'?'':`<div class="seg">${[['all','All'],['off','Attack'],['stat','Stats'],['def','Defense'],['regen','Recovery'],['mine',build.char],['explore','Map'],['start','Start']].map(([k,n])=>`<button data-ptab="${k}" aria-pressed="${pickerTab===k}">${esc(n)}</button>`).join('')}</div>`;
-  const listHtml=Object.keys(GROUPS).filter(g=>groups[g]).map(g=>`<div class="grp">${GROUPS[g]}</div>`+groups[g].map(x=>`<button class="pitem" data-act="choosefx" data-id="${x.id}"><b>${esc(x.n)}</b><small>${esc(describe(x))}${pickerFor.kind!=='c'&&editing.deep&&NEEDC.has(x.id)?' · <span class="cn">comes with a curse</span>':''}</small></button>`).join('')).join('');
+  const cur=pickerFor.kind==='c'?editing.ca[pickerFor.i]:editing.effects[pickerFor.i];
+  const cursed=x=>pickerFor.kind!=='c'&&editing.deep&&NEEDC.has(x.id);
+  const row=c=>{
+    if(c.items.length===1){ const x=c.items[0].x; return `<button class="pitem" data-act="choosefx" data-id="${x.id}"><b>${esc(x.n)}</b><small>${esc(describe(x))}${cursed(x)?' · <span class="cn">comes with a curse</span>':''}</small></button>`; }
+    const d0=describe(c.items[0].x), d1=describe(c.items[c.items.length-1].x), cz=c.items.filter(({x})=>cursed(x)).map(({t})=>'+'+t);
+    return `<div class="prow"><div class="pn"><b>${esc(c.base)}</b><small>${esc(d0===d1?d0:`${d0} … ${d1}`)}${cz.length?` · <span class="cn">${cz.join(', ')} come${cz.length===1?'s':''} with a curse</span>`:''}</small></div><div class="tiers">${c.items.map(({x,t})=>`<button class="tier ${cursed(x)?'cn':''}" data-act="choosefx" data-id="${x.id}" aria-pressed="${x.id===cur}" title="${esc(x.n+' · '+describe(x)+(cursed(x)?' · comes with a curse':''))}">${t?'+'+t:'base'}</button>`).join('')}</div></div>`;
+  };
+  const listHtml=Object.keys(GROUPS).filter(g=>groups[g]).map(g=>`<div class="grp">${GROUPS[g]}</div>`+clusterTiers(groups[g]).map(row).join('')).join('');
   const html=`<div class="dlg" role="dialog" aria-modal="true" aria-label="Pick an effect">
     <div class="dh"><h3>${pickerFor.kind==='c'?'Deep relic curse':editing.deep?'Deep relic effect':'Standard relic effect'}</h3><button class="btn sm ghost" data-act="backed">Back</button></div>
     <input class="search" id="psearch" placeholder="Search: physical, poison, vigor…" value="${esc(q)}" data-autofocus>
