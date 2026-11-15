@@ -28,7 +28,7 @@
     --bg:#090E18; --surface:#0F1625; --surface2:#151E31; --line:#212C42; --line2:#2F3C57;
     --fg:#DDE3EC; --muted:#8E9AB0; --faint:#5F6B83;
     --accent:#AFC3E3; --accent-fg:#0A0F1A; --accent-soft:#18253C; --bg-glow:#15223B;
-    --glow:0 0 0 1px var(--accent),0 0 14px rgba(150,182,232,.22); --hov:rgba(255,255,255,.06);
+    --glow:0 0 0 1px var(--accent); --hov:rgba(255,255,255,.06);
     --r:#78141A; --b:#1C2D71; --y:#845A1B; --g:#12704A; --w:#7F7C77;
     --good:#5BAA78; --warn:#C9A04A; --bad:#D6503F;
     --good-soft:#13261C; --warn-soft:#2A2312; --bad-soft:#2E1716;
@@ -43,7 +43,7 @@
   --bg:#090E18; --surface:#0F1625; --surface2:#151E31; --line:#212C42; --line2:#2F3C57;
   --fg:#DDE3EC; --muted:#8E9AB0; --faint:#5F6B83;
   --accent:#AFC3E3; --accent-fg:#0A0F1A; --accent-soft:#18253C; --bg-glow:#15223B;
-  --glow:0 0 0 1px var(--accent),0 0 14px rgba(150,182,232,.22); --hov:rgba(255,255,255,.06);
+  --glow:0 0 0 1px var(--accent); --hov:rgba(255,255,255,.06);
   --r:#78141A; --b:#1C2D71; --y:#845A1B; --g:#12704A; --w:#7F7C77;
   --good:#5BAA78; --warn:#C9A04A; --bad:#D6503F;
   --good-soft:#13261C; --warn-soft:#2A2312; --bad-soft:#2E1716;
@@ -124,8 +124,7 @@ select{-webkit-appearance:none;appearance:none;cursor:pointer;border:1px solid v
 .slotlabel:first-child{margin-top:0}
 .slot{border:1px dashed var(--line2);border-radius:8px;padding:10px;display:flex;flex-direction:column;gap:6px;min-height:92px;background:var(--surface2);min-width:0}
 .slot.filled{border:2px solid var(--c);background:var(--surface)}
-.slot.filled.active{border-color:color-mix(in srgb,var(--accent) 70%,transparent);box-shadow:0 0 14px rgba(150,182,232,.16)}
-.slot.add.active{border-color:color-mix(in srgb,var(--accent) 70%,transparent);border-style:solid;box-shadow:0 0 14px rgba(150,182,232,.16)}
+
 .slot.dp,.slot.filled.dp{background:var(--deepbg)}
 .slot.add{border:2px dashed var(--c);align-items:center;justify-content:center;gap:8px;min-height:120px;width:100%;font:inherit;color:var(--muted);text-align:center;cursor:pointer}
 .slot.add:hover{color:var(--fg)}
@@ -162,7 +161,7 @@ select{-webkit-appearance:none;appearance:none;cursor:pointer;border:1px solid v
 .fxl li.curse::before{background:var(--bad)}
 
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;height:var(--h);border:1px solid var(--line2);background:var(--surface2);border-radius:var(--r-md);padding:0 14px;font-size:13px;font-weight:500;white-space:nowrap}
-.btn.pri{background:var(--accent-soft);border-color:var(--accent);color:var(--fg);box-shadow:var(--glow)}
+.btn.pri{background:var(--accent-soft);color:var(--fg)}
 .btn.sm{height:var(--h-sm);padding:0 10px;font-size:12px}
 .btn.ghost{border-color:transparent;background:transparent;color:var(--muted)}
 .btn.danger{color:var(--bad)}
@@ -170,7 +169,7 @@ select{-webkit-appearance:none;appearance:none;cursor:pointer;border:1px solid v
 .seg{display:inline-flex;flex-wrap:wrap;gap:2px;padding:3px;border:1px solid var(--line2);background:var(--surface2);border-radius:var(--r-md)}
 .seg button{border:0;background:transparent;min-height:calc(var(--h) - 8px);padding:0 11px;border-radius:var(--r-sm);font-size:13px;color:var(--muted)}
 .seg button:hover{color:var(--fg)}
-.seg button[aria-pressed="true"]{background:var(--accent-soft);color:var(--fg);box-shadow:var(--glow)}
+.seg button[aria-pressed="true"]{background:var(--accent-soft);color:var(--fg);box-shadow:inset 0 0 0 1px var(--accent)}
 .switch{display:inline-flex;align-items:center;gap:8px;font-size:12px;color:var(--muted)}
 .switch input{width:16px;height:16px;accent-color:var(--accent)}
 
@@ -208,7 +207,7 @@ select{-webkit-appearance:none;appearance:none;cursor:pointer;border:1px solid v
 .tgl .knob{position:relative;flex:none;width:30px;height:18px;border-radius:999px;background:var(--surface2);border:1px solid var(--line2)}
 .tgl .knob::after{content:"";position:absolute;top:2px;left:2px;width:12px;height:12px;border-radius:50%;background:var(--faint)}
 .tgl:hover .knob{background-image:linear-gradient(var(--hov),var(--hov))}
-.tgl input:checked + .knob{background:var(--accent-soft);border-color:var(--accent);box-shadow:0 0 10px rgba(150,182,232,.18)}
+.tgl input:checked + .knob{background:var(--accent-soft);border-color:var(--accent)}
 .tgl input:checked + .knob::after{transform:translateX(12px);background:var(--accent)}
 .tgl input:checked ~ .tt{color:var(--fg)}
 .tgl input:focus-visible + .knob{outline:2px solid var(--accent);outline-offset:2px}
@@ -367,7 +366,11 @@ table.bt{border-collapse:collapse;width:100%;font-size:12px;min-width:600px}
 .efbtn b{font-weight:500;font-size:13px;overflow:hidden;text-overflow:ellipsis}
 .efbtn small{color:var(--muted);font-size:11px}
 .efbtn.ph b{color:var(--muted);font-weight:400}
-.efbtn.curse{border-color:var(--bad)}
+.efbtn.curse{border-color:color-mix(in srgb,var(--bad) 55%,var(--line2))}
+.efbtn.curse b{color:var(--bad)}
+.efrow.cur{margin-left:18px;position:relative}
+.efrow.cur::before{content:"";position:absolute;left:-11px;top:-6px;height:calc(50% + 6px);width:8px;border-left:1px solid var(--line2);border-bottom:1px solid var(--line2);border-bottom-left-radius:4px}
+.pitem .cn{color:var(--bad)}
 .plist{display:flex;flex-direction:column;max-height:min(56vh,520px);overflow-y:auto;border:1px solid var(--line);border-radius:var(--r-md)}
 .plist .grp{position:sticky;top:0;background:var(--surface2);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);padding:5px 10px;border-bottom:1px solid var(--line);z-index:1}
 .pitem{display:flex;flex-direction:column;gap:1px;text-align:left;border:0;border-bottom:1px solid var(--line);background:var(--surface);padding:8px 12px}
@@ -865,6 +868,8 @@ function relicIssues(row){
   return [...new Set(out)];
 }
 Object.entries(XEFF).forEach(([id,[n,cur]])=>{ if(CTMAP[id]) return; const isC=!!cur; let e=(NAMEIDX[normN(n)]||[]).find(x=>isC?x.g==='curse':x.g!=='curse'); if(!e){ const chm=n.match(/^\[(\w+)\]/); e=add({id:'x'+id,n,g:isC?'curse':(chm?'char':'regen'),deep:isC?'d':'b',ch:chm?chm[1]:undefined,st:true,hide:true,note:isC?'in-game curse':'in-game effect, not calculated as a number'}); indexEff(e); } CTMAP[id]=e.id; });
+// deep-relic effects that always come with a curse (every effect is either always or never cursed in the game data)
+const NEEDC = new Set(Object.entries(CTMAP).filter(([ct])=>{ const R=RULES.get(+ct); return R&&!R.ill&&R.c!=='S'&&R.rd; }).map(([,id])=>id));
 const NAMED = new Set([...PRESETS.map(p=>p[0]), ...CT_TYPES.map(x=>x[1]).filter(n=>!/Scene$/.test(n)), ...Object.values(UNAME)]);
 /* ---- guaranteed relics: fixed effects, from the 'Guaranteed Relics' tab of the Nightreign Useful Info sheet, checked against real saves ---- */
 const GUAR = [["Night of the Fathom","R","Boss",["maxhp5","flaskallies","itemsallies"]],["Grand Burning Scene","R","Generic",["runes","stonesword","discount"]],["Slate Whetstone","R","Wylder",["w_follow","phys0"]],["Stone Stake","R","Guardian",["g_dur","cd3"]],["Grand Burning Scene","R","Ironeye",["i_poison","vspoison","ult3"]],["Grand Burning Scene","R","Duchess",["sw_d1","str3","vig3"]],["Grand Burning Scene","R","Raider",["sw_r1","mnd3","int3"]],["Golden Sprout","R","Executor",["e_roar","guardhp","lowhpregen"]],["Cleansing Tear","R","Scholar",["s_dot","negaffn","killart"]],["Night of the Demon","R","Boss",["discount2","crossedlegs","madfp"]],["Grand Burning Scene","R","Generic",["lowhpregen","neglow","vig3"]],["Silver Tear","R","Wylder",["w_art","arc3","ult3"]],["Third Volume","R","Guardian",["g_whirl","x7341800"]],["Grand Burning Scene","R","Executor",["e_roar","dex2","arc2"]],["Grand Burning Scene","R","Scholar",["sw_s1","vig3","mnd3"]],["The Night of Dregs","R","Boss",["statusgauge","rotdmgtaken","rothp"]],["Grand Burning Scene","R","Generic",["stancepw","stamhit0","end3"]],["The Wylder's Earring","R","Wylder",["w_extra","w_fire","stamhit0"]],["Grand Burning Scene","R","Guardian",["g_reflect","guardart","end3"]],["Grand Burning Scene","R","Executor",["sw_e1","vig3","end3"]],["Dark Night of the Baron","R","Boss",["crit1","crit0","critrunes"]],["Grand Burning Scene","R","Generic",["rotdmgtaken","statusgauge","arc2"]],["Grand Burning Scene","R","Wylder",["sw_w1","vig3","mnd3"]],["Grand Burning Scene","R","Guardian",["sw_g1","str3","dex3"]],["Grand Burning Scene","R","Generic",["meathp","itemsallies","pouch"]],["Night of the Champion","G","Boss",["maxst5","gchp","thrusthp"]],["Old Pocketwatch","G","Generic",["succfp","dex3"]],["Grand Tranquil Scene","G","Ironeye",["sw_i1","dex3","arc3"]],["Crown Medal","G","Duchess",["d_chain","wt_dagger"]],["Grand Tranquil Scene","G","Raider",["sw_r2","vig3","arc3"]],["Vestige of Night","G","Recluse",["c_terra","mag2"]],["Blessed Flowers","G","Executor",["e_cursed","dex3"]],["Grand Tranquil Scene","G","Undertaker",["u_chain","str2","fth2"]],["Night of the Beast","G","Boss",["stamhit1","startel_fire"]],["Grand Tranquil Scene","G","Generic",["postdmg","vig2","poise2"]],["Blessed Iron Coin","G","Duchess",["d_ultap","conthp","vig3"]],["Bone-Like Stone","G","Recluse",["c_blood","c_hp","int3"]],["Glass Necklace","G","Undertaker",["u_ult","succap","ult3"]],["Dark Night of the Wise","G","Boss",["maxfp5","succfp","rise"]],["Grand Tranquil Scene","G","Generic",["stance2h","firsthit","poise3"]],["Grand Tranquil Scene","G","Duchess",["d_restage","dex2","int2"]],["Grand Tranquil Scene","G","Recluse",["sw_c2","int3","fth3"]],["Grand Tranquil Scene","G","Undertaker",["sw_u2","mnd3","fth3"]],["Dark Night of the Miasma","G","Boss",["frostconceal","start_frost","negphys"]],["Grand Tranquil Scene","G","Generic",["fp3staff","rise","mag0"]],["Grand Tranquil Scene","G","Duchess",["d_stealth","crit0","cd2"]],["Grand Tranquil Scene","G","Generic",["hittaken","knockback","phys2"]],["Dark Night of the Fathom","B","Boss",["maxhp5","conthp","lowhpregen"]],["Fell Omen Fetish","B","Generic",["swapap","x7040400","vig1"]],["Grand Drizzly Scene","B","Wylder",["w_fire","x7122900","fire2"]],["Witch's Brooch","B","Guardian",["g_heal","g_shock","vig3"]],["Grand Drizzly Scene","B","Duchess",["sw_d2","mnd3","fth3"]],["Torn Braided Cord","B","Raider",["r_dmg","str3"]],["Small Makeup Brush","B","Revenant",["v_family","runes"]],["Grand Drizzly Scene","B","Recluse",["sw_c1","vig3","end3"]],["Leather Monocle Case","B","Undertaker",["u_buff","spelldur","phys2"]],["Night of the Baron","B","Boss",["crit1","critart","critstam"]],["Besmirched Frame","B","Generic",["hittaken","fth3"]],["Grand Drizzly Scene","B","Wylder",["sw_w2","int3","fth3"]],["Old Portrait","B","Revenant",["v_heal","v_ghost","killart"]],["Grand Drizzly Scene","B","Undertaker",["sw_u1","vig3","dex3"]],["Night of the Lord","B","Boss",["swapaff","addedaff","swapap"]],["Grand Drizzly Scene","B","Generic",["x7126000","x7126000","x7126000"]],["Grand Drizzly Scene","B","Revenant",["v_ally","itemsallies","x7126000"]],["Grand Drizzly Scene","B","Undertaker",["u_contact","postdmg","killart"]],["The Will of the Balancers","B","Boss",["melee","skillap","contfp"]],["Grand Drizzly Scene","B","Generic",["d_church","d_ruin","rise"]],["Grand Drizzly Scene","B","Revenant",["sw_v1","vig3","end3"]],["Dark Night of the Demon","B","Boss",["hittaken","crossedlegs","madfp"]],["Night of the Wise","Y","Boss",["maxfp5","start_poison","nearpr"]],["Grand Luminous Scene","Y","Generic",["evergaol","treasure","stonesword"]],["Grand Luminous Scene","Y","Guardian",["sw_g2","mnd3","fth3"]],["Cracked Sealing Wax","Y","Ironeye",["i_weak","critrunes"]],["Golden Dew","Y","Duchess",["d_restage","addedaff"]],["Black Claw Necklace","Y","Raider",["r_totem","killart","poise3"]],["Grand Luminous Scene","Y","Revenant",["sw_v2","str3","fth3"]],["Grand Luminous Scene","Y","Executor",["e_skill","guardhp","guardart"]],["Note \"My Dear Successor\"","Y","Scholar",["s_allies","s_slow","cd3"]],["Night of the Miasma","Y","Boss",["frostconceal","x7123900","vsfrost"]],["Grand Luminous Scene","Y","Generic",["critart","killart","ult3"]],["Edge of Order","Y","Ironeye",["i_counter","wt_bow","startel_holy"]],["Grand Luminous Scene","Y","Raider",["r_ult","wt_colweapon","end3"]],["Grand Luminous Scene","Y","Executor",["sw_e2","dex3","arc3"]],["Grand Luminous Scene","Y","Scholar",["sw_s2","end3","dex3"]],["Dark Night of the Champion","Y","Boss",["maxst5","addedaff","killart"]],["Grand Luminous Scene","Y","Ironeye",["i_weak","end2","dex2"]],["Grand Luminous Scene","Y","Scholar",["s_runes","pouch","pouch"]],["Dark Night of the Beast","Y","Boss",["stamhit1","hittaken","fire2"]],["Grand Luminous Scene","Y","Ironeye",["sw_i2","vig3","str3"]],["The Will of the Balance","R","Boss",["melee","skillap","nullify"]]];
@@ -1241,18 +1246,19 @@ function renderResults(){
 let editing=null, pickerFor=null, pickerTab='all';
 function openOv(html){ const o=$('#ov'); o.innerHTML=html; o.hidden=false; const f=o.querySelector('[data-autofocus]'); if(f) setTimeout(()=>f.focus(),20); }
 function closeOv(){ const o=$('#ov'); o.hidden=true; o.innerHTML=''; editing=null; pickerFor=null; if(ui.pick!=null){ ui.pick=null; renderSlots(); } }
-function openEditor(r){ editing = r ? JSON.parse(JSON.stringify(r)) : {id:null,name:'',color:'R',deep:false,effects:[],curses:[]}; if(!editing.curses) editing.curses=[]; renderEditor(); }
+function openEditor(r){ editing = r ? JSON.parse(JSON.stringify(r)) : {id:null,name:'',color:'R',deep:false,effects:[],curses:[]}; if(!editing.curses) editing.curses=[];
+  let j=0; editing.ca=editing.effects.map(e=>editing.deep&&NEEDC.has(e)?(editing.curses[j++]||null):null); renderEditor(); }
 function renderEditor(msg){
   const e=editing;
   const efRow=(arr,i,curse)=>{ const id=arr[i]; const ef=id?EBY[id]:null; return `<div class="efrow"><button class="efbtn ${ef?'':'ph'} ${curse?'curse':''}" data-act="pickfx" data-kind="${curse?'c':'e'}" data-i="${i}">${ef?`<b>${esc(ef.n)}</b><small>${esc(describe(ef))}</small>`:`<b>${curse?'+ curse':'+ effect'}</b>`}</button>${ef?`<button class="btn sm ghost" data-act="clrfx" data-kind="${curse?'c':'e'}" data-i="${i}" aria-label="Remove">✕</button>`:''}</div>`; };
-  const nE=Math.min(3,e.effects.length+1), nC=Math.min(3,e.curses.length+1);
+  const nE=Math.min(3,e.effects.length+1);
+  const curseRow=i=>{ const id=e.ca[i], c=id?EBY[id]:null; return `<div class="efrow cur"><button class="efbtn curse ${c?'':'ph'}" data-act="pickfx" data-kind="c" data-i="${i}">${c?`<b>${esc(c.n)}</b><small>Curse</small>`:`<b>+ curse</b><small>This effect always comes with one</small>`}</button>${c?`<button class="btn sm ghost" data-act="clrfx" data-kind="c" data-i="${i}" aria-label="Remove curse">✕</button>`:''}</div>`; };
   openOv(`<div class="dlg" role="dialog" aria-modal="true" aria-label="Relic">
     <div class="dh"><h3>${e.id?'Edit relic':'New relic'}</h3><button class="btn sm ghost" data-act="close">Close</button></div>
     <div class="field"><label for="ed-name">Name (optional)</label><input id="ed-name" class="search" value="${esc(e.name)}" placeholder="e.g. Deep phys +4 / poison +2" data-autofocus></div>
     <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center"><span class="msg">Type</span><div class="seg"><button data-act="setdeep" data-v="0" aria-pressed="${!e.deep}">Standard</button><button data-act="setdeep" data-v="1" aria-pressed="${!!e.deep}">Deep</button></div></div>
     <div class="colors">${COLORS.map(([k,n])=>`<button class="colorbtn" data-act="setcolor" data-v="${k}" aria-pressed="${e.color===k}" title="${esc(n)}">${gem(k,e.deep)}${esc(n.split(' · ')[1].replace(/^./,c=>c.toUpperCase()))}</button>`).join('')}</div>
-    <div class="field"><label>Effects (up to 3)</label><div style="display:flex;flex-direction:column;gap:6px">${Array.from({length:nE},(_,i)=>efRow(e.effects,i,false)).join('')}</div></div>
-    ${e.deep?`<div class="field"><label>Curses (up to 3)</label><div style="display:flex;flex-direction:column;gap:6px">${Array.from({length:nC},(_,i)=>efRow(e.curses,i,true)).join('')}</div></div>`:''}
+    <div class="field"><label>Effects (up to 3)</label><div style="display:flex;flex-direction:column;gap:6px">${Array.from({length:nE},(_,i)=>efRow(e.effects,i,false)+(e.deep&&e.effects[i]&&NEEDC.has(e.effects[i])?curseRow(i):'')).join('')}</div></div>
     ${e._del
       ? `<div class="dh"><span class="msg bad">Delete this relic? It also leaves any slot it's in.</span><div class="btns"><button class="btn" data-act="delno">Keep</button><button class="btn danger" data-act="delyes">Delete</button></div></div>`
       : `<div class="dh"><div>${e.id?`<button class="btn sm danger" data-act="delask">Delete relic</button>`:''}</div><div class="btns"><button class="btn" data-act="close">Cancel</button><button class="btn pri" data-act="saverelic">Save</button></div></div>`}
@@ -1266,7 +1272,7 @@ function renderPicker(q){
   if(pickerTab!=='all' && pickerFor.kind!=='c') items=items.filter(x=>pickerTab==='mine' ? x.ch===ch : x.g===pickerTab);
   const groups={}; items.forEach(x=>{ (groups[x.g]=groups[x.g]||[]).push(x); });
   const tabs=pickerFor.kind==='c'?'':`<div class="seg">${[['all','All'],['off','Attack'],['stat','Stats'],['def','Defense'],['regen','Recovery'],['mine',build.char],['explore','Map'],['start','Start']].map(([k,n])=>`<button data-ptab="${k}" aria-pressed="${pickerTab===k}">${esc(n)}</button>`).join('')}</div>`;
-  const listHtml=Object.keys(GROUPS).filter(g=>groups[g]).map(g=>`<div class="grp">${GROUPS[g]}</div>`+groups[g].map(x=>`<button class="pitem" data-act="choosefx" data-id="${x.id}"><b>${esc(x.n)}</b><small>${esc(describe(x))}</small></button>`).join('')).join('');
+  const listHtml=Object.keys(GROUPS).filter(g=>groups[g]).map(g=>`<div class="grp">${GROUPS[g]}</div>`+groups[g].map(x=>`<button class="pitem" data-act="choosefx" data-id="${x.id}"><b>${esc(x.n)}</b><small>${esc(describe(x))}${pickerFor.kind!=='c'&&editing.deep&&NEEDC.has(x.id)?' · <span class="cn">comes with a curse</span>':''}</small></button>`).join('')).join('');
   const html=`<div class="dlg" role="dialog" aria-modal="true" aria-label="Pick an effect">
     <div class="dh"><h3>${pickerFor.kind==='c'?'Deep relic curse':editing.deep?'Deep relic effect':'Standard relic effect'}</h3><button class="btn sm ghost" data-act="backed">Back</button></div>
     <input class="search" id="psearch" placeholder="Search: physical, poison, vigor…" value="${esc(q)}" data-autofocus>
@@ -1572,7 +1578,7 @@ document.addEventListener('click', async ev=>{
   const t=ev.target.closest('button'); if(!t) return;
   if(t.id==='vbtn'){ toggleVlist(); return; }
   if(t.dataset.vessel){ build.vessel[build.char]=t.dataset.vessel; ui.pick=null; toggleVlist(false); $('#vbtn').focus(); saveBuildSoon(); renderAll(); return; }
-  if(t.dataset.lf){ ui.lf=t.dataset.lf; ui.limit=60; renderLibrary(); return; }
+  if(t.dataset.lf){ if(t.dataset.lf==='f'&&!flaggedCount()){ toast('No flagged relics: none of your relics look edited.'); return; } ui.lf=t.dataset.lf; ui.limit=60; renderLibrary(); return; }
   if(t.dataset.plf){ ui.plf=t.dataset.plf; ui.plimit=60; renderSlotPick(); return; }
   if(t.dataset.hp){ build.combat.hp=t.dataset.hp; saveBuildSoon(); renderCombat(); renderResults(); return; }
   if(t.dataset.ptab){ pickerTab=t.dataset.ptab; renderPicker(($('#psearch')||{}).value||''); return; }
@@ -1582,6 +1588,7 @@ document.addEventListener('click', async ev=>{
   if(a==='unslot'){ curSlots()[+t.dataset.slot]=null; saveBuildSoon(); renderSlots(); renderLibrary(); renderCombat(); renderResults(); return; }
   if(a==='place'){ placeRelic(t.dataset.id); return; }
   if(a==='new'){ openEditor(null); return; }
+  if(a==='pillflag'&&!flaggedCount()){ toast('No flagged relics: none of your relics look edited.'); return; }
   if(a==='pillall'||a==='pillflag'){ ui.lf=a==='pillflag'?'f':'all'; ui.q=''; const q=$('#libq'); if(q) q.value=''; ui.limit=60; renderLibrary(); $('#library').scrollIntoView({block:'start',behavior:'smooth'}); return; }
   if(a==='pillprof'){ pendingSave=lastProfiles.length>1?lastProfiles:null; openSaveDlg({step:'menu'}); return; }
   if(a==='presetdlg'){ openPresetDlg(); return; }
@@ -1599,13 +1606,19 @@ document.addEventListener('click', async ev=>{
   if(a==='more'){ ui.limit+=60; renderLibrary(); return; }
   if(a==='edit'){ openEditor(relicById(t.dataset.id)); return; }
   if(a==='close'){ closeOv(); return; }
-  if(a==='setdeep'){ editing.name=$('#ed-name').value; editing.deep=t.dataset.v==='1'; editing.effects=editing.effects.filter(e=>{const x=EBY[e]; return x&&(editing.deep?x.deep!=='n':x.deep!=='d');}); if(!editing.deep) editing.curses=[]; renderEditor(); return; }
+  if(a==='setdeep'){ editing.name=$('#ed-name').value; editing.deep=t.dataset.v==='1'; const keep=editing.effects.map(e=>{const x=EBY[e]; return !!x&&(editing.deep?x.deep!=='n':x.deep!=='d');}); editing.effects=editing.effects.filter((_,k)=>keep[k]); editing.ca=editing.ca.filter((_,k)=>keep[k]); if(!editing.deep) editing.ca=editing.effects.map(()=>null); renderEditor(); return; }
   if(a==='setcolor'){ editing.name=$('#ed-name').value; editing.color=t.dataset.v; renderEditor(); return; }
   if(a==='pickfx'){ openPicker(t.dataset.kind,+t.dataset.i); return; }
-  if(a==='clrfx'){ editing.name=$('#ed-name').value; const arr=t.dataset.kind==='c'?editing.curses:editing.effects; arr.splice(+t.dataset.i,1); renderEditor(); return; }
-  if(a==='choosefx'){ const arr=pickerFor.kind==='c'?editing.curses:editing.effects; arr[pickerFor.i]=t.dataset.id; const cl=arr.filter(Boolean); arr.length=0; cl.forEach(x=>arr.push(x)); pickerFor=null; renderEditor(); return; }
+  if(a==='clrfx'){ editing.name=$('#ed-name').value; const i=+t.dataset.i; if(t.dataset.kind==='c') editing.ca[i]=null; else { editing.effects.splice(i,1); editing.ca.splice(i,1); } renderEditor(); return; }
+  if(a==='choosefx'){ const i=pickerFor.i, id=t.dataset.id;
+    if(pickerFor.kind==='c') editing.ca[i]=id;
+    else { if(editing.effects[i]!==id) editing.ca[i]=null; editing.effects[i]=id; const keep=editing.effects.map(Boolean); editing.effects=editing.effects.filter((_,k)=>keep[k]); editing.ca=editing.ca.filter((_,k)=>keep[k]).concat([]).slice(0,editing.effects.length); while(editing.ca.length<editing.effects.length) editing.ca.push(null); }
+    pickerFor=null; renderEditor(); return; }
   if(a==='backed'){ pickerFor=null; renderEditor(); return; }
-  if(a==='saverelic'){ editing.name=$('#ed-name').value.trim(); if(!editing.effects.length){ toast('Add at least one effect first.','bad'); return; } const isNew=!editing.id; delete editing._del; const err=await saveRelic(editing); if(err){ toast(err,'bad'); return; } closeOv(); renderAll(); toast(isNew?'Relic added.':'Relic saved.'); return; }
+  if(a==='saverelic'){ editing.name=$('#ed-name').value.trim(); if(!editing.effects.length){ toast('Add at least one effect first.','bad'); return; }
+    if(editing.deep){ const k=editing.effects.findIndex((x,k)=>NEEDC.has(x)&&!editing.ca[k]); if(k>=0){ toast(`"${EBY[editing.effects[k]].n}" always comes with a curse. Pick it first.`,'bad'); return; } }
+    editing.curses=editing.deep?editing.effects.map((x,k)=>NEEDC.has(x)?editing.ca[k]:null).filter(Boolean):[];
+    const isNew=!editing.id; delete editing._del; const err=await saveRelic(editing); if(err){ toast(err,'bad'); return; } closeOv(); renderAll(); toast(isNew?'Relic added.':'Relic saved.'); return; }
   if(a==='delask'){ editing.name=$('#ed-name').value; editing._del=true; renderEditor(); return; }
   if(a==='delno'){ editing._del=false; renderEditor(); return; }
   if(a==='delyes'){ const id=editing.id; closeOv(); await deleteRelic(id); renderAll(); toast('Relic deleted.'); return; }
