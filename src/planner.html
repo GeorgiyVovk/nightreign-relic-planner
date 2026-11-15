@@ -329,6 +329,14 @@ table.bt{border-collapse:collapse;width:100%;font-size:12px;min-width:600px}
 .tr select{padding:0 4px;font-family:var(--f-mono);font-size:12px;color:var(--fg)}
 @media (max-width:560px){.stable{grid-template-columns:minmax(0,1fr);gap:22px}.trows{grid-template-rows:none;grid-auto-rows:31px}}
 
+.curses{margin-top:14px}
+.curses .sh3{margin:0 0 4px}
+.crow{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:5px 0;font-size:13px;border-top:1px solid var(--line)}
+.curses .sh3 + .crow{border-top:0}
+.crow .cl{display:flex;align-items:center;gap:7px;min-width:0}
+.crow .cl i{width:8px;height:8px;border-radius:50%;background:var(--c);flex:none}
+.crow small{display:block;color:var(--muted);font-size:11px}
+.crow .cv{font-family:var(--f-mono);font-variant-numeric:tabular-nums;font-weight:600;color:var(--bad);white-space:nowrap}
 .toast{position:fixed;left:50%;top:max(16px,env(safe-area-inset-top,0px));transform:translateX(-50%);z-index:60;display:flex;align-items:center;gap:10px;width:max-content;max-width:min(480px,calc(100vw - 32px));background:var(--surface);border:1px solid var(--line2);border-left:3px solid var(--good);border-radius:var(--r-md);box-shadow:var(--shadow);padding:10px 14px;font-size:13px}
 .toast.bad{border-left-color:var(--bad)}
 .toast.busy{border-left-color:var(--accent)}
@@ -716,7 +724,10 @@ DC('Executor','de_hp','Slowly Restore HP upon Ability Activation','regen after t
 DC('Scholar','ds_fp','Reduced FP consumption when using Character Skill on self','FP ×0.85 for 40 s');
 DC('Undertaker','du_art','Executing Art readies Character Skill','Trance right after the ult');
 const CU=o=>add(Object.assign({deep:'d',g:'curse'},o));
-CU({id:'c_buildup',n:'Taking Damage Causes [Status] Buildup',note:'getting hit builds a status on you'});
+CU({id:'c_buildup',n:'Taking Damage Causes [Status] Buildup',note:'getting hit builds a status on you',hide:true}); // older hand-made relics
+// buildup on you per hit taken (Nightreign Useful Info, Deep Relic Effects)
+[['poison','Poison',52],['rot','Rot',44],['frost','Frost',44],['bleed','Blood Loss',44],['madness','Madness',40],['sleep','Sleep',40],['blight','Death',32]].forEach(([k,N,v])=>
+  CU({id:'c_bu_'+k,n:`Taking Damage Causes ${N} Buildup`,bu:{s:k,hit:v},note:`+${v} ${N==='Death'?'death blight':N.toLowerCase()} buildup on you per hit taken`}));
 CU({id:'c_strint',n:'Reduced Strength and Intelligence',stat:{str:-3,int:-3}});
 CU({id:'c_dexfth',n:'Reduced Dexterity and Faith',stat:{dex:-3,fth:-3}});
 CU({id:'c_dexint',n:'Reduced Dexterity and Intelligence',stat:{dex:-3,int:-3}});
@@ -731,8 +742,8 @@ CU({id:'c_evade',n:'More Damage Taken After Evasion',note:'−45% negation right
 CU({id:'c_evades',n:'Repeated Evasions Lower Damage Negation',note:'−23% / −35% negation for 15 s'});
 CU({id:'c_flaskneg',n:'Reduced Damage Negation for Flask Usages',note:'−45% negation while drinking'});
 CU({id:'c_lowatk',n:'Lower Attack When Below Max HP',dmg:[D('all',.915)],cond:'below85'});
-CU({id:'c_poison',n:'Poison Buildup When Below Max HP',note:'poison builds on you below 85% HP'});
-CU({id:'c_rot',n:'Rot Buildup When Below Max HP',note:'rot builds on you below 85% HP'});
+CU({id:'c_poison',n:'Poison Buildup When Below Max HP',bu:{s:'poison',rate:2/0.22},note:'+9.1 poison buildup per second on you below 85% HP'});
+CU({id:'c_rot',n:'Rot Buildup When Below Max HP',bu:{s:'rot',rate:2/0.24},note:'+8.3 rot buildup per second on you below 85% HP'});
 CU({id:'c_neardeath',n:'Near Death Reduces Max HP',note:'HP ×0.75 for 60 s after being downed'});
 
 /* ---- talismans ---- */
@@ -825,7 +836,7 @@ const AKA = {
   s_slow:['[Scholar] Prevent slowing of Character Skill progress'], u_chain:['[Undertaker] Attack power increased by landing the final blow of a chain attack'],
   greaseap:['Physical attack power increases after using grease items'], meathp:['HP restored when using medicinal boluses, etc.'], allystam:['Raised stamina recovery for nearby allies but, but not for self'], roar:['Improved Roar & Breath Attacks'],
   dspell0:['Improved Sorceries','Improved Incantations'], dspell1:['Improved Sorceries +1','Improved Incantations +1'], dspell2:['Improved Sorceries +2','Improved Incantations +2'],
-  c_buildup:['Poison','Rot','Frost','Blood Loss','Madness','Sleep','Death'].map(s=>`Taking Damage Causes ${s} Buildup`), c_dexint:['Reduced Intelligence and Dexterity'], c_strfth:['Reduced Faith and Strength'],
+  c_dexint:['Reduced Intelligence and Dexterity'], c_strfth:['Reduced Faith and Strength'],
   dv_fp:['[Revenant] Increased Max FP upon Ability Activation'], start_frost:['Starting armament inflicts frost'], hp3shield:['Max HP Up with 3+ Small Shields Equipped','Max HP Up with 3+ Medium Shields Equipped','Max HP Up with 3+ Greatshields Equipped'],
   res_rot:['Improved Rot Resistance'], dres_rot1:['Improved Rot Resistance +1'], dres_rot2:['Improved Rot Resistance +2'], res_frost:['Improved Frostbite Resistance'], dres_frost1:['Improved Frostbite Resistance +1'], dres_frost2:['Improved Frostbite Resistance +2']
 };
@@ -1191,6 +1202,22 @@ function renderCombat(){
   <div class="conds">${condHtml}</div>
   ${stacks?`<div class="stacks">${stacks}</div>`:''}`;
 }
+// active curses, with how fast a buildup curse gets you: hits for on-hit buildup, seconds for the below-85% ones
+function curseBlock(list,s){
+  const rows=[], drain='Status bars drain over time, so this assumes the hits come close together.';
+  const by={}; list.filter(a=>a.ok&&a.eff.g==='curse').forEach(a=>{ const e=a.eff;
+    if(e.bu){ const k=e.bu.s, i=resIdx(k), st=STATUS[i]||[k,k,k,'s-poison'], R=Math.max(0,Math.round(s.res[i]||0));
+      if(e.bu.hit){ const per=e.bu.hit*a.count, n=Math.max(1,Math.ceil(R/per));
+        rows.push({c:st[3],l:`${st[1]} when hit`,d:`+${per} per hit · your ${st[1].toLowerCase()} resistance ${R}`,v:`${n} hit${n===1?'':'s'}`,t:drain}); }
+      else { const per=e.bu.rate*a.count, t=R/per;
+        rows.push({c:st[3],l:`${st[1]} below 85% HP`,d:`+${per.toFixed(1)} per second · your ${st[1].toLowerCase()} resistance ${R}`,v:`${t<10?t.toFixed(1):Math.round(t)} s`,t:'Time from an empty status bar while your HP stays below 85%.'}); }
+      return; }
+    if(e.stat||e.res||e.dmg||e.ultM) return; // already in the numbers above
+    rows.push({l:e.n,d:e.note||'',v:''});
+  });
+  if(!rows.length) return '';
+  return `<div class="curses"><h3 class="sh3">Curses</h3>${rows.map(r=>`<div class="crow"${r.t?` title="${esc(r.t)}"`:''}><div class="cl">${r.c?`<i style="--c:var(--${r.c})"></i>`:''}<div><span>${esc(r.l)}</span>${r.d?`<small>${esc(r.d)}</small>`:''}</div></div>${r.v?`<span class="cv">${esc(r.v)}</span>`:''}</div>`).join('')}</div>`;
+}
 function renderResults(){
   const {list,warn}=collect(); const s=calcStats(list); const c=build.combat; const boss=bossById(c.boss);
   const bar=(cls,k,v,v0,ref)=>{ const d=Math.round(v-v0); return `<div class="sbar ${cls}"><div class="bk"><span class="bl">${k}</span>${d?`<span class="${d>0?'up':'dn'}">${d>0?'+':''}${d}</span>`:''}</div><div class="bv">${int(v)}</div><div class="track"><i style="width:${Math.min(100,v/ref*100).toFixed(1)}%"></i></div></div>`; };
@@ -1210,6 +1237,7 @@ function renderResults(){
   let h=`<div class="stable">${col(bar('hp','HP',s.hp,s.hp0,1600),'Attributes',colA)}${col(bar('fp','FP',s.fp,s.fp0,260),'Damage Negation',colB)}${col(bar('st','STAMINA',s.st,s.st0,170),'Resistance',colC)}</div>`;
   const est=[];
   if(est.length) h+=`<p class="msg" style="margin:10px 0 0">${est.join('. ')}.</p>`;
+  h+=curseBlock(list,s);
   $('#stats').innerHTML=h;
 
   // damage
