@@ -1290,7 +1290,7 @@ function renderPicker(q){
   const row=c=>{
     if(c.items.length===1){ const x=c.items[0].x; return `<button class="pitem" data-act="choosefx" data-id="${x.id}"><b>${esc(x.n)}</b><small>${esc(describe(x))}${cursed(x)?' · <span class="cn">comes with a curse</span>':''}</small></button>`; }
     const d0=describe(c.items[0].x), d1=describe(c.items[c.items.length-1].x), cz=c.items.filter(({x})=>cursed(x)).map(({t})=>'+'+t);
-    return `<div class="prow"><div class="pn"><b>${esc(c.base)}</b><small>${esc(d0===d1?d0:`${d0} … ${d1}`)}${cz.length?` · <span class="cn">${cz.join(', ')} come${cz.length===1?'s':''} with a curse</span>`:''}</small></div><div class="tiers">${c.items.map(({x,t})=>`<button class="tier ${cursed(x)?'cn':''}" data-act="choosefx" data-id="${x.id}" aria-pressed="${x.id===cur}" title="${esc(x.n+' · '+describe(x)+(cursed(x)?' · comes with a curse':''))}">${t?'+'+t:'base'}</button>`).join('')}</div></div>`;
+    return `<div class="prow"><div class="pn"><b>${esc(c.base)}</b><small>${esc(d0===d1?d0:`${d0} … ${d1}`)}${cz.length&&cz.length<c.items.length?` · <span class="cn">${cz.join(', ')} come${cz.length===1?'s':''} with a curse</span>`:''}</small></div><div class="tiers">${c.items.map(({x,t})=>`<button class="tier ${cursed(x)?'cn':''}" data-act="choosefx" data-id="${x.id}" aria-pressed="${x.id===cur}" title="${esc(x.n+' · '+describe(x)+(cursed(x)?' · comes with a curse':''))}">${t?'+'+t:'base'}</button>`).join('')}</div></div>`;
   };
   const listHtml=Object.keys(GROUPS).filter(g=>groups[g]).map(g=>`<div class="grp">${GROUPS[g]}</div>`+clusterTiers(groups[g]).map(row).join('')).join('');
   const html=`<div class="dlg" role="dialog" aria-modal="true" aria-label="Pick an effect">
