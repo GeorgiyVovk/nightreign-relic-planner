@@ -1261,9 +1261,9 @@ function renderEditor(msg){
     <div class="colors">${COLORS.map(([k,n])=>`<button class="colorbtn" data-act="setcolor" data-v="${k}" aria-pressed="${e.color===k}" title="${esc(n)}">${gem(k,e.deep)}${esc(n.split(' · ')[1].replace(/^./,c=>c.toUpperCase()))}</button>`).join('')}</div>
     <div class="field"><label>Effects (up to 3)</label><div style="display:flex;flex-direction:column;gap:6px">${Array.from({length:nE},(_,i)=>efRow(e.effects,i,false)).join('')}</div></div>
     ${e.deep?`<div class="field"><label>Curses (up to 3)</label><div style="display:flex;flex-direction:column;gap:6px">${Array.from({length:nC},(_,i)=>efRow(e.curses,i,true)).join('')}</div></div>`:''}
-    ${msg?`<p class="msg bad">${esc(msg)}</p>`:''}
-    <div class="dh"><div>${e.id?`<button class="btn sm danger" data-act="delask">Delete relic</button>`:''}</div><div class="btns"><button class="btn" data-act="close">Cancel</button><button class="btn pri" data-act="saverelic">Save</button></div></div>
-    <div id="delzone"></div>
+    ${e._del
+      ? `<div class="dh"><span class="msg bad">Delete this relic? It also leaves any slot it's in.</span><div class="btns"><button class="btn" data-act="delno">Keep</button><button class="btn danger" data-act="delyes">Delete</button></div></div>`
+      : `<div class="dh"><div>${e.id?`<button class="btn sm danger" data-act="delask">Delete relic</button>`:''}</div><div class="btns"><button class="btn" data-act="close">Cancel</button><button class="btn pri" data-act="saverelic">Save</button></div></div>`}
   </div>`);
 }
 function openPicker(kind,i){ editing.name=($('#ed-name')||{}).value??editing.name; pickerFor={kind,i}; pickerTab='all'; renderPicker(''); }
@@ -1319,11 +1319,10 @@ end
 local json='{"source":"nightreign-ce","relics":['..table.concat(out,",")..']}'
 writeToClipboard(json)
 print(("Relics found: %d. JSON copied to clipboard."):format(#out))`;
-function openIO(msg,cls){
+function openIO(){
   openOv(`<div class="dlg" role="dialog" aria-modal="true" aria-label="Import and export"><div class="dh"><h3>Import / Export</h3><button class="btn sm ghost" data-act="close">Close</button></div>
   <p class="msg" style="margin:0">The relics you made by hand, as text. Copy it to keep a backup or to move them to another device; to bring relics in, paste the text here and press Import. Duplicates are skipped. Relics from your save don't need this, just load the save again.</p>
   <textarea class="io" id="iotext" spellcheck="false">${esc(exportJson())}</textarea>
-  ${msg?`<p class="msg ${cls||''}">${esc(msg)}</p>`:''}
   <div class="dh"><button class="btn" data-act="copyio">Copy</button><button class="btn pri" data-act="doimport">Import</button></div>
   </div>`);
 }
@@ -1597,14 +1596,14 @@ document.addEventListener('click', async ev=>{
   if(a==='prnew'||a==='prupd'){ normBuild(); const ch=build.char; const name=(($('#pr-name')||{}).value||'').trim().slice(0,40)||`${ch} ${build.presets.filter(p=>p.char===ch).length+1}`;
     const data={name,char:ch,vessel:curVessel(),slots:curSlots().slice()}; let p=a==='prupd'?build.presets.find(x=>x.id===build.activePreset[ch]):null;
     if(p) Object.assign(p,data); else { p=Object.assign({id:'p'+Date.now().toString(36)},data); build.presets.push(p); }
-    build.activePreset[ch]=p.id; saveBuildSoon(); closeOv(); renderPresets(); return; }
-  if(a==='prdel'){ normBuild(); const ch=build.char, id=build.activePreset[ch]; build.presets=build.presets.filter(p=>p.id!==id); build.activePreset[ch]=null; saveBuildSoon(); closeOv(); renderPresets(); return; }
+    build.activePreset[ch]=p.id; saveBuildSoon(); closeOv(); renderPresets(); toast(a==='prupd'?`Preset "${p.name}" updated.`:`Preset "${p.name}" saved.`); return; }
+  if(a==='prdel'){ normBuild(); const ch=build.char, id=build.activePreset[ch]; build.presets=build.presets.filter(p=>p.id!==id); build.activePreset[ch]=null; saveBuildSoon(); closeOv(); renderPresets(); toast('Preset deleted.'); return; }
   if(a==='loadsave'){ openSaveDlg({step:'intro'}); return; }
   if(a==='appsave'){ const x=appSaves[+t.dataset.i]; if(x) await loadAppSave(x.path); return; }
   if(a==='apppick'){ try{ const x=await APP.pickSave(); if(x&&x.path) await loadAppSave(x.path); }catch(e){} return; }
   if(a==='choosesave'){ $('#savefile').click(); return; }
   if(a==='saveslot'){ const sl=pendingSave&&pendingSave[+t.dataset.i]; pendingSave=null; if(sl) await importSaveSlot(sl); return; }
-  if(a==='copypath'){ try{ await navigator.clipboard.writeText('%APPDATA%\\Nightreign'); t.textContent='Copied'; }catch(e){ const p=$('#savepath'); p.focus(); p.select(); } return; }
+  if(a==='copypath'){ try{ await navigator.clipboard.writeText('%APPDATA%\\Nightreign'); toast('Copied to clipboard.'); }catch(e){ const p=$('#savepath'); p.focus(); p.select(); toast('Press Ctrl+C to copy the selected text.'); } return; }
   if(a==='more'){ ui.limit+=60; renderLibrary(); return; }
   if(a==='edit'){ openEditor(relicById(t.dataset.id)); return; }
   if(a==='close'){ closeOv(); return; }
@@ -1614,15 +1613,15 @@ document.addEventListener('click', async ev=>{
   if(a==='clrfx'){ editing.name=$('#ed-name').value; const arr=t.dataset.kind==='c'?editing.curses:editing.effects; arr.splice(+t.dataset.i,1); renderEditor(); return; }
   if(a==='choosefx'){ const arr=pickerFor.kind==='c'?editing.curses:editing.effects; arr[pickerFor.i]=t.dataset.id; const cl=arr.filter(Boolean); arr.length=0; cl.forEach(x=>arr.push(x)); pickerFor=null; renderEditor(); return; }
   if(a==='backed'){ pickerFor=null; renderEditor(); return; }
-  if(a==='saverelic'){ editing.name=$('#ed-name').value.trim(); if(!editing.effects.length){ renderEditor('Add at least one effect.'); return; } const err=await saveRelic(editing); if(err){ renderEditor(err); return; } closeOv(); renderAll(); return; }
-  if(a==='delask'){ $('#delzone').innerHTML=`<div class="picking"><span>Delete "${esc(relicTitle(editing))}"? It is also removed from slots.</span><span class="btns"><button class="btn sm" data-act="delno">No</button><button class="btn sm danger" data-act="delyes">Delete</button></span></div>`; return; }
-  if(a==='delno'){ $('#delzone').innerHTML=''; return; }
-  if(a==='delyes'){ const id=editing.id; closeOv(); await deleteRelic(id); renderAll(); return; }
+  if(a==='saverelic'){ editing.name=$('#ed-name').value.trim(); if(!editing.effects.length){ toast('Add at least one effect first.','bad'); return; } const isNew=!editing.id; delete editing._del; const err=await saveRelic(editing); if(err){ toast(err,'bad'); return; } closeOv(); renderAll(); toast(isNew?'Relic added.':'Relic saved.'); return; }
+  if(a==='delask'){ editing.name=$('#ed-name').value; editing._del=true; renderEditor(); return; }
+  if(a==='delno'){ editing._del=false; renderEditor(); return; }
+  if(a==='delyes'){ const id=editing.id; closeOv(); await deleteRelic(id); renderAll(); toast('Relic deleted.'); return; }
   if(a==='io'){ openIO(); return; }
-  if(a==='copyio'){ const ta=$('#iotext'); try{ await navigator.clipboard.writeText(ta.value); openIO('Copied.','good'); }catch(e){ ta.focus(); ta.select(); } return; }
-  if(a==='copylua'){ const ta=$('#celua'); try{ await navigator.clipboard.writeText(CE_LUA); t.textContent='Copied'; }catch(e){ ta.focus(); ta.select(); } return; }
+  if(a==='copyio'){ const ta=$('#iotext'); try{ await navigator.clipboard.writeText(ta.value); toast('Copied to clipboard.'); }catch(e){ ta.focus(); ta.select(); toast('Press Ctrl+C to copy the selected text.'); } return; }
+  if(a==='copylua'){ const ta=$('#celua'); try{ await navigator.clipboard.writeText(CE_LUA); toast('Copied to clipboard.'); }catch(e){ ta.focus(); ta.select(); toast('Press Ctrl+C to copy the selected text.'); } return; }
   if(a==='doimport'){
-    let data; try{ data=JSON.parse($('#iotext').value); }catch(e){ openIO("That doesn't look like JSON. Check brackets and quotes.",'bad'); return; }
+    let data; try{ data=JSON.parse($('#iotext').value); }catch(e){ toast("That isn't valid JSON. Check the brackets and quotes.",'bad'); return; }
     const place=!!($('#io-place')||{}).checked;
     const arr=Array.isArray(data)?data:(data&&data.relics)||[]; let ok=0, dup=0, placed=0, noColor=0, miss=[];
     const have=new Map(relics.map(r=>[relicSig(r),r.id]));
@@ -1645,8 +1644,10 @@ document.addEventListener('click', async ev=>{
     }
     if(placed) saveBuildSoon();
     renderAll();
-    const bits=[`Added ${ok}`]; if(dup) bits.push(`already had ${dup}`); if(placed) bits.push(`placed in slots ${placed}`); if(noColor) bits.push(`no color found for ${noColor} (set to red, check them)`);
-    openIO(bits.join(' · ')+'.'+(miss.length?` Unknown IDs / names: ${[...new Set(miss)].slice(0,8).join(', ')}`:''), ok||dup?'good':'bad'); return;
+    const bits=[`Imported ${ok} relic${ok===1?'':'s'}`]; if(dup) bits.push(`${dup} already there`); if(placed) bits.push(`${placed} put in slots`); if(noColor) bits.push(`${noColor} had no colour and were set to red`);
+    const msg=bits.join(', ')+'.'+(miss.length?` Unknown effects: ${[...new Set(miss)].slice(0,8).join(', ')}.`:'');
+    if(ok||dup){ closeOv(); toast(msg, miss.length||noColor?'bad':''); } else toast(arr.length?msg:'No relics found in the text.','bad');
+    return;
   }
 });
 document.addEventListener('change', ev=>{
