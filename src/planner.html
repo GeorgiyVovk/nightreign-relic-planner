@@ -77,12 +77,7 @@ select:focus,input:focus,textarea:focus,select:focus-visible,input:focus-visible
 .savepill .nm{font-weight:600;color:var(--fg)}
 .savepill .fl{color:var(--bad);font-weight:600}
 .savepill .fl:hover{color:var(--bad)}
-.store[data-act]{cursor:pointer}
-.store[data-act]:hover{border-color:var(--line2);color:var(--fg)}
-.store{font:inherit;cursor:default;display:inline-flex;align-items:center;gap:8px;font-size:12px;color:var(--muted);border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:5px 10px}
-.store i{width:8px;height:8px;border-radius:50%;background:var(--faint);display:inline-block}
-.store[data-mode="db"] i{background:var(--good)}
-.store[data-mode="local"] i{background:var(--warn)}
+.savepill .live{width:7px;height:7px;border-radius:50%;background:var(--good);display:inline-block}
 
 .layout{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px 20px;align-items:stretch;padding-block:6px 40px}
 .layout > .full{grid-column:1 / -1}
@@ -200,6 +195,9 @@ select:focus,input:focus,textarea:focus,select:focus-visible,input:focus-visible
 .susnote{margin:0;font-size:11px;font-weight:600;color:var(--bad);line-height:1.35}
 .gtag{display:inline-block;font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:0 6px;border-radius:4px;color:var(--good);background:var(--good-soft)}
 .gfrom{color:var(--muted)}
+.relic.unowned{opacity:.6}
+.relic.unowned:hover,.relic.unowned:focus-visible{opacity:1}
+.gno{color:var(--muted);font-style:italic}
 .emptybox{border:1px dashed var(--line2);border-radius:8px;padding:18px;color:var(--muted);text-align:center;font-size:13px}
 
 /* stats */
@@ -346,14 +344,13 @@ table.bt{border-collapse:collapse;width:100%;font-size:12px;min-width:600px}
 .search{border:1px solid var(--line2);background:var(--surface2);border-radius:7px;padding:8px 10px;width:100%}
 textarea.io{width:100%;min-height:200px;border:1px solid var(--line2);background:var(--surface2);border-radius:8px;padding:10px;font-family:var(--f-mono);font-size:12px}
 details.more summary{cursor:pointer;font-size:13px;color:var(--accent)}
-.presets{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:8px;max-height:min(60vh,560px);overflow-y:auto}
 @media (prefers-reduced-motion: no-preference){ .slot,.relic,.btn,.cond,.vopt{transition:border-color .15s,background-color .15s,box-shadow .15s} }
 </style>
 
 <header class="top">
   <div class="wrap">
-    <div class="tleft"><h1>Nightreign Relic Planner</h1><span class="savepill" id="savepill" hidden></span></div>
-    <button class="store" id="store" type="button" data-mode="loading"><i></i><span>Connecting…</span></button>
+    <div class="tleft"><h1>Nightreign Relic Planner</h1></div>
+    <span class="savepill" id="savepill" hidden></span>
   </div>
 </header>
 
@@ -407,15 +404,14 @@ details.more summary{cursor:pointer;font-size:13px;color:var(--accent)}
     <div id="picking"></div>
     <div class="libbar">
       <div class="btns">
-        <button class="btn pri" data-act="loadsave">Load save</button>
         <button class="btn" data-act="new">+ New relic</button>
-        <button class="btn" data-act="presets">Guaranteed relics</button>
-        <button class="btn" data-act="io">Backup</button>
+        <button class="btn" data-act="io">Import / Export</button>
       </div>
       <div class="seg" id="libfilter">
         <button data-lf="all" aria-pressed="true">All</button>
         <button data-lf="n" aria-pressed="false">Standard</button>
         <button data-lf="d" aria-pressed="false">Deep</button>
+        <button data-lf="g" aria-pressed="false" title="Relics with fixed effects: Nightlord drops, remembrance rewards and other set rewards">Guaranteed</button>
         <button data-lf="f" aria-pressed="false" id="lf-flag" hidden>Flagged</button>
       </div>
     </div>
@@ -1005,18 +1001,14 @@ function calcStats(list){
 
 /* ============ RENDER ============ */
 function renderAll(){ renderStore(); renderPickers(); renderSlots(); renderLibrary(); renderCombat(); renderResults(); }
-function renderStore(){
-  const el=$('#store'); el.dataset.mode=store.mode;
-  if(APP){ el.dataset.act=appSavePath?'pillprof':'loadsave'; el.dataset.mode=appSavePath?'db':'local'; el.querySelector('span').textContent=appSavePath?`Live: ${appSavePath.split(/[\\/]/).pop()}`:'No save picked'; el.title=appSavePath?'Your relics update by themselves every time the game saves. Click to switch saves.':'Click to pick a save.'; renderSavePill(); return; }
-  el.querySelector('span').textContent = store.mode==='db' ? 'Synced to your Claude account' : store.mode==='local' ? 'Saved in this browser only' : 'Connecting…';
-  el.title = store.mode==='db' ? 'Your relics, presets and builds are kept in your Claude account, so they are the same on every device you open this page on.' : store.mode==='local' ? 'Only this browser keeps your data. Another device or a cleared browser starts empty.' : '';
-  renderSavePill();
-}
+function renderStore(){ renderSavePill(); }
 function renderSavePill(){
   const sp=$('#savepill'); if(!sp) return;
-  if(!saveRelics.length){ sp.hidden=true; return; }
-  const k=flaggedCount(); sp.hidden=false;
-  sp.innerHTML=`<button class="nm" data-act="pillprof" title="Switch profile or load another save">${esc((saveInfo&&(saveInfo.name||saveInfo.file))||'Save')}</button><span>·</span><button data-act="pillall" title="Show all your relics">${saveRelics.length} relics</button><span>·</span><button data-act="pillflag" class="${k?'fl':''}" title="Show flagged relics">${k} flagged</button>`;
+  if(!ui.loaded){ sp.hidden=true; return; }
+  sp.hidden=false;
+  if(!saveRelics.length){ sp.innerHTML=`<button class="nm" data-act="loadsave" title="Pull your relics from the game's save file">Load save</button>`; return; }
+  const k=flaggedCount(), live=APP&&appSavePath?appSavePath.split(/[\\/]/).pop():'';
+  sp.innerHTML=`${live?`<i class="live" title="${esc(`Live: ${live} — your relics update by themselves every time the game saves`)}"></i>`:''}<button class="nm" data-act="pillprof" title="Switch profile or load another save">${esc((saveInfo&&(saveInfo.name||saveInfo.file))||'Save')}</button><span>·</span><button data-act="pillall" title="Show all your relics">${saveRelics.length} relics</button><span>·</span><button data-act="pillflag" class="${k?'fl':''}" title="Show flagged relics">${k} flagged</button>`;
 }
 const flaggedCount = () => saveRelics.reduce((n,r)=>n+(r.bad&&r.bad.length?1:0),0);
 function normBuild(){ if(!Array.isArray(build.presets)) build.presets=[]; if(!build.activePreset||typeof build.activePreset!=='object'||Array.isArray(build.activePreset)) build.activePreset={}; }
@@ -1061,7 +1053,7 @@ function renderSlots(){
   $('#slots').innerHTML = `<div class="slotlabel">Standard relics</div><div class="slotrow">${[0,1,2].map(one).join('')}</div><label class="slotlabel don"><input type="checkbox" id="don" ${build.don?'checked':''}><span>Deep relics</span></label><div class="slotrow">${[3,4,5].map(one).join('')}</div>`;
   renderPresets();
 }
-function relicCard(r, pickMode){
+function relicCard(r, pickMode, unowned){
   const code=vesselCode(build.char,curVessel());
   const lis=(r.effects||[]).map(e=>{ const x=EBY[e], off=x&&x.ch&&x.ch!==build.char; return `<li${off?' class="off"':''} title="${esc(off?`Only works on ${x.ch}`:(x?describe(x):''))}">${esc(x?x.n:e)}</li>`; }).join('')+(r.curses||[]).map(e=>`<li class="curse">${esc(EBY[e]?EBY[e].n:e)}</li>`).join('');
   const inSlot=curSlots().indexOf(r.id);
@@ -1070,7 +1062,7 @@ function relicCard(r, pickMode){
   if(r.src!=='save'&&r.src!=='guar') acts+=`<button class="btn sm" data-act="edit" data-id="${r.id}">Edit</button>`;
   const incompat=pickMode && !slotOk(code,ui.pick,r); const pickable=pickMode && !incompat;
   const sus=r.bad&&r.bad.length?`<p class="susnote" title="${esc(r.bad.join('\n'))}">Looks edited: ${esc(r.bad.join('; '))}</p>`:'';
-  return `<div class="relic ${incompat?'incompat':''} ${pickable?'pickable':''} ${sus?'sus':''}"${pickable?` data-place="${r.id}" role="button" tabindex="0" title="Put in slot ${ui.pick+1}"`:''}>${inSlot>=0?`<div class="inslot"><span class="ck" aria-hidden="true"></span><span>In slot ${inSlot+1}</span></div>`:''}<div class="rh">${gem(r.color,r.deep,true)}<div class="t">${isNamed(r)?`<b title="${esc(r.name)}">${esc(r.name)}</b>`:''}<small>${sizeName(r)} · ${COLORN[r.color]}${r.guar?` · <span class="gtag">Guaranteed</span>${r.from?` <span class="gfrom">${esc(fromLabel(r.from))}</span>`:''}`:''}</small></div></div><ul class="fxl">${lis||'<li>no effects</li>'}</ul>${sus}<div class="ra">${acts}</div></div>`;
+  return `<div class="relic ${incompat?'incompat':''} ${pickable?'pickable':''} ${sus?'sus':''} ${unowned?'unowned':''}"${pickable?` data-place="${r.id}" role="button" tabindex="0" title="Put in slot ${ui.pick+1}"`:''}>${inSlot>=0?`<div class="inslot"><span class="ck" aria-hidden="true"></span><span>In slot ${inSlot+1}</span></div>`:''}<div class="rh">${gem(r.color,r.deep,true)}<div class="t">${isNamed(r)?`<b title="${esc(r.name)}">${esc(r.name)}</b>`:''}<small>${sizeName(r)} · ${COLORN[r.color]}${r.guar?` · <span class="gtag">Guaranteed</span>${r.from?` <span class="gfrom">${esc(fromLabel(r.from))}</span>`:''}${unowned?` · <span class="gno">not owned</span>`:''}`:''}</small></div></div><ul class="fxl">${lis||'<li>no effects</li>'}</ul>${sus}<div class="ra">${acts}</div></div>`;
 }
 function renderLibrary(){
   { const fb=$('#lf-flag'); if(fb){ fb.hidden=!saveRelics.length; fb.textContent=`Flagged (${flaggedCount()})`; if(!saveRelics.length&&ui.lf==='f') ui.lf='all'; } }
@@ -1080,15 +1072,17 @@ function renderLibrary(){
   const all=relics.concat(saveRelics.length?saveRelics:GUAR_RELICS);
   $('#libcount').textContent = all.length ? String(all.length) : '';
   if(!ui.loaded){ $('#library').innerHTML=`<div class="emptybox">Loading your relics…${ui.loadNote?'<br>'+esc(ui.loadNote):''}</div>`; return; }
-  if(!all.length){ $('#library').innerHTML=`<div class="emptybox">Your relics show up here. Pull them from your game with "Load save" or make one with "+ New relic".</div>`; return; }
-  let rs=all;
+  if(!all.length){ $('#library').innerHTML=`<div class="emptybox">Your relics show up here. Pull them from your game with "Load save" at the top, or make one with "+ New relic".</div>`; return; }
+  let rs=all, unowned=null;
   if(ui.lf==='n') rs=rs.filter(r=>!r.deep); if(ui.lf==='d') rs=rs.filter(r=>r.deep); if(ui.lf==='f') rs=rs.filter(r=>r.bad&&r.bad.length);
+  if(ui.lf==='g'){ rs=rs.filter(r=>r.guar);
+    if(saveRelics.length){ const sig=r=>r.color+'|'+(r.effects||[]).slice().sort().join(','), have=new Set(rs.map(sig)); const miss=GUAR_RELICS.filter(r=>!have.has(sig(r))); unowned=new Set(miss.map(r=>r.id)); rs=rs.concat(miss); } }
   if(ui.pick!=null) rs=rs.filter(r=>slotOk(code,ui.pick,r));
   const words=parseQuery(ui.q);
   if(words.length) rs=rs.filter(r=>relicMatches(r,words));
   if(!rs.length){ $('#library').innerHTML=`<div class="emptybox">${ui.lf==='f'&&!words.length&&ui.pick==null?'No flagged relics.':ui.pick!=null&&!words.length?'None of your relics fit this slot.':'Nothing matches.'}</div>`; return; }
   const shown=rs.slice(0,ui.limit);
-  $('#library').innerHTML=`<div class="relics">${shown.map(r=>relicCard(r,ui.pick!=null)).join('')}</div>`+(rs.length>shown.length?`<div class="libmore"><button class="btn" data-act="more">Show more · ${rs.length-shown.length} left</button></div>`:'');
+  $('#library').innerHTML=`<div class="relics">${shown.map(r=>relicCard(r,ui.pick!=null,unowned&&unowned.has(r.id))).join('')}</div>`+(rs.length>shown.length?`<div class="libmore"><button class="btn" data-act="more">Show more · ${rs.length-shown.length} left</button></div>`:'');
 }
 function renderCombat(){
   const c=build.combat; const {list}=collect();
@@ -1223,11 +1217,6 @@ function renderPicker(q){
   if(o.hidden || !o.querySelector('#psearch')) openOv(html);
   else { o.querySelector('#plist').innerHTML=listHtml||'<div class="emptybox">Nothing found</div>'; const tb=o.querySelector('.dlg > .seg'); if(tb&&tabs) tb.outerHTML=tabs; }
 }
-function openPresets(){
-  openOv(`<div class="dlg" role="dialog" aria-modal="true" aria-label="Guaranteed relics"><div class="dh"><h3>Guaranteed relics</h3><button class="btn sm ghost" data-act="close">Close</button></div>
-  <p class="msg" style="margin:0">Relics with fixed effects: Nightlord drops, remembrance rewards and other set rewards. Click one to add a copy you can edit.</p>
-  <div class="presets">${GUAR.map(([n,c,from,fxs],i)=>`<button class="relic" style="text-align:left" data-act="addpreset" data-i="${i}"><div class="rh">${gem(c,false,true)}<div class="t"><b>${esc(n)}</b><small>${COLORN[c]} · <span class="gfrom">${esc(fromLabel(from))}</span></small></div></div><ul class="fxl">${fxs.map(f=>`<li>${esc(EBY[f]?EBY[f].n:f)}</li>`).join('')}</ul></button>`).join('')}</div></div>`);
-}
 function exportJson(){ return JSON.stringify({version:1,relics:relics.map(r=>({name:r.name||'',color:r.color,deep:!!r.deep,effects:(r.effects||[]).map(e=>EBY[e]?EBY[e].n:e),curses:(r.curses||[]).map(e=>EBY[e]?EBY[e].n:e)}))},null,2); }
 const CE_LUA = `-- Nightreign Relic Planner: export relics from game memory (read-only, writes nothing)
 -- Needs the Hexinton table attached to nightreign.exe (symbols CSGaitem and GameDataMan)
@@ -1263,8 +1252,8 @@ local json='{"source":"nightreign-ce","relics":['..table.concat(out,",")..']}'
 writeToClipboard(json)
 print(("Relics found: %d. JSON copied to clipboard."):format(#out))`;
 function openIO(msg,cls){
-  openOv(`<div class="dlg" role="dialog" aria-modal="true" aria-label="Import and export"><div class="dh"><h3>Backup</h3><button class="btn sm ghost" data-act="close">Close</button></div>
-  <p class="msg" style="margin:0">A backup of the relics you made by hand. Keep a copy somewhere; to restore, paste it back and press Import. Duplicates are skipped. Relics from your save don't need a backup, just load the save again.</p>
+  openOv(`<div class="dlg" role="dialog" aria-modal="true" aria-label="Import and export"><div class="dh"><h3>Import / Export</h3><button class="btn sm ghost" data-act="close">Close</button></div>
+  <p class="msg" style="margin:0">The relics you made by hand, as text. Copy it to keep a backup or to move them to another device; to bring relics in, paste the text here and press Import. Duplicates are skipped. Relics from your save don't need this, just load the save again.</p>
   <textarea class="io" id="iotext" spellcheck="false">${esc(exportJson())}</textarea>
   ${msg?`<p class="msg ${cls||''}">${esc(msg)}</p>`:''}
   <div class="dh"><button class="btn" data-act="copyio">Copy</button><button class="btn pri" data-act="doimport">Import</button></div>
@@ -1556,8 +1545,6 @@ document.addEventListener('click', async ev=>{
   if(a==='delask'){ $('#delzone').innerHTML=`<div class="picking"><span>Delete "${esc(relicTitle(editing))}"? It is also removed from slots.</span><span class="btns"><button class="btn sm" data-act="delno">No</button><button class="btn sm danger" data-act="delyes">Delete</button></span></div>`; return; }
   if(a==='delno'){ $('#delzone').innerHTML=''; return; }
   if(a==='delyes'){ const id=editing.id; closeOv(); await deleteRelic(id); renderAll(); return; }
-  if(a==='presets'){ openPresets(); return; }
-  if(a==='addpreset'){ const [n,c,,fxs]=GUAR[+t.dataset.i]; await saveRelic({id:null,name:n,color:c,deep:false,effects:fxs.slice(),curses:[]}); closeOv(); renderAll(); return; }
   if(a==='io'){ openIO(); return; }
   if(a==='copyio'){ const ta=$('#iotext'); try{ await navigator.clipboard.writeText(ta.value); openIO('Copied.','good'); }catch(e){ ta.focus(); ta.select(); } return; }
   if(a==='copylua'){ const ta=$('#celua'); try{ await navigator.clipboard.writeText(CE_LUA); t.textContent='Copied'; }catch(e){ ta.focus(); ta.select(); } return; }
