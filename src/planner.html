@@ -370,7 +370,7 @@ table.bt{border-collapse:collapse;width:100%;font-size:12px;min-width:600px}
 .efbtn.curse b{color:var(--bad)}
 .efrow.cur{margin-left:18px;position:relative}
 .efrow.cur::before{content:"";position:absolute;left:-11px;top:-6px;height:calc(50% + 6px);width:8px;border-left:1px solid var(--line2);border-bottom:1px solid var(--line2);border-bottom-left-radius:4px}
-.pitem .cn,.prow .cn{color:var(--bad)}
+.pitem small.cn,.prow .pn small.cn{color:var(--bad)}
 .prow{display:flex;align-items:center;justify-content:space-between;gap:12px;border-bottom:1px solid var(--line);background:var(--surface);padding:8px 12px}
 .prow .pn{flex:1 1 auto;display:flex;flex-direction:column;gap:1px;min-width:0}
 .prow .pn b{font-weight:500;font-size:13px}
@@ -841,7 +841,7 @@ const CMP = {STD:'n',DoN:'d',BTH:'b'};
 CT_EFF.forEach(([id,c,grp,n])=>{
   const want=CMP[c]; const isC=grp==='CURSE'; const cand=(NAMEIDX[normN(n)]||[]).filter(x=>isC?x.g==='curse':x.g!=='curse');
   let e = cand.find(x=>x.deep===want) || cand.find(x=>x.deep==='b') || cand[0];
-  if(!e){ const chm=n.match(/^\[(\w+)\]/); e=add({id:'x'+id,n,g:GRPMAP[grp]||'regen',deep:want,ch:chm?chm[1]:undefined,st:true,note:grp==='MAGIC_UP'?'×1.12 for that spell school only':'in-game effect, not calculated as a number'}); indexEff(e); }
+  if(!e){ const chm=n.match(/^\[(\w+)\]/); e=add({id:'x'+id,n,g:GRPMAP[grp]||'regen',deep:want,ch:chm?chm[1]:undefined,st:true,note:grp==='MAGIC_UP'?'×1.12 for that spell school only':'works in game, not counted in the stats here'}); indexEff(e); }
   else if(want==='b' && e.deep!=='b') e.deep='b';
   CTMAP[id]=e.id;
 });
@@ -875,7 +875,7 @@ function relicIssues(row){
   });
   return [...new Set(out)];
 }
-Object.entries(XEFF).forEach(([id,[n,cur]])=>{ if(CTMAP[id]) return; const isC=!!cur; let e=(NAMEIDX[normN(n)]||[]).find(x=>isC?x.g==='curse':x.g!=='curse'); if(!e){ const chm=n.match(/^\[(\w+)\]/); e=add({id:'x'+id,n,g:isC?'curse':(chm?'char':'regen'),deep:isC?'d':'b',ch:chm?chm[1]:undefined,st:true,hide:true,note:isC?'in-game curse':'in-game effect, not calculated as a number'}); indexEff(e); } CTMAP[id]=e.id; });
+Object.entries(XEFF).forEach(([id,[n,cur]])=>{ if(CTMAP[id]) return; const isC=!!cur; let e=(NAMEIDX[normN(n)]||[]).find(x=>isC?x.g==='curse':x.g!=='curse'); if(!e){ const chm=n.match(/^\[(\w+)\]/); e=add({id:'x'+id,n,g:isC?'curse':(chm?'char':'regen'),deep:isC?'d':'b',ch:chm?chm[1]:undefined,st:true,hide:true,note:isC?'in-game curse':'works in game, not counted in the stats here'}); indexEff(e); } CTMAP[id]=e.id; });
 // deep-relic effects that always come with a curse (every effect is either always or never cursed in the game data)
 const NEEDC = new Set(Object.entries(CTMAP).filter(([ct])=>{ const R=RULES.get(+ct); return R&&!R.ill&&R.c!=='S'&&R.rd; }).map(([,id])=>id));
 const NAMED = new Set([...PRESETS.map(p=>p[0]), ...CT_TYPES.map(x=>x[1]).filter(n=>!/Scene$/.test(n)), ...Object.values(UNAME)]);
@@ -936,18 +936,20 @@ const bossById = k => BOSSES.find(b=>b.k===k) || BOSSES[1];
 const gem = (c,deep,lg) => `<i class="gem c-${c} ${deep?'deep':''} ${c==='W'?'any':''} ${lg?'lg':''}"></i>`;
 function pips(code){ return code.split('').map((c,i)=>(i===3?'<span class="sep"></span>':'')+gem(c,i>=3)).join(''); }
 
+const pct = m => { const v=Math.round((m-1)*1000)/10; return (v>0?'+':v<0?'−':'')+Math.abs(v)+'%'; };
+const DLABEL = {all:'damage',phys:'physical attack',elem:'affinity attack',mag:'magic attack',fire:'fire attack',ltng:'lightning attack',holy:'holy attack',skill:'skill damage',crit:'critical hit damage',gc:'guard counter damage',charged:'charged attack damage',spell:'spell damage',ranged:'bow damage'};
 function describe(e){
   const p=[];
   if(e.stat) Object.entries(e.stat).forEach(([k,v])=>p.push(`${v>0?'+':''}${v} ${ABBR[k]||k}`));
-  if(e.hpM) p.push('HP '+fx(e.hpM)); if(e.fpM) p.push('FP '+fx(e.fpM)); if(e.stM) p.push('stamina '+fx(e.stM));
-  (e.dmg||[]).forEach(d=>p.push(`${fx(d.m)} ${d.t==='wt'&&e.wtype?(WT.find(w=>w[0]===e.wtype)||[])[1]:TLABEL[d.t]}`));
+  if(e.hpM) p.push(pct(e.hpM)+' max HP'); if(e.fpM) p.push(pct(e.fpM)+' max FP'); if(e.stM) p.push(pct(e.stM)+' max stamina');
+  (e.dmg||[]).forEach(d=>p.push(`${pct(d.m)} ${d.t==='wt'&&e.wtype?((WT.find(w=>w[0]===e.wtype)||[])[1]||'weapon')+' damage':DLABEL[d.t]||TLABEL[d.t]}`));
   if(e.cond) p.push(`(${CONDSHORT[e.cond]||e.cond})`);
-  if(e.stack){ const s=e.stack; p.push(s.t==='arc'?`+${s.add} ARC each`:`${fx(s.m)} ${s.t==='all'?'damage':s.t==='hp'?'HP':s.t==='fp'?'FP':'stamina'} each`); }
+  if(e.stack){ const s=e.stack; p.push(s.t==='arc'?`+${s.add} ARC per stack`:`${pct(s.m)} ${s.t==='all'?'damage':s.t==='hp'?'max HP':s.t==='fp'?'max FP':'max stamina'} per stack`); }
   if(e.neg) Object.entries(e.neg).forEach(([k,v])=>p.push(`${v>0?'+':''}${Math.round(v*1000)/10}% ${k==='phys'?'physical':TLABEL[k]} negation`));
   if(e.res) Object.entries(e.res).forEach(([k,v])=>p.push(`${v>0?'+':''}${v} ${k==='all'?'all resistances':(STATUS.find(s=>s[0]===k)||[,k])[1]+' resist'}`));
-  if(e.poiseM) p.push('poise damage taken '+fx(e.poiseM));
-  if(e.cdM) p.push('skill cooldown '+fx(e.cdM)); if(e.ultM) p.push('ult charge '+fx(e.ultM));
-  if(e.startMult) p.push('starting weapon '+fx(e.startMult));
+  if(e.poiseM) p.push(pct(e.poiseM)+' poise damage taken');
+  if(e.cdM) p.push(pct(e.cdM)+' skill cooldown'); if(e.ultM) p.push(pct(e.ultM)+' ultimate art gauge');
+  if(e.startMult) p.push(pct(e.startMult)+' starting weapon damage');
   if(e.note) p.push(e.note);
   if(!e.st) p.push("doesn't stack with itself");
   return p.join(' · ');
@@ -1273,6 +1275,23 @@ function renderEditor(msg){
   </div>`);
 }
 function openPicker(kind,i){ editing.name=($('#ed-name')||{}).value??editing.name; pickerFor={kind,i}; pickerTab='all'; renderPicker(''); }
+// one line for all tiers, values in the same order as the tier buttons: "Guard counter damage +17% / +23% / +29%"
+function tierText(items){
+  const lab=t=>t?'+'+t:'base', parts=items.map(({x})=>describe(x).split(' · '));
+  // notes every tier shares (e.g. "doesn't stack with itself") are said once at the end
+  const common=parts[0].filter(q=>parts.every(p=>p.includes(q)));
+  const own=parts.map(p=>p.filter(q=>!common.includes(q)).join(' · '));
+  const tail=common.length?` · ${common.join(' · ')}`:'';
+  if(own.every(o=>!o)) return common.join(' · ');
+  // same wording, different number: "Guard counter damage: base +17% · +1 +23% · +2 +29%"
+  const num=/^([+−-]?[\d.]+%?)\s+(.+)$/, numEnd=/^(.+?)\s+([×+−-]?[\d.]+%?)$/;
+  for(const re of [num,numEnd]){
+    const m=own.map(o=>re.exec(o)); if(!m.every(Boolean)) continue;
+    const vi=re===num?1:2, wi=re===num?2:1;
+    if(m.every(x=>x[wi]===m[0][wi])) return `${m[0][wi].replace(/^./,c=>c.toUpperCase())} ${m.map(x=>x[vi]).join(' / ')}${tail}`;
+  }
+  return items.map(({t},i)=>`${lab(t)}: ${own[i]||'—'}`).join(' · ')+tail;
+}
 // "Physical Attack Up", "+1", "+2"… become one row with a button per tier
 const tierOf = n => { const m=/^(.*\S)\s\+(\d+)$/.exec(n); return m?[m[1],+m[2]]:[n,0]; };
 function clusterTiers(list){ const out=[], by=new Map();
@@ -1288,9 +1307,9 @@ function renderPicker(q){
   const cur=pickerFor.kind==='c'?editing.ca[pickerFor.i]:editing.effects[pickerFor.i];
   const cursed=x=>pickerFor.kind!=='c'&&editing.deep&&NEEDC.has(x.id);
   const row=c=>{
-    if(c.items.length===1){ const x=c.items[0].x; return `<button class="pitem" data-act="choosefx" data-id="${x.id}"><b>${esc(x.n)}</b><small>${esc(describe(x))}${cursed(x)?' · <span class="cn">comes with a curse</span>':''}</small></button>`; }
-    const d0=describe(c.items[0].x), d1=describe(c.items[c.items.length-1].x), cz=c.items.filter(({x})=>cursed(x)).map(({t})=>'+'+t);
-    return `<div class="prow"><div class="pn"><b>${esc(c.base)}</b><small>${esc(d0===d1?d0:`${d0} … ${d1}`)}${cz.length&&cz.length<c.items.length?` · <span class="cn">${cz.join(', ')} come${cz.length===1?'s':''} with a curse</span>`:''}</small></div><div class="tiers">${c.items.map(({x,t})=>`<button class="tier ${cursed(x)?'cn':''}" data-act="choosefx" data-id="${x.id}" aria-pressed="${x.id===cur}" title="${esc(x.n+' · '+describe(x)+(cursed(x)?' · comes with a curse':''))}">${t?'+'+t:'base'}</button>`).join('')}</div></div>`;
+    if(c.items.length===1){ const x=c.items[0].x; return `<button class="pitem" data-act="choosefx" data-id="${x.id}"><b>${esc(x.n)}</b><small>${esc(describe(x))}</small>${cursed(x)?'<small class="cn">Comes with a curse</small>':''}</button>`; }
+    const cz=c.items.filter(({x})=>cursed(x)).map(({t})=>t?'+'+t:'base');
+    return `<div class="prow"><div class="pn"><b>${esc(c.base)}</b><small>${esc(tierText(c.items))}</small>${cz.length&&cz.length<c.items.length?`<small class="cn">${cz.join(' and ')} come${cz.length===1?'s':''} with a curse</small>`:''}</div><div class="tiers">${c.items.map(({x,t})=>`<button class="tier ${cursed(x)?'cn':''}" data-act="choosefx" data-id="${x.id}" aria-pressed="${x.id===cur}" title="${esc(x.n+' · '+describe(x)+(cursed(x)?' · comes with a curse':''))}">${t?'+'+t:'base'}</button>`).join('')}</div></div>`;
   };
   const listHtml=Object.keys(GROUPS).filter(g=>groups[g]).map(g=>`<div class="grp">${GROUPS[g]}</div>`+clusterTiers(groups[g]).map(row).join('')).join('');
   const html=`<div class="dlg" role="dialog" aria-modal="true" aria-label="Pick an effect">
