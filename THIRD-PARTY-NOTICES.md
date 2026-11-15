@@ -44,7 +44,7 @@ Effect roll order, pools, curse requirements and roll groups come from the Hexin
 Stat and stacking data: the community sheet 'Nightreign Useful Info' (docs.google.com/spreadsheets/d/1meXOw4jR1hh7YXVMeijWwSDIXnCw6Tk4hTZPq2qvyK4).
 
 == Fonts ==
-Inter, Cinzel and IBM Plex Mono, bundled from Fontsource, under the SIL Open Font License 1.1.
+Inter, EB Garamond and IBM Plex Mono, bundled from Fontsource, under the SIL Open Font License 1.1.
 
 == Electron ==
 Electron (MIT) and Chromium; see LICENSE and LICENSES.chromium.html in this folder.

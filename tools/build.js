@@ -8,7 +8,7 @@ const src = fs.readFileSync(path.join(root, 'src', 'planner.html'), 'utf8');
 
 const FONTS = [
   ['Inter', '@fontsource/inter', 'inter', [400, 500, 600, 700]],
-  ['Cinzel', '@fontsource/cinzel', 'cinzel', [600, 700]],
+  ['EB Garamond', '@fontsource/eb-garamond', 'eb-garamond', [500, 600]],
   ['IBM Plex Mono', '@fontsource/ibm-plex-mono', 'ibm-plex-mono', [400, 500, 600]],
 ];
 
