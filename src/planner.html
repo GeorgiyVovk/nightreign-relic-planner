@@ -188,7 +188,6 @@ select:hover,.vbtn:hover,.search:hover,.field input:hover,.efbtn:hover{border-co
 
 /* library */
 .libbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between;margin-bottom:10px}
-.picking{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;background:var(--accent-soft);border:1px solid var(--accent);border-radius:var(--r-md);padding:6px 6px 6px 12px;margin-bottom:10px;font-size:13px}
 .relics{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:8px}
 .relic{border:1px solid var(--line);border-radius:var(--r-md);padding:10px;display:flex;flex-direction:column;gap:6px;background:var(--surface);min-width:0}
 .relic .rh{display:flex;align-items:flex-start;gap:8px;min-width:0}
@@ -332,8 +331,18 @@ table.bt{border-collapse:collapse;width:100%;font-size:12px;min-width:600px}
 .tr select{padding:0 4px;font-family:var(--f-mono);font-size:12px;color:var(--fg)}
 @media (max-width:560px){.stable{grid-template-columns:minmax(0,1fr);gap:22px}.trows{grid-template-rows:none;grid-auto-rows:31px}}
 
-.toast{position:fixed;left:50%;top:max(16px,env(safe-area-inset-top,0px));transform:translateX(-50%);z-index:60;width:max-content;max-width:min(480px,calc(100vw - 32px));background:var(--surface);border:1px solid var(--line2);border-left:3px solid var(--good);border-radius:var(--r-md);box-shadow:var(--shadow);padding:10px 14px;font-size:13px}
+.toast{position:fixed;left:50%;top:max(16px,env(safe-area-inset-top,0px));transform:translateX(-50%);z-index:60;display:flex;align-items:center;gap:10px;width:max-content;max-width:min(480px,calc(100vw - 32px));background:var(--surface);border:1px solid var(--line2);border-left:3px solid var(--good);border-radius:var(--r-md);box-shadow:var(--shadow);padding:10px 14px;font-size:13px}
 .toast.bad{border-left-color:var(--bad)}
+.toast.busy{border-left-color:var(--accent)}
+.toast .spin{width:14px;height:14px;flex:none;border-radius:50%;border:2px solid var(--line2);border-top-color:var(--accent)}
+@media (prefers-reduced-motion: no-preference){ .toast .spin{animation:spin .8s linear infinite} @keyframes spin{to{transform:rotate(360deg)}} }
+/* relic chooser for one slot */
+.dlg.lg{width:min(1200px,100%);height:calc(100dvh - 48px)}
+.pickhead{display:flex;align-items:center;gap:10px;min-width:0}
+.pickhead .msg{display:inline-flex;align-items:center;gap:6px}
+.pickbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.pickbar .search{flex:1 1 260px;width:auto}
+.pickbody{flex:1;min-height:0;overflow-y:auto;margin:-4px;padding:4px}
 @media (prefers-reduced-motion: no-preference){ .toast:not([hidden]){animation:toastin .18s ease-out} @keyframes toastin{from{opacity:0;transform:translate(-50%,-6px)}} }
 
 /* overlays */
@@ -428,7 +437,6 @@ details.more summary{cursor:pointer;font-size:13px;color:var(--accent)}
   </div>
     <section class="panel full">
     <div class="ph"><h2>My relics</h2><span class="hint" id="libcount"></span></div>
-    <div id="picking"></div>
     <div class="libbar">
       <div class="btns">
         <button class="btn" data-act="new">+ New relic</button>
@@ -1073,10 +1081,10 @@ function renderSlots(){
   const one=i=>{
     const r=slots[i]?relicById(slots[i]):null; const c=code[i]; const off=i>=3&&!build.don; const act=ui.pick===i;
     const kind=i<3?'standard':'deep';
-    if(!r) return `<button class="slot add c-${c} ${i>=3?'dp':''} ${act?'active':''} ${off?'off':''}" data-act="pick" data-slot="${i}" title="${COLORN[c]} · ${kind}"><span class="plus" aria-hidden="true"></span><span class="al">${act?'Cancel':'Add relic'}</span></button>`;
+    if(!r) return `<button class="slot add c-${c} ${i>=3?'dp':''} ${act?'active':''} ${off?'off':''}" data-act="pick" data-slot="${i}" title="${COLORN[c]} · ${kind}"><span class="plus" aria-hidden="true"></span><span class="al">Add relic</span></button>`;
     const lis=(r.effects||[]).map((e,j)=>{ const d=dead[i+':'+j]; return `<li${d?` class="off${d.dup?' dup':''}" title="${esc(d.why)}"`:''}>${esc(EBY[e]?EBY[e].n:e)}</li>`; }).join('')+(r.curses||[]).map(e=>`<li class="curse">${esc(EBY[e]?EBY[e].n:e)}</li>`).join('');
     const bad=!slotOk(code,i,r);
-    return `<div class="slot filled c-${r.color} ${i>=3?'dp':''} ${act?'active':''} ${off?'off':''}" title="${esc(relicTitle(r))}">${isNamed(r)?`<div class="rn">${esc(r.name)}</div>`:''}<ul class="fxl">${lis}</ul>${r.bad&&r.bad.length?`<p class="susnote" title="${esc(r.bad.join('\n'))}">Looks edited</p>`:''}${bad?'<span class="msg bad">Wrong color or type for this slot</span>':''}<div class="stabs"><button data-act="pick" data-slot="${i}">${act?'Cancel':'Replace'}</button><button class="rm" data-act="unslot" data-slot="${i}">Remove</button></div></div>`;
+    return `<div class="slot filled c-${r.color} ${i>=3?'dp':''} ${act?'active':''} ${off?'off':''}" title="${esc(relicTitle(r))}">${isNamed(r)?`<div class="rn">${esc(r.name)}</div>`:''}<ul class="fxl">${lis}</ul>${r.bad&&r.bad.length?`<p class="susnote" title="${esc(r.bad.join('\n'))}">Looks edited</p>`:''}${bad?'<span class="msg bad">Wrong color or type for this slot</span>':''}<div class="stabs"><button data-act="pick" data-slot="${i}">Replace</button><button class="rm" data-act="unslot" data-slot="${i}">Remove</button></div></div>`;
   };
   $('#slots').innerHTML = `<div class="slotlabel">Standard relics</div><div class="slotrow">${[0,1,2].map(one).join('')}</div><label class="slotlabel don"><input type="checkbox" id="don" ${build.don?'checked':''}><span>Deep relics</span></label><div class="slotrow">${[3,4,5].map(one).join('')}</div>`;
   renderPresets();
@@ -1087,7 +1095,7 @@ function relicCard(r, pickMode, unowned){
   const inSlot=curSlots().indexOf(r.id);
   let acts='';
   if(pickMode && !slotOk(code,ui.pick,r)) acts=`<span class="msg">${!!r.deep!==(ui.pick>=3)?(r.deep?'deep relic':'standard relic'):'wrong color'}</span>`;
-  if(r.src!=='save'&&r.src!=='guar') acts+=`<button class="btn sm" data-act="edit" data-id="${r.id}">Edit</button>`;
+  if(!pickMode&&r.src!=='save'&&r.src!=='guar') acts+=`<button class="btn sm" data-act="edit" data-id="${r.id}">Edit</button>`;
   const incompat=pickMode && !slotOk(code,ui.pick,r); const pickable=pickMode && !incompat;
   const sus=r.bad&&r.bad.length?`<p class="susnote" title="${esc(r.bad.join('\n'))}">Looks edited: ${esc(r.bad.join('; '))}</p>`:'';
   return `<div class="relic ${incompat?'incompat':''} ${pickable?'pickable':''} ${sus?'sus':''} ${unowned?'unowned':''}"${pickable?` data-place="${r.id}" role="button" tabindex="0" title="Put in slot ${ui.pick+1}"`:''}>${inSlot>=0?`<div class="inslot"><span class="ck" aria-hidden="true"></span><span>In slot ${inSlot+1}</span></div>`:''}<div class="rh">${gem(r.color,r.deep,true)}<div class="t">${isNamed(r)?`<b title="${esc(r.name)}">${esc(r.name)}</b>`:''}<small>${sizeName(r)} · ${COLORN[r.color]}${r.guar?` · <span class="gtag">Guaranteed</span>${r.from?` <span class="gfrom">${esc(fromLabel(r.from))}</span>`:''}${unowned?` · <span class="gno">not owned</span>`:''}`:''}</small></div></div><ul class="fxl">${lis||'<li>no effects</li>'}</ul>${sus}<div class="ra">${acts}</div></div>`;
@@ -1096,21 +1104,44 @@ function renderLibrary(){
   { const fb=$('#lf-flag'); if(fb){ fb.hidden=!saveRelics.length; fb.textContent=`Flagged (${flaggedCount()})`; if(!saveRelics.length&&ui.lf==='f') ui.lf='all'; } }
   document.querySelectorAll('#libfilter button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.lf===ui.lf));
   const code=vesselCode(build.char,curVessel());
-  $('#picking').innerHTML = ui.pick!=null ? `<div class="picking"><span>Click a relic to put it in slot ${ui.pick+1} (${COLORN[code[ui.pick]]}, ${ui.pick<3?'standard':'deep'}).</span><button class="btn sm" data-act="cancelpick">Cancel</button></div>` : '';
   const all=relics.concat(saveRelics.length?saveRelics:GUAR_RELICS);
   $('#libcount').textContent = all.length ? String(all.length) : '';
   if(!ui.loaded){ $('#library').innerHTML=`<div class="emptybox">Loading your relics…${ui.loadNote?'<br>'+esc(ui.loadNote):''}</div>`; return; }
   if(!all.length){ $('#library').innerHTML=`<div class="emptybox">Your relics show up here. Pull them from your game with "Load save" at the top, or make one with "+ New relic".</div>`; return; }
-  let rs=all, unowned=null;
-  if(ui.lf==='n') rs=rs.filter(r=>!r.deep); if(ui.lf==='d') rs=rs.filter(r=>r.deep); if(ui.lf==='f') rs=rs.filter(r=>r.bad&&r.bad.length);
-  if(ui.lf==='g'){ rs=rs.filter(r=>r.guar);
-    if(saveRelics.length){ const sig=r=>r.color+'|'+(r.effects||[]).slice().sort().join(','), have=new Set(rs.map(sig)); const miss=GUAR_RELICS.filter(r=>!have.has(sig(r))); unowned=new Set(miss.map(r=>r.id)); rs=rs.concat(miss); } }
-  if(ui.pick!=null) rs=rs.filter(r=>slotOk(code,ui.pick,r));
-  const words=parseQuery(ui.q);
-  if(words.length) rs=rs.filter(r=>relicMatches(r,words));
-  if(!rs.length){ $('#library').innerHTML=`<div class="emptybox">${ui.lf==='f'&&!words.length&&ui.pick==null?'No flagged relics.':ui.pick!=null&&!words.length?'None of your relics fit this slot.':'Nothing matches.'}</div>`; return; }
+  const {rs,unowned}=relicList(all,ui.lf,ui.q,null), words=parseQuery(ui.q);
+  if(!rs.length){ $('#library').innerHTML=`<div class="emptybox">${ui.lf==='f'&&!words.length?'No flagged relics.':'Nothing matches.'}</div>`; return; }
   const shown=rs.slice(0,ui.limit);
-  $('#library').innerHTML=`<div class="relics">${shown.map(r=>relicCard(r,ui.pick!=null,unowned&&unowned.has(r.id))).join('')}</div>`+(rs.length>shown.length?`<div class="libmore"><button class="btn" data-act="more">Show more · ${rs.length-shown.length} left</button></div>`:'');
+  $('#library').innerHTML=`<div class="relics">${shown.map(r=>relicCard(r,false,unowned&&unowned.has(r.id))).join('')}</div>`+(rs.length>shown.length?`<div class="libmore"><button class="btn" data-act="more">Show more · ${rs.length-shown.length} left</button></div>`:'');
+}
+// filter + search shared by the library and the slot chooser; 'g' also lists guaranteed relics the save doesn't have
+function relicList(all,lf,q,slot){
+  const code=vesselCode(build.char,curVessel());
+  let rs=all, unowned=null;
+  if(lf==='n') rs=rs.filter(r=>!r.deep); if(lf==='d') rs=rs.filter(r=>r.deep); if(lf==='f') rs=rs.filter(r=>r.bad&&r.bad.length);
+  if(lf==='g'){ rs=rs.filter(r=>r.guar);
+    if(saveRelics.length){ const sig=r=>r.color+'|'+(r.effects||[]).slice().sort().join(','), have=new Set(rs.map(sig)); const miss=GUAR_RELICS.filter(r=>!have.has(sig(r))); unowned=new Set(miss.map(r=>r.id)); rs=rs.concat(miss); } }
+  if(slot!=null) rs=rs.filter(r=>slotOk(code,slot,r));
+  const words=parseQuery(q);
+  if(words.length) rs=rs.filter(r=>relicMatches(r,words));
+  return {rs,unowned};
+}
+function openSlotPick(i){
+  ui.pick=i; ui.pq=''; ui.plf='all'; ui.plimit=60;
+  const code=vesselCode(build.char,curVessel()), deep=i>=3;
+  openOv(`<div class="dlg lg" role="dialog" aria-modal="true" aria-label="Choose a relic for slot ${i+1}">
+    <div class="dh"><div class="pickhead"><h3>Slot ${i+1}</h3><span class="msg">${gem(code[i],deep)}${COLORN[code[i]]} · ${deep?'deep':'standard'}</span></div><button class="btn sm ghost" data-act="close">Close</button></div>
+    <div class="pickbar"><input class="search" id="pq" type="search" placeholder="Search effects: aff atk 2, vigor" autocomplete="off" data-autofocus><div class="seg" id="pfilter"><button data-plf="all" aria-pressed="true">All</button><button data-plf="g" aria-pressed="false">Guaranteed</button></div></div>
+    <div class="pickbody" id="pbody"></div></div>`);
+  renderSlotPick();
+}
+function renderSlotPick(){
+  const b=$('#pbody'); if(!b||ui.pick==null) return;
+  document.querySelectorAll('#pfilter button').forEach(x=>x.setAttribute('aria-pressed',x.dataset.plf===ui.plf));
+  const all=relics.concat(saveRelics.length?saveRelics:GUAR_RELICS);
+  const {rs,unowned}=relicList(all,ui.plf,ui.pq,ui.pick), words=parseQuery(ui.pq);
+  if(!rs.length){ b.innerHTML=`<div class="emptybox">${words.length?'Nothing matches.':'None of your relics fit this slot.'}</div>`; return; }
+  const shown=rs.slice(0,ui.plimit);
+  b.innerHTML=`<div class="relics">${shown.map(r=>relicCard(r,true,unowned&&unowned.has(r.id))).join('')}</div>`+(rs.length>shown.length?`<div class="libmore"><button class="btn" data-act="pmore">Show more · ${rs.length-shown.length} left</button></div>`:'');
 }
 function renderCombat(){
   const c=build.combat; const {list}=collect();
@@ -1208,7 +1239,7 @@ function renderResults(){
 /* ============ OVERLAYS ============ */
 let editing=null, pickerFor=null, pickerTab='all';
 function openOv(html){ const o=$('#ov'); o.innerHTML=html; o.hidden=false; const f=o.querySelector('[data-autofocus]'); if(f) setTimeout(()=>f.focus(),20); }
-function closeOv(){ const o=$('#ov'); o.hidden=true; o.innerHTML=''; editing=null; pickerFor=null; }
+function closeOv(){ const o=$('#ov'); o.hidden=true; o.innerHTML=''; editing=null; pickerFor=null; if(ui.pick!=null){ ui.pick=null; renderSlots(); } }
 function openEditor(r){ editing = r ? JSON.parse(JSON.stringify(r)) : {id:null,name:'',color:'R',deep:false,effects:[],curses:[]}; if(!editing.curses) editing.curses=[]; renderEditor(); }
 function renderEditor(msg){
   const e=editing;
@@ -1365,7 +1396,7 @@ const profGrid = (list,cur) => `<div class="profgrid">${list.map((x,i)=>x.name==
   ? `<button class="prof" aria-current="true" disabled title="${esc(x.name)} · ${x.relics.length} relics · loaded now"><b>${esc(x.name)}</b><span>${x.relics.length}</span></button>`
   : `<button class="prof" data-act="saveslot" data-i="${i}" title="${esc(x.name)} · ${x.relics.length} relics"><b>${esc(x.name)}</b><span>${x.relics.length}</span></button>`).join('')}</div>`;
 function openSaveDlg(st){
-  st=st||{step:'intro'}; let body='';
+  st=st||{step:'intro'}; let body=''; endBusyToast();
   if(APP && st.step==='intro'){ openSaveDlg({step:'busy',msg:'Looking for your saves…'}); APP.listSaves().then(r=>{ appSaves=r.saves||[]; openSaveDlg({step:'applist',root:r.root}); }).catch(()=>openSaveDlg({step:'applist'})); return; }
   if(st.step==='applist') body=`<p class="msg" style="margin:0">Pick a save. The planner keeps an eye on it and updates your relics every time the game saves. Relics you made by hand are replaced. The save itself is only read, never changed.</p>
     ${appSaves.length?`<div class="savelist">${appSaves.map((x,i)=>`<button class="saveitem" data-act="appsave" data-i="${i}"><b>${x.kind==='seamless'?'Seamless Co-op':'Normal game'}</b><span class="mono">${esc(x.file)}</span><span class="msg">${esc(new Date(x.mtime).toLocaleString())}</span></button>`).join('')}</div>`:`<p class="msg bad" style="margin:0">No saves found${st.root?` in ${esc(st.root)}`:''}.</p>`}
@@ -1387,7 +1418,7 @@ function openSaveDlg(st){
 async function onSaveFile(file){
   if(!file) return;
   lastFile=file.name;
-  openSaveDlg({step:'busy',msg:`Reading ${file.name}…`});
+  closeOv(); toast(`Reading ${file.name}…`,'busy');
   try{
     const slots=(await parseSave(await file.arrayBuffer())).filter(x=>x.relics.length);
     if(!slots.length) throw new SaveParseError('No relics found in this save.');
@@ -1408,7 +1439,7 @@ async function importSaveSlot(slot, opt={}){
     return;
   }
   lastRowsSig=JSON.stringify(rows);
-  openSaveDlg({step:'busy',msg:`Saving ${rows.length} relics…`});
+  closeOv(); toast(`Loading ${slot.name}: ${rows.length} relics…`,'busy');
   const err=await storeSaveRows(rows,info);
   setSaveRows(rows,info);
   if(!err) await clearManualRelics();
@@ -1417,10 +1448,11 @@ async function importSaveSlot(slot, opt={}){
   const deep=saveRelics.filter(r=>r.deep).length, sus=saveRelics.filter(r=>r.bad&&r.bad.length).length;
   closeOv(); toast(`Loaded ${slot.name}: ${rows.length} relics, ${rows.length-deep} standard and ${deep} deep.`+(sus?` ${sus} look edited, see Flagged.`:''), sus?'bad':'');
 }
-function toast(msg,kind){ const t=$('#toast'); if(!t) return; t.textContent=msg; t.className='toast'+(kind?' '+kind:''); t.hidden=true; void t.offsetWidth; t.hidden=false; clearTimeout(toastTimer); toastTimer=setTimeout(()=>{ t.hidden=true; },4500); }
+function toast(msg,kind){ const t=$('#toast'); if(!t) return; t.innerHTML=(kind==='busy'?'<i class="spin" aria-hidden="true"></i>':'')+`<span>${esc(msg)}</span>`; t.className='toast'+(kind?' '+kind:''); t.hidden=false; clearTimeout(toastTimer); if(kind!=='busy') toastTimer=setTimeout(()=>{ t.hidden=true; },4500); }
+function endBusyToast(){ const t=$('#toast'); if(t&&t.classList.contains('busy')) t.hidden=true; }
 async function loadAppSave(p, opt={}){
   if(!APP||!p) return;
-  if(!opt.quiet) openSaveDlg({step:'busy',msg:'Reading save…'});
+  if(!opt.quiet){ closeOv(); toast(`Reading ${p.split(/[\\/]/).pop()}…`,'busy'); }
   try{
     const buf=await APP.readSave(p); lastFile=p.split(/[\\/]/).pop();
     const slots=(await parseSave(buf)).filter(x=>x.relics.length);
@@ -1541,11 +1573,12 @@ document.addEventListener('click', async ev=>{
   if(t.id==='vbtn'){ toggleVlist(); return; }
   if(t.dataset.vessel){ build.vessel[build.char]=t.dataset.vessel; ui.pick=null; toggleVlist(false); $('#vbtn').focus(); saveBuildSoon(); renderAll(); return; }
   if(t.dataset.lf){ ui.lf=t.dataset.lf; ui.limit=60; renderLibrary(); return; }
+  if(t.dataset.plf){ ui.plf=t.dataset.plf; ui.plimit=60; renderSlotPick(); return; }
   if(t.dataset.hp){ build.combat.hp=t.dataset.hp; saveBuildSoon(); renderCombat(); renderResults(); return; }
   if(t.dataset.ptab){ pickerTab=t.dataset.ptab; renderPicker(($('#psearch')||{}).value||''); return; }
   const a=t.dataset.act; if(!a) return;
-  if(a==='pick'){ const i=+t.dataset.slot; ui.pick = ui.pick===i?null:i; ui.limit=60; renderSlots(); renderLibrary(); if(ui.pick!=null && window.innerWidth<1000){ const lib=$('#library'); if(lib) lib.scrollIntoView({block:'start',behavior:'smooth'}); } return; }
-  if(a==='cancelpick'){ ui.pick=null; renderSlots(); renderLibrary(); return; }
+  if(a==='pick'){ openSlotPick(+t.dataset.slot); return; }
+  if(a==='pmore'){ ui.plimit+=60; renderSlotPick(); return; }
   if(a==='unslot'){ curSlots()[+t.dataset.slot]=null; saveBuildSoon(); renderSlots(); renderLibrary(); renderCombat(); renderResults(); return; }
   if(a==='place'){ placeRelic(t.dataset.id); return; }
   if(a==='new'){ openEditor(null); return; }
@@ -1624,10 +1657,11 @@ document.addEventListener('input', ev=>{
   const t=ev.target;
   if(t.id==='psearch'){ renderPicker(t.value); return; }
   if(t.id==='libq'){ ui.q=t.value; ui.limit=60; renderLibrary(); return; }
+  if(t.id==='pq'){ ui.pq=t.value; ui.plimit=60; renderSlotPick(); return; }
   if(t.dataset.c && t.type==='number'){ build.combat[t.dataset.c]=t.value===''?0:+t.value; saveBuildSoon(); renderResults(); return; }
   if(t.dataset.stack){ build.combat.stacks[t.dataset.stack]=t.value===''?0:+t.value; saveBuildSoon(); renderResults(); return; }
 });
-function placeRelic(id){ if(ui.pick==null) return; const s=curSlots(); s.forEach((x,i)=>{ if(x===id) s[i]=null; }); s[ui.pick]=id; ui.pick=null; saveBuildSoon(); renderSlots(); renderLibrary(); renderCombat(); renderResults(); }
+function placeRelic(id){ if(ui.pick==null) return; const s=curSlots(); s.forEach((x,i)=>{ if(x===id) s[i]=null; }); s[ui.pick]=id; ui.pick=null; closeOv(); saveBuildSoon(); renderSlots(); renderLibrary(); renderCombat(); renderResults(); }
 document.addEventListener('keydown', ev=>{
   if(ev.key==='Enter' && ev.target.id==='pr-name'){ ev.preventDefault(); const b=document.querySelector('#ov .btn.pri'); if(b) b.click(); return; }
   if((ev.key==='Enter'||ev.key===' ') && ev.target.dataset && ev.target.dataset.place){ ev.preventDefault(); placeRelic(ev.target.dataset.place); return; }
