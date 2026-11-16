@@ -1,6 +1,8 @@
 // Nightreign Relic Planner: desktop shell.
 // Shows the planner page and gives it read-only access to Nightreign save files:
 // list them, read one, let the user pick one, and say when the game rewrites it.
+// Also runs the overlay: a small click-through timer window on top of the game,
+// started by a global hotkey. It never touches the game itself.
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 use serde::Serialize;
@@ -14,8 +16,9 @@ use std::{
     thread,
     time::{Duration, UNIX_EPOCH},
 };
-use tauri::{ipc::Response, AppHandle, Emitter, Manager, State};
+use tauri::{ipc::Response, AppHandle, Emitter, Manager, State, WebviewUrl, WebviewWindowBuilder, WindowEvent};
 use tauri_plugin_dialog::DialogExt;
+use tauri_plugin_global_shortcut::{GlobalShortcutExt, Shortcut, ShortcutState};
 
 #[derive(Serialize, Clone)]
 struct SaveInfo {
@@ -189,9 +192,89 @@ fn watch_save(path: String, app: AppHandle, state: State<AppState>) -> bool {
     true
 }
 
+#[derive(Serialize)]
+struct OverlayPos {
+    x: f64,
+    y: f64,
+}
+
+/// Opens the overlay window (or shows it again): borderless, transparent, always on top, clicks pass through.
+/// Async because creating a window from a synchronous command can deadlock on Windows.
+#[tauri::command]
+async fn overlay_show(app: AppHandle, x: Option<f64>, y: Option<f64>) -> Result<(), String> {
+    if let Some(w) = app.get_webview_window("overlay") {
+        return w.show().map_err(|e| e.to_string());
+    }
+    let mut b = WebviewWindowBuilder::new(&app, "overlay", WebviewUrl::App("overlay.html".into()))
+        .title("Nightreign overlay")
+        .inner_size(240.0, 112.0)
+        .decorations(false)
+        .transparent(true)
+        .always_on_top(true)
+        .skip_taskbar(true)
+        .resizable(false)
+        .shadow(false)
+        .focused(false);
+    b = match (x, y) {
+        (Some(x), Some(y)) => b.position(x, y),
+        _ => b.position(40.0, 40.0),
+    };
+    let w = b.build().map_err(|e| e.to_string())?;
+    w.set_ignore_cursor_events(true).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+async fn overlay_hide(app: AppHandle) -> Result<(), String> {
+    match app.get_webview_window("overlay") {
+        Some(w) => w.close().map_err(|e| e.to_string()),
+        None => Ok(()),
+    }
+}
+
+/// Unlocked, the overlay takes the mouse so it can be dragged; locked, clicks go through to the game.
+/// Returns where it sits now, in logical pixels, so the page can remember it.
+#[tauri::command]
+async fn overlay_lock(app: AppHandle, locked: bool) -> Result<Option<OverlayPos>, String> {
+    let Some(w) = app.get_webview_window("overlay") else { return Ok(None) };
+    w.set_ignore_cursor_events(locked).map_err(|e| e.to_string())?;
+    let _ = app.emit("overlay:locked", locked);
+    let p = w.outer_position().map_err(|e| e.to_string())?;
+    let s = w.scale_factor().map_err(|e| e.to_string())?;
+    Ok(Some(OverlayPos { x: p.x as f64 / s, y: p.y as f64 / s }))
+}
+
+/// One global hotkey (e.g. "F8"); an empty string turns it off.
+#[tauri::command]
+fn overlay_hotkey(app: AppHandle, key: String) -> Result<(), String> {
+    let gs = app.global_shortcut();
+    gs.unregister_all().map_err(|e| e.to_string())?;
+    if key.is_empty() {
+        return Ok(());
+    }
+    let sc: Shortcut = key.parse().map_err(|_| format!("Unknown key: {key}"))?;
+    gs.register(sc).map_err(|e| e.to_string())
+}
+
 fn main() {
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
+        .plugin(
+            tauri_plugin_global_shortcut::Builder::new()
+                .with_handler(|app, _shortcut, event| {
+                    if event.state() == ShortcutState::Pressed {
+                        let _ = app.emit("overlay:hotkey", ());
+                    }
+                })
+                .build(),
+        )
+        // closing the planner closes the overlay too
+        .on_window_event(|window, event| {
+            if let WindowEvent::Destroyed = event {
+                if window.label() == "main" {
+                    window.app_handle().exit(0);
+                }
+            }
+        })
         .manage(AppState::default())
         .setup(|app| {
             if let Some(file) = picked_file(app.handle()) {
@@ -205,7 +288,7 @@ fn main() {
             }
             Ok(())
         })
-        .invoke_handler(tauri::generate_handler![list_saves, read_save, pick_save, watch_save])
+        .invoke_handler(tauri::generate_handler![list_saves, read_save, pick_save, watch_save, overlay_show, overlay_hide, overlay_lock, overlay_hotkey])
         .run(tauri::generate_context!())
         .expect("error while running Nightreign Relic Planner");
 }

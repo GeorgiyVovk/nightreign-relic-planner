@@ -71,6 +71,8 @@ select{-webkit-appearance:none;appearance:none;cursor:pointer;border:1px solid v
 .top .wrap{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px 20px}
 .top h1{font-family:var(--f-display);font-weight:600;font-size:30px;letter-spacing:.01em;margin:0;line-height:1.1}
 .tleft{display:flex;align-items:center;gap:12px;flex-wrap:wrap;min-width:0}
+.tright{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.ovrow{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .savepill{display:inline-flex;align-items:center;gap:7px;height:30px;border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:0 12px;font-size:12px;color:var(--muted)}
 .savepill .fn{color:var(--muted)}
 .savepill .sep{width:1px;height:14px;background:var(--line2)}
@@ -410,12 +412,13 @@ details.more summary{cursor:pointer;font-size:13px;color:var(--accent)}
 /* hover, everywhere (kept last so no variant's own background wins over it): the fill gets a light veil; borders and text stay as they are */
 .btn:hover,.tier:hover,.vbtn:hover,.efbtn:hover,.saveitem:hover,.prof:not([aria-current]):hover,.colorbtn:hover,.seg button:hover,.slot.add:hover,.vopt:hover{background-image:linear-gradient(var(--hov),var(--hov))}
 select:hover{background-image:linear-gradient(to top right,transparent 50%,var(--muted) 50%),linear-gradient(to top left,transparent 50%,var(--muted) 50%),linear-gradient(var(--hov),var(--hov));background-size:5px 6px,5px 6px,100% 100%}
+.btn:disabled{opacity:.45;cursor:default;pointer-events:none}
 </style>
 
 <header class="top">
   <div class="wrap">
     <div class="tleft"><h1>Nightreign Relic Planner</h1></div>
-    <span class="savepill" id="savepill" hidden></span>
+    <div class="tright"><span class="savepill" id="savepill" hidden></span><button class="btn sm" id="ovbtn" data-act="overlay" title="Timer on top of the game" hidden>Overlay</button></div>
   </div>
 </header>
 
@@ -1518,7 +1521,7 @@ function renderResults(){
 /* ============ OVERLAYS ============ */
 let editing=null, pickerFor=null, pickerTab='all';
 function openOv(html){ const o=$('#ov'); o.innerHTML=html; o.hidden=false; const f=o.querySelector('[data-autofocus]'); if(f) setTimeout(()=>f.focus(),20); }
-function closeOv(){ const o=$('#ov'); o.hidden=true; o.innerHTML=''; editing=null; pickerFor=null; if(ui.pick!=null){ ui.pick=null; renderSlots(); } }
+function closeOv(){ if(ovlMoving) ovlLock(true); const o=$('#ov'); o.hidden=true; o.innerHTML=''; editing=null; pickerFor=null; if(ui.pick!=null){ ui.pick=null; renderSlots(); } }
 function openEditor(r){ editing = r ? JSON.parse(JSON.stringify(r)) : {id:null,name:'',color:'R',deep:false,effects:[],curses:[]}; if(!editing.curses) editing.curses=[];
   let j=0; editing.ca=editing.effects.map(e=>editing.deep&&NEEDC.has(e)?(editing.curses[j++]||null):null); renderEditor(); }
 function renderEditor(msg){
@@ -1775,8 +1778,26 @@ async function loadAppSave(p, opt={}){
     openSaveDlg({step:'error',msg:e instanceof SaveParseError?e.message:"Couldn't read this save."});
   }
 }
+// overlay (desktop app only): settings live in localStorage, which the overlay window shares
+const OVL_KEY='nr-overlay', OVL_KEYS=['F1','F2','F3','F4','F5','F6','F7','F8','F9','F10','F11','F12'];
+let ovlMoving=false;
+function ovlGet(){ let o={}; try{ o=JSON.parse(localStorage.getItem(OVL_KEY)||'{}')||{}; }catch(e){} o=Object.assign({on:false,key:'F8',secs:25,x:null,y:null},o); if(!OVL_KEYS.includes(o.key)) o.key='F8'; o.secs=Math.min(600,Math.max(1,Math.round(+o.secs)||25)); return o; }
+function ovlSet(o){ try{ localStorage.setItem(OVL_KEY,JSON.stringify(o)); }catch(e){} }
+async function ovlApply(o){ const O=APP&&APP.overlay; if(!O) return;
+  try{ if(o.on){ await O.show(o.x,o.y); await O.hotkey(o.key); O.config({key:o.key,secs:o.secs}); } else { ovlMoving=false; await O.hotkey(''); await O.hide(); } }
+  catch(e){ toast(`Overlay: ${e}`,'bad'); } }
+async function ovlLock(lock){ const O=APP&&APP.overlay; if(!O) return; ovlMoving=!lock;
+  try{ const p=await O.lock(lock); if(lock&&p){ const o=ovlGet(); o.x=p.x; o.y=p.y; ovlSet(o); } }catch(e){} }
+function openOverlayDlg(){ const o=ovlGet();
+  openOv(`<div class="dlg sm" role="dialog" aria-modal="true" aria-label="Overlay"><div class="dh"><h3>Overlay</h3><button class="btn sm ghost" data-act="close">Close</button></div>
+    <p class="msg" style="margin:0">A small timer on top of the game for the Dreglord relic. Press the hotkey when the stacks icon disappears: it counts down and tells you when to sit.</p>
+    <label class="tgl"><input type="checkbox" id="ov-on" role="switch" ${o.on?'checked':''}><span class="knob" aria-hidden="true"></span><span class="tt">Show the overlay</span></label>
+    <div class="ovrow"><div class="field"><label for="ov-key">Hotkey</label><select id="ov-key">${OVL_KEYS.map(k=>`<option ${k===o.key?'selected':''}>${k}</option>`).join('')}</select></div><div class="field"><label for="ov-secs">Countdown, seconds</label><input id="ov-secs" type="number" min="1" max="600" value="${o.secs}"></div></div>
+    <div class="btns"><button class="btn" data-act="ovmove" ${o.on?'':'disabled'}>${ovlMoving?'Done moving':'Move'}</button><button class="btn" data-act="ovtest" ${o.on?'':'disabled'}>Test</button></div>
+    <p class="msg" style="margin:0">Works with the game in borderless or windowed mode. The overlay only listens to your hotkey and never reads the game.</p></div>`); }
 async function startApp(){
   if(!APP) return;
+  if(APP.overlay){ const b=$('#ovbtn'); if(b) b.hidden=false; const o=ovlGet(); if(o.on) ovlApply(o); }
   APP.onSaveChanged(p=>{ if(p===appSavePath) loadAppSave(p,{quiet:true}); });
   let p=''; try{ p=localStorage.getItem(LS_APP)||''; }catch(e){}
   try{ const r=await APP.listSaves(); appSaves=r.saves||[]; }catch(e){}
@@ -1896,6 +1917,9 @@ document.addEventListener('click', async ev=>{
   if(a==='pillall'||a==='pillflag'){ ui.lf=a==='pillflag'?'f':'all'; ui.q=''; const q=$('#libq'); if(q) q.value=''; ui.limit=60; renderLibrary(); $('#library').scrollIntoView({block:'start',behavior:'smooth'}); return; }
   if(a==='pillprof'){ pendingSave=lastProfiles.length>1?lastProfiles:null; openSaveDlg({step:'menu'}); return; }
   if(a==='presetdlg'){ openPresetDlg(); return; }
+  if(a==='overlay'){ openOverlayDlg(); return; }
+  if(a==='ovmove'){ await ovlLock(ovlMoving); openOverlayDlg(); return; }
+  if(a==='ovtest'){ try{ APP.overlay.test(); }catch(e){} return; }
   if(a==='prnew'||a==='prupd'){ normBuild(); const ch=build.char; const name=(($('#pr-name')||{}).value||'').trim().slice(0,40)||`${ch} ${build.presets.filter(p=>p.char===ch).length+1}`;
     const data={name,char:ch,vessel:curVessel(),slots:curSlots().slice()}; let p=a==='prupd'?build.presets.find(x=>x.id===build.activePreset[ch]):null;
     if(p) Object.assign(p,data); else { p=Object.assign({id:'p'+Date.now().toString(36)},data); build.presets.push(p); }
@@ -1971,6 +1995,12 @@ document.addEventListener('change', ev=>{
   if(t.id==='w-pick'||t.id==='w-aff'||t.id==='w-two'){ const ws=weaponState();
     if(t.id==='w-pick'){ ws.name=t.value; const w=WBYN[ws.name]; if(!w[5].some(x=>x[0]===ws.aff)) ws.aff=w[5][0][0]; ws.rar=Math.max(ws.rar,w[2]); } else if(t.id==='w-aff') ws.aff=+t.value; else ws.two=t.checked;
     saveBuildSoon(); renderCombat(); renderResults(); return; }
+  if(t.id==='ov-on'||t.id==='ov-key'||t.id==='ov-secs'){ const o=ovlGet();
+    if(t.id==='ov-on') o.on=t.checked; else if(t.id==='ov-key') o.key=t.value; else o.secs=Math.min(600,Math.max(1,Math.round(+t.value)||25));
+    ovlSet(o);
+    if(t.id==='ov-on'){ ovlApply(o).then(()=>openOverlayDlg()); }
+    else if(o.on&&APP&&APP.overlay){ if(t.id==='ov-key') APP.overlay.hotkey(o.key).catch(e=>toast(`Overlay: ${e}`,'bad')); APP.overlay.config({key:o.key,secs:o.secs}); }
+    return; }
   if(t.id==='en-pick'||t.id==='en-mode'||t.id==='en-day2'||t.id==='en-aura'){ const st=enemyState();
     if(t.id==='en-pick') st.id=+t.value; else if(t.id==='en-mode') st.depth=+t.value; else if(t.id==='en-day2') st.day2=t.checked; else st.aura=t.checked;
     saveBuildSoon(); renderEnemy(); renderCombat(); renderResults(); return; }

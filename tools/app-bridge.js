@@ -16,5 +16,14 @@
       return () => { if (stop) stop(); };
     },
     version: () => T.app.getVersion(),
+    // the overlay: a click-through timer window on top of the game, started by a global hotkey
+    overlay: {
+      show: (x, y) => invoke('overlay_show', { x: x ?? null, y: y ?? null }),
+      hide: () => invoke('overlay_hide'),
+      lock: (locked) => invoke('overlay_lock', { locked }),
+      hotkey: (key) => invoke('overlay_hotkey', { key }),
+      config: (cfg) => T.event.emit('overlay:config', cfg),
+      test: () => T.event.emit('overlay:hotkey'),
+    },
   };
 })();
