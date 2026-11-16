@@ -59,4 +59,7 @@ function build(name, html, extra = {}) {
 
 const CSP = "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data:";
 build('web', page({ csp: CSP + "; connect-src 'self'" }), { '.nojekyll': path.join(root, 'tools', 'nojekyll') });
-build('app', page({ extraHead: '<script src="app-bridge.js"></script>\n', htmlAttrs: ' data-theme="dark"' }), { 'app-bridge.js': path.join(root, 'tools', 'app-bridge.js') });
+build('app', page({ extraHead: '<script src="app-bridge.js"></script>\n', htmlAttrs: ' data-theme="dark"' }), {
+  'app-bridge.js': path.join(root, 'tools', 'app-bridge.js'),
+  'overlay.html': path.join(root, 'tools', 'overlay.html'),   // the timer window over the game
+});
