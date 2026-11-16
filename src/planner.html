@@ -668,7 +668,7 @@ add({id:'vspoison',n:'Attack power up when facing poison-afflicted enemy',g:'off
 add({id:'vsrot',n:'Attack power up when facing scarlet rot-afflicted enemy',g:'off',dmg:[D('all',1.1)],cond:'vsRot',st:false});
 add({id:'frostconceal',n:'Frostbite in Vicinity Conceals Self',g:'off',st:false,note:'frostbite nearby hides you'});
 add({id:'nearpr',n:'Poison & Rot in Vicinity Increases Attack Power',g:'off',dmg:[D('all',1.12)],cond:'nearPR',st:false,note:'20 s after a poison or rot proc nearby'});
-add({id:'statusgauge',n:'Status Ailment Gauges Slowly Increase Attack Power',g:'off',st:false,stack:{k:'gauge',t:'all',m:1.04,label:'Status gauge stacks (0–10)',max:10}});
+add({id:'statusgauge',n:'Status Ailment Gauges Slowly Increase Attack Power',g:'off',st:false,stack:{k:'gauge',t:'all',m:1.04,vals:[1.035,1.07,1.11,1.155,1.2,1.25,1.3,1.35,1.4,1.45],label:'Status gauge stacks (0–10)',max:10},note:'one stack about every 20 s while a status gauge is filling on you; stacks drop after about 30 s with no buildup'});
 add({id:'rotdmgtaken',n:'Attacks Inflict Rot when Damage is Taken',g:'off',st:false,note:'+25 rot on the weapon for 12 s after you get hit'});
 add({id:'negphys',n:'Improved Physical Damage Negation',g:'def',neg:{phys:.10}});
 [['mag','Magic'],['fire','Fire'],['ltng','Lightning'],['holy','Holy']].forEach(([k,N])=>add({id:'neg_'+k,n:`${N} Damage Negation Up`,g:'def',neg:{[k]:.10}}));
@@ -1078,7 +1078,7 @@ function describe(e){
   if(e.hpM) p.push(pct(e.hpM)+' max HP'); if(e.fpM) p.push(pct(e.fpM)+' max FP'); if(e.stM) p.push(pct(e.stM)+' max stamina');
   (e.dmg||[]).forEach(d=>p.push(`${pct(d.m)} ${d.t==='wt'&&e.wtype?((WT.find(w=>w[0]===e.wtype)||[])[1]||'weapon')+' damage':DLABEL[d.t]||TLABEL[d.t]}`));
   if(e.cond) p.push(`(${CONDSHORT[e.cond]||e.cond})`);
-  if(e.stack){ const s=e.stack; p.push(s.t==='arc'?`+${s.add} ARC per stack`:`${pct(s.m)} ${s.t==='all'?'damage':s.t==='hp'?'max HP':s.t==='fp'?'max FP':'max stamina'} per stack`); }
+  if(e.stack){ const s=e.stack; p.push(s.vals?`${pct(s.vals[0])} damage at 1 stack up to ${pct(s.vals[s.vals.length-1])} at ${s.vals.length}`:s.t==='arc'?`+${s.add} ARC per stack`:`${pct(s.m)} ${s.t==='all'?'damage':s.t==='hp'?'max HP':s.t==='fp'?'max FP':'max stamina'} per stack`); }
   if(e.neg) Object.entries(e.neg).forEach(([k,v])=>p.push(`${v>0?'+':''}${Math.round(v*1000)/10}% ${k==='phys'?'physical':TLABEL[k]} negation`));
   if(e.res) Object.entries(e.res).forEach(([k,v])=>p.push(`${v>0?'+':''}${v} ${k==='all'?'all resistances':(STATUS.find(s=>s[0]===k)||[,k])[1]+' resist'}`));
   if(e.poiseM) p.push(pct(e.poiseM)+' poise damage taken');
@@ -1143,7 +1143,7 @@ function factors(list, ctx, kind, part, el){
     if(e.wtype && ctx.wtype!==e.wtype) return;
     if(e.three && !ctx.cond.three) return;
     (e.dmg||[]).forEach(d=>{ if(applies(d.t,kind,part,el,ctx)) out.push({label:e.n+(a.apply>1?` ×${a.apply}`:''),m:Math.pow(d.m,a.apply)}); });
-    if(e.stack && e.stack.t==='all'){ let s=+ctx.stacks[e.stack.k]||0; if(e.stack.max) s=Math.min(s,e.stack.max); if(s>0) out.push({label:`${e.n} (${s})`,m:Math.pow(e.stack.m,s)}); }
+    if(e.stack && e.stack.t==='all'){ let s=+ctx.stacks[e.stack.k]||0; if(e.stack.max) s=Math.min(s,e.stack.max); if(s>0) out.push({label:`${e.n} (${s})`,m:e.stack.vals?e.stack.vals[Math.min(s,e.stack.vals.length)-1]:Math.pow(e.stack.m,s)}); }
     if(e.startMult && ctx.cond.startWpn && part!=='spell') out.push({label:e.n,m:e.startMult});
   });
   if(condOn('vsFrost',ctx)) out.push({label:'Frostbite on the enemy (+20% damage taken)',m:1.2,post:true});
