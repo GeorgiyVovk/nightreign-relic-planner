@@ -890,6 +890,59 @@ function relicIssues(row){
   return [...new Set(out)];
 }
 Object.entries(XEFF).forEach(([id,[n,cur]])=>{ if(CTMAP[id]) return; const isC=!!cur; let e=(NAMEIDX[normN(n)]||[]).find(x=>isC?x.g==='curse':x.g!=='curse'); if(!e){ const chm=n.match(/^\[(\w+)\]/); e=add({id:'x'+id,n,g:isC?'curse':(chm?'char':'regen'),deep:isC?'d':'b',ch:chm?chm[1]:undefined,st:true,hide:true,note:isC?'in-game curse':'works in game, not counted in the stats here'}); indexEff(e); } CTMAP[id]=e.id; });
+/* ---- what each effect does, in plain words, from the Nightreign Useful Info sheet (Relic Effects / Deep Relic Effects tabs).
+   Only text and the stack-with-itself flag; numbers the stats use are set where each effect is defined. */
+const SHEET_NOTE = {
+  runes:'+3.5% runes for you and allies', flaskallies:'allies nearby get 50% of your flask healing', itemsallies:'items you use also affect nearby allies',
+  treasure:'hidden chests shown on the map', firsthit:'+15% damage on the first light attack of a chain', roar:'+15% roar and breath damage',
+  stance2h:'+5% poise damage when two-handing', stancepw:'+5% poise damage when power stancing',
+  swapaff:'adds 12 random magic, fire, lightning or holy attack for 10 s after a weapon swap',
+  frostconceal:'enemies lose track of you while frostbite procs nearby', rotdmgtaken:'+25 rot buildup on your weapon for 12 s after you take damage',
+  knockback:'+20% negation and 20% less poise damage taken for 20 s after a knockdown',
+  postdmg:'hits heal you for a short time after you take damage', lowhpregen:'0.5% max HP + 1 HP/s for 50 s once HP drops below 20%, for you and allies',
+  critart:'+5 Art gauge per critical hit', guardart:'+1 Art gauge per blocked hit', killart:'+5 Art gauge per kill',
+  crossedlegs:'+10 madness buildup on you every 2 s while doing the gesture', madfp:'+2 FP/s for 25 s after madness procs',
+  rothp:'0.15% max HP + 15 HP/s for 15 s after rot procs nearby', allystam:'allies regain 4 more stamina per second, you don\'t',
+  succfp:'5% of max FP back on successive attacks', thrusthp:'2.5% of max HP per counter hit',
+  w_art:'+18 Art gauge when your passive triggers', w_fire:'the ult leaves a patch of fire that burns enemies',
+  w_follow:'light attack follow-up after Claw Shot, +12 fire attack', g_dur:'charge the skill for a bigger, longer whirlwind that blocks projectiles',
+  g_heal:'allies regain 10% max HP + 12 HP every 0.5 s while the ult is held', g_shock:'each blocked hit in Iron Guard sends a shockwave (100 physical attack)',
+  i_poison:'charged ult adds 300 poison buildup', i_counter:'+20% counter hit damage for 30 s after the ult',
+  r_totem:'50% of max HP back per kill near the Totem Stela', v_heal:'spend 50% of your current HP to fully heal allies on the ult',
+  v_ghost:'ghostflame explosion on the ult (20 magic attack)', v_ally:'+25% ally damage for 30 s after the ult',
+  v_family:'Helen +1 HP/s, Frederick +10% damage, Sebastian +20% elemental negation',
+  c_terra:'a sigil that gives +15% magic damage while you stand in it, 30 s', c_hp:'+50% max HP for 30 s, then until you get hit',
+  e_cursed:'5% max HP + 100 HP back', e_roar:'15% of max HP back per roar during the ult',
+  s_allies:'targeted allies get +20% physical / +15% elemental damage for 30 s', s_dot:'15 damage per second for 20 s',
+  s_runes:'+1300 runes for each new enemy type you analyze', u_contact:'allies touched by the ult regain 30% max HP + 100',
+  e_skill:'+35% damage for 6 s, −40% negation for 5 s',
+  d_fort:'+5.5% runes and +16 item discovery per Fort boss', dguardart1:'+1.5 Art gauge per blocked hit', dcritart1:'+6.5 Art gauge per critical hit',
+  dkillart1:'+6.5 Art gauge per kill', dfp0:'−8% FP cost', dfp1:'−13% FP cost', dfp2:'−16% FP cost',
+  dpostdmg1:'like the base effect, 25% more healing per hit', dpostdmg2:'like the base effect, 35% more healing per hit',
+  dthrust1:'3.3% of max HP per counter hit', dbolus1:'+80 HP from boluses and similar', dflask:'+10% flask healing',
+  dw_bleed:'skill inflicts 60 (impact) / 55 (pull) blood loss buildup', di_poison:'skill inflicts 70 poison; poisoned enemies take 0.25% of their max HP + 250',
+  dd_inv:'0.4 s of invulnerability after the skill', dr_weak:'enemies hit by the skill deal 13% less damage for 13 s',
+  dv_fp:'+0.75–0.95% max FP per stack, up to +51% at 60 stacks', dc_neg:'+20% negation to that element for 30 s per residue',
+  de_hp:'0.27% max HP + 3 HP/s for 30 s after your passive triggers', ds_fp:'−15% FP cost for 40 s after the self-buff skill',
+  du_art:'you can Trance right after the ult, also with a temporary ult',
+  succap:'+5% / +6.5% / +9% as the chain goes on', d_ultap:'for 30 s per kill while the ult is active',
+  r_dmg:'for 20 s after taking a hit during the skill; also +20% max stamina', c_blood:'costs 20% of max HP on the ult; lasts 30 s',
+  u_ult:'for 40 s after the ult', u_chain:'for 20 s after the last hit of a light attack chain', u_buff:'for 60 s after a self-buff incantation',
+  c_runes:'−10% runes', c_flask:'−15% flask healing', c_hploss:'−2 HP per second', c_neardeath:'−25% max HP for 60 s after being downed',
+};
+Object.entries(SHEET_NOTE).forEach(([id,n])=>{ if(EBY[id]) EBY[id].note=n; });
+function sheetByName(e){
+  let m;
+  if(/^Improved (Throwing Pot|Throwing Knife|Glintstone and Gravity Stone) Damage(\s*\+1)?$|^Improved Perfuming Arts(\s*\+1)?$/.test(e.n)){ const deep=/\+1$/.test(e.n);
+    const what=/Pot/.test(e.n)?'throwing pot':/Knife/.test(e.n)?'throwing knife':/Glintstone/.test(e.n)?'glintstone and gravity stone':'perfume'; e.note=`+${deep?30:15}% ${what} damage`; e.st=true; return; }
+  if((m=/^Improved (.+?) (Sorcery|Incantations|sorcery)$/.exec(e.n))){ e.note='+12% damage for that spell school'; return; }
+  if((m=/^Dormant Power Helps Discover (.+)$/.exec(e.n))){ e.note=`more ${m[1].toLowerCase()} drop; if you have several, the first in slot order counts`; e.st=false; return; }
+  if((m=/^HP Restoration upon (.+) Attacks$/.exec(e.n))){ e.note=`+15 HP on successive hits with ${m[1].toLowerCase()}s`; e.st=false; return; }
+  if((m=/^FP Restoration upon (.+) Attacks$/.exec(e.n))&&!/Successive/.test(m[1])){ e.note=`+2 FP on successive hits with ${m[1].toLowerCase()}s`; e.st=false; return; }
+  if(/^Changes? compatible armament's/.test(e.n)){ e.note='the starting weapon gets this skill or spell'; e.st=false; return; }
+  if(/in possession at start of expedition$/.test(e.n)&&/works in game/.test(e.note||'')){ e.note='you start the run with it'; return; }
+}
+EFF.forEach(e=>{ if(/^x\d/.test(e.id)) sheetByName(e); });
 // deep-relic effects that always come with a curse (every effect is either always or never cursed in the game data)
 const NEEDC = new Set(Object.entries(CTMAP).filter(([ct])=>{ const R=RULES.get(+ct); return R&&!R.ill&&R.c!=='S'&&R.rd; }).map(([,id])=>id));
 const NAMED = new Set([...PRESETS.map(p=>p[0]), ...CT_TYPES.map(x=>x[1]).filter(n=>!/Scene$/.test(n)), ...Object.values(UNAME)]);
