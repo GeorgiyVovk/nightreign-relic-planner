@@ -687,21 +687,27 @@ const grade = c => c>=175?'S':c>=140?'A':c>=90?'B':c>=60?'C':c>=25?'D':'E';
 // (defense 100, like every enemy in the game) takes exactly that much. Checked in game, no relics: Guardian's Short Sword shows
 // and hits for 47 at level 1 and 96 at level 15 (79 and 161 × 0.6), Noble's Slender Sword 100 at level 15 (168 × 0.6).
 // Spells too: Recluse's Glintstone Pebble (152) hits for 91 at 100.7 sorcery scaling and 151 at 165.9, Glintstone Arc (148) for 89 and 147.
+// Nothing is rounded before the 60%: Wylder's Greatsword at level 15 is (80 + 123.4) × 0.6 = 122.05, and the game shows 122.
 const NR_ATK = 0.6;
-// attack rating: (base × upgrade, plus base × Σ(stat scaling × curve(stat))) × 60%, per damage type
+// attack rating: (base × upgrade, plus base × Σ(stat scaling × curve(stat))) × 60%, per damage type, × the two-handed rate when two-handing
+// Two-handing doesn't count Strength ×1.5 in Nightreign: the attack goes up by the moveset's two-handed R1 motion value instead,
+// and the menu shows it that way. Checked in game: Guardian level 15 Short Sword 96 → 99 (× 1.03), Raider level 15 Raider's Greataxe
+// 158 → 180 (× 1.14; Strength ×1.5 would cap at 175), and the two-handed R1 hits for exactly that.
 function weaponAR(cw, a){
-  const {w,v,s}=cw, R=WREINF[w[3]+(s.rar-w[2])]||WREINF[w[3]], ct=v[4]||[0,0,0,0,0], sct=v[5]||[6,6,6,6];
-  const stats=STAT5.map(k=>k==='str'&&(s.two||w[1]==='ballista')?Math.floor(a.str*1.5):a[k]);
+  const {w,v,s}=cw, R=WREINF[w[3]+(s.rar-w[2])]||WREINF[w[3]], ct=v[4]||[0,0,0,0,0], sct=v[5]||[6,6,6,6], tf=weaponMV(cw).tf;
+  const stats=STAT5.map(k=>a[k]);
   const coef=v[2].map((c,i)=>c*R[5+i]);
   const parts=[0,1,2,3,4].map(t=>{ const base=v[1][t]*R[t]; if(!base) return {base:0,bonus:0};
-    let sc=0; coef.forEach((c,i)=>{ if(c) sc+=c/100*curveVal(ct[t],stats[i])/100; }); return {base,bonus:base*sc,atk:(Math.floor(base)+Math.floor(base*sc))*NR_ATK}; });
+    let sc=0; coef.forEach((c,i)=>{ if(c) sc+=c/100*curveVal(ct[t],stats[i])/100; }); return {base,bonus:base*sc,atk:(base+base*sc)*NR_ATK*tf[t]}; });
   const status=[]; (v[3]||[]).forEach((b,i)=>{ const st=WSTATUS[b+(R[10+i]||0)]||WSTATUS[b]; if(!st) return; const k=st[0]; let val=st[1];
     const ci={poison:0,bleed:1,sleep:2,madness:3}[k]; if(ci!=null&&coef[4]>0) val*=1+coef[4]/100*curveVal(sct[ci],stats[4])/100; status.push({k,val}); });
   return {parts,stats,coef,status,total:parts.reduce((t,p)=>t+(p.atk?Math.floor(p.atk+1e-9):0),0)};
 }
-// the attack the calculator shows: R1, or the charged R2 with Charged on, one- or two-handed, with the moveset's motion value
-function weaponMV(cw=curWeapon()){ const row=WMV[WVAR[cw.w[0]]]||[100,100,0,0], t=cw.s.two?1:0, canCh=!!row[2+t], ch=cw.s.chg&&canCh;
-  const v=ch?row[2+t]:(row[t]||100); return {mv:Array.isArray(v)?v:[v,v,v,v,v], ch, canCh, label:`${ch?'charged R2':'R1'}, ${cw.s.two?'two':'one'}-handed`}; }
+// the attack the calculator shows: R1, or the charged R2 with Charged on, one- or two-handed, with the moveset's motion value.
+// tf: the two-handed rate per damage type (the two-handed R1 motion value, 1 one-handed); mv is relative to the attack after it
+function weaponMV(cw=curWeapon()){ const row=WMV[WVAR[cw.w[0]]]||[100,100,0,0], two=!!cw.s.two, t=two?1:0, canCh=!!row[2+t], ch=cw.s.chg&&canCh;
+  const arr=x=>Array.isArray(x)?x:[x,x,x,x,x], tf=two&&row[1]?arr(row[1]).map(x=>(x||100)/100):[1,1,1,1,1];
+  const v=arr(ch?row[2+t]:(row[t]||100)); return {mv:v.map((x,i)=>(x||100)/tf[i]), tf, ch, canCh, label:`${ch?'charged R2':'R1'}, ${two?'two':'one'}-handed`}; }
 // what the damage maths needs from the chosen weapon
 function weaponHit(a){ const cs=curSpell();
   if(cs){ const r=spellAR(cs,a); return {arP:r.parts[0],els:[['mag',1],['fire',2],['ltng',3],['holy',4]].map(([k,i])=>[k,r.parts[i]]).filter(e=>e[1]>0),ptype:PHYS_OF[cs.cast[5]]||'std',wtype:'catalyst',spell:cs.k}; }
@@ -1376,7 +1382,7 @@ function renderWeapon(a){
   const ttl=$('#w-title'); if(ttl){ ttl.textContent=cs?'Catalyst':'Weapon'; ttl.htmlFor=cs?'sp-cat':'w-pick'; }
   const two=$('#w-two'), twl=$('#w-twol'), twt=$('#w-twot');
   if(two){ if(cs){ two.checked=cs.ch; two.disabled=!cs.sp[5]; twt.textContent='Charged'; twl.title=cs.sp[5]?'Hold the cast to charge it':`${cs.sp[1]} can't be charged`; }
-    else { two.checked=ws.two; two.disabled=false; twt.textContent='Two-handed'; twl.title='Two-handing counts your Strength ×1.5'; } }
+    else { two.checked=ws.two; two.disabled=false; twt.textContent='Two-handed'; twl.title='Two-handing raises the attack by the moveset\'s two-handed rate (Strength isn\'t ×1.5 in Nightreign)'; } }
   const chg=$('#w-chg'), chl=$('#w-chgl');
   if(chg){ chl.hidden=!!cs; if(!cs){ const M=weaponMV(); chg.checked=M.ch; chg.disabled=!M.canCh; chl.title=M.canCh?'The first charged heavy attack (R2) instead of the first light attack':"This weapon has no charged heavy attack here"; } }
   if(cs) return renderSpell(a,cs);
@@ -1391,9 +1397,9 @@ function renderWeapon(a){
   const grp=t=>`<div class="tr grp">${t}</div>`;
   const row=(label,val,o={})=>`<div class="tr${o.cls2?' '+o.cls2:''}"${o.t?` title="${esc(o.t)}"`:''}><span class="tl">${o.c?`<i style="--c:var(--${o.c})"></i>`:''}${label}</span><span class="tv ${o.cls||''}">${val}</span></div>`;
   const colA=[];
-  r.parts.forEach((p,i)=>{ if(p.base>0) colA.push(row(DMGN[i][0],int(Math.floor(p.atk+1e-9)),{c:DMGN[i][1],t:`(${Math.floor(p.base)} base + ${Math.floor(p.bonus)} from your stats) × 60%, as the game's menu shows it`})); });
+  r.parts.forEach((p,i)=>{ if(p.base>0) colA.push(row(DMGN[i][0],int(Math.floor(p.atk+1e-9)),{c:DMGN[i][1],t:`(${Math.floor(p.base)} base + ${Math.floor(p.bonus)} from your stats) × 60%${s.two?` × ${+(p.atk/((p.base+p.bonus)*NR_ATK)).toFixed(2)} two-handed`:''}, as the game's menu shows it`})); });
   const colB=[];
-  STAT5.forEach((k,i)=>{ const c=r.coef[i]; if(c>0) colB.push(row(STATN[k],`${grade(c)} · ${int(c)}`,{t:`Your ${STATN[k]}: ${r.stats[i]}${k==='str'&&r.stats[i]!==a.str?` (${a.str} ×1.5 two-handed)`:''}`})); });
+  STAT5.forEach((k,i)=>{ const c=r.coef[i]; if(c>0) colB.push(row(STATN[k],`${grade(c)} · ${int(c)}`,{t:`Your ${STATN[k]}: ${r.stats[i]}`})); });
   if(!colB.length) colB.push(row('None','—',{cls:'faint'}));
   const en=enemyNow(), colC=[];
   if(!r.status.length) colC.push(row('None','—',{cls:'faint'}));
@@ -1798,7 +1804,7 @@ function renderDamagePage(){
   // what the bottom line compares: the physical type, or for a spell its main element
   const mainEl=spm&&WH.els.length&&WH.els.reduce((m,e)=>e[1]>m[1]?e:m,WH.els[0])[1]>WH.arP?WH.els.reduce((m,e)=>e[1]>m[1]?e:m,WH.els[0]):null;
   const vsI=mainEl?(ELEMS.find(p=>p[0]===mainEl[0])||ELEMS[0])[2]:pi, vsN=mainEl?(ELEMS.find(p=>p[0]===mainEl[0])||ELEMS[0])[1]:PTYPES[pi][1], negV=boss.neg[vsI];
-  let d=`<div class="hero"><div class="big">${r.dmg>0?int(r.dmg):'—'}<small> per hit</small></div><div class="meta"><span>${spm?`Buffs on the ${cs.ch?'charged ':''}${SPELL_KIND[cs.k].one.toLowerCase()} <b>${f2(mainEl?elTot:physTot)}</b>`:`Buffs on the physical part <b>${f2(physTot)}</b>`}</span>${MV?`<span>Motion value <b>${MV.mv[0]}%</b> · ${MV.label}</span>`:''}<span>Vs. a bare hit, defense included <b>${r.base>0?f2(r.dmg/r.base):'—'}</b></span><span>${hp?`${esc(boss.n)} HP <b>${int(hp)}</b> → <b>${hits??'—'}</b> hits`:'HP unknown for this boss'}</span></div></div>`;
+  let d=`<div class="hero"><div class="big">${r.dmg>0?int(r.dmg):'—'}<small> per hit</small></div><div class="meta"><span>${spm?`Buffs on the ${cs.ch?'charged ':''}${SPELL_KIND[cs.k].one.toLowerCase()} <b>${f2(mainEl?elTot:physTot)}</b>`:`Buffs on the physical part <b>${f2(physTot)}</b>`}</span>${MV?`<span>Motion value <b>${+MV.mv[0].toFixed(1)}%</b> · ${MV.label}</span>`:''}<span>Vs. a bare hit, defense included <b>${r.base>0?f2(r.dmg/r.base):'—'}</b></span><span>${hp?`${esc(boss.n)} HP <b>${int(hp)}</b> → <b>${hits??'—'}</b> hits`:'HP unknown for this boss'}</span></div></div>`;
   const one=x=>!(x.base>0)||Math.abs(x.dmg/x.base-1)<1e-6;   // tiles only when relics change something
   if(spm){ let ln=one(r)?'':`<div class="line"><span>${esc(cs.sp[1])}${cs.ch?' · charged':''}</span><b>${fx(r.dmg/r.base)}</b><span>buffs from relics</span></div>`;
     if(cs.sp[5]){ const o=withSpellCharge(!cs.ch,()=>hitOn(list,boss,'normal')); ln+=`<div class="line"><span>${cs.ch?'Not charged':'Charged'}</span><b>${o.dmg>0?int(o.dmg):'—'}</b><span>per hit</span></div>`; }
