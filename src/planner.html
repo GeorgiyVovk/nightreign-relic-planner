@@ -71,6 +71,8 @@ select{-webkit-appearance:none;appearance:none;cursor:pointer;border:1px solid v
 .top .wrap{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px 20px}
 .top h1{font-family:var(--f-display);font-weight:600;font-size:30px;letter-spacing:.01em;margin:0;line-height:1.1}
 .tleft{display:flex;align-items:center;gap:12px;flex-wrap:wrap;min-width:0}
+.pages{padding-block:2px 12px}
+.dsum{margin:10px 0 0!important}.dsum b{color:var(--fg);font-weight:600}
 .tright{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 .ovrow{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .savepill{display:inline-flex;align-items:center;gap:7px;height:30px;border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:0 12px;font-size:12px;color:var(--muted)}
@@ -422,7 +424,9 @@ select:hover{background-image:linear-gradient(to top right,transparent 50%,var(-
   </div>
 </header>
 
-<main class="wrap layout">
+<nav class="wrap pages" aria-label="Pages"><div class="seg" id="pages"><button data-page="relics" aria-pressed="true">Relics</button><button data-page="damage" aria-pressed="false">Damage</button></div></nav>
+
+<main class="wrap layout" id="pg-relics">
   <div class="col">
     <section class="panel">
       <div class="ph"><h2>Nightfarer &amp; vessel</h2></div>
@@ -449,31 +453,6 @@ select:hover{background-image:linear-gradient(to top right,transparent 50%,var(-
       <div class="ph"><h2>Stats</h2><div class="phr"><label class="tgl" title="Count deep relics in the stats, as in Deep of Night"><input type="checkbox" id="don" role="switch"><span class="knob" aria-hidden="true"></span><span class="tt">Deep of Night</span></label><div class="lvlbox"><label for="f-level">Level</label><select id="f-level"></select></div></div></div>
       <div id="stats"></div>
     </section>
-    <section class="panel weaponp">
-      <div class="ph"><h2>Weapon</h2><div class="phr"><label class="tgl" title="Two-handing counts your Strength ×1.5"><input type="checkbox" id="w-two" role="switch"><span class="knob" aria-hidden="true"></span><span class="tt">Two-handed</span></label></div></div>
-      <div id="weapon"></div>
-    </section>
-    <section class="panel enemyp">
-      <div class="ph"><h2>Enemy</h2><div class="phr"><div class="seg" id="enplayers" role="group" aria-label="Players"><button data-enp="1" aria-pressed="true">Solo</button><button data-enp="2" aria-pressed="false">Duo</button><button data-enp="3" aria-pressed="false">Trio</button></div><div class="lvlbox"><label for="en-mode">Mode</label><select id="en-mode"><option value="0">Normal</option><option value="1">Depth 1</option><option value="2">Depth 2</option><option value="3">Depth 3</option><option value="4">Depth 4</option><option value="5">Depth 5</option></select></div></div></div>
-      <div id="enemy"></div>
-    </section>
-    <section class="panel" hidden>
-      <div class="ph"><h2>Fight</h2><span class="hint">AR from the weapon menu in game</span></div>
-      <div id="combat"></div>
-    </section>
-    <section class="panel" hidden>
-      <div class="ph"><h2>Damage</h2><span class="hint" id="dmgfor"></span></div>
-      <div id="damage"></div>
-    </section>
-    <section class="panel" hidden>
-      <div class="ph"><h2>Nightlords</h2><span class="hint">normal hit · damage per hit and hits to kill</span></div>
-      <div id="bosses"></div>
-    </section>
-    <section class="panel" hidden>
-      <div class="ph"><h2>What's active</h2></div>
-      <div id="effects"></div>
-      <p class="foot">Multipliers multiply, as in FromSoft games. Damage per hit is approximate: AR × buffs → Elden Ring defense formula (defense 100) → boss negation → frostbite debuff. Enemy HP, negation and resistances come from the game's 1.03.5 data (Enemy panel). Other numbers: <a href="https://docs.google.com/spreadsheets/d/1meXOw4jR1hh7YXVMeijWwSDIXnCw6Tk4hTZPq2qvyK4/htmlview" target="_blank" rel="noopener">Nightreign Useful Info</a> v1.03.2 and the Hexinton cheat table.</p>
-    </section>
   </div>
     <section class="panel full">
     <div class="ph"><h2>My relics</h2><span class="hint" id="libcount"></span></div>
@@ -494,6 +473,43 @@ select:hover{background-image:linear-gradient(to top right,transparent 50%,var(-
     <input type="file" id="savefile" accept=".sl2,.co2" hidden>
     <div id="library"></div>
   </section>
+</main>
+
+<main class="wrap layout" id="pg-damage" hidden>
+  <div class="col">
+    <section class="panel buildp">
+      <div class="ph"><h2>Build</h2><div class="phr"><label class="tgl" title="Count deep relics, as in Deep of Night"><input type="checkbox" id="don2" role="switch"><span class="knob" aria-hidden="true"></span><span class="tt">Deep of Night</span></label><div class="lvlbox"><label for="f-level2">Level</label><select id="f-level2"></select></div></div></div>
+      <div class="pickrow"><select id="d-preset" aria-label="Preset"></select></div>
+      <p class="enwhere" id="d-sum"></p>
+    </section>
+    <section class="panel weaponp">
+      <div class="ph"><h2>Weapon</h2><div class="phr"><label class="tgl" title="Two-handing counts your Strength ×1.5"><input type="checkbox" id="w-two" role="switch"><span class="knob" aria-hidden="true"></span><span class="tt">Two-handed</span></label></div></div>
+      <div id="weapon"></div>
+    </section>
+    <section class="panel">
+      <div class="ph"><h2>Fight</h2><span class="hint">talismans and what is going on</span></div>
+      <div id="combat"></div>
+    </section>
+  </div>
+  <div class="col">
+    <section class="panel enemyp">
+      <div class="ph"><h2>Enemy</h2><div class="phr"><div class="seg" id="enplayers" role="group" aria-label="Players"><button data-enp="1" aria-pressed="true">Solo</button><button data-enp="2" aria-pressed="false">Duo</button><button data-enp="3" aria-pressed="false">Trio</button></div><div class="lvlbox"><label for="en-mode">Mode</label><select id="en-mode"><option value="0">Normal</option><option value="1">Depth 1</option><option value="2">Depth 2</option><option value="3">Depth 3</option><option value="4">Depth 4</option><option value="5">Depth 5</option></select></div></div></div>
+      <div id="enemy"></div>
+    </section>
+    <section class="panel damagep">
+      <div class="ph"><h2>Damage</h2><span class="hint" id="dmgfor"></span></div>
+      <div id="damage"></div>
+    </section>
+    <section class="panel">
+      <div class="ph"><h2>What's active</h2></div>
+      <div id="effects"></div>
+      <p class="foot">Multipliers multiply, as in FromSoft games. Damage per hit is approximate until it's checked in game: weapon attack × buffs → Elden Ring defense formula (enemy defense 100) → enemy negation → frostbite. It is a plain hit at 100% motion value, about a one-handed light attack. Weapons and enemies come from the game's 1.03.5 data. Other numbers: <a href="https://docs.google.com/spreadsheets/d/1meXOw4jR1hh7YXVMeijWwSDIXnCw6Tk4hTZPq2qvyK4/htmlview" target="_blank" rel="noopener">Nightreign Useful Info</a> v1.03.2 and the Hexinton cheat table.</p>
+    </section>
+    <section class="panel" hidden>
+      <div class="ph"><h2>Nightlords</h2><span class="hint">normal hit · damage per hit and hits to kill</span></div>
+      <div id="bosses"></div>
+    </section>
+  </div>
 </main>
 
 <div class="ov" id="ov" hidden></div>
@@ -575,7 +591,7 @@ const STAT5 = ['str','dex','int','fth','arc'];
 const WEAPON_DEFAULT = {name:'Uchigatana',aff:0,rar:0,two:false};
 function weaponState(){ let s=build.weapon; if(!s||typeof s!=='object') s=build.weapon={...WEAPON_DEFAULT};
   const w=WBYN[s.name]||WBYN[WEAPON_DEFAULT.name]; s.name=w[0]; if(!w[5].some(v=>v[0]===+s.aff)) s.aff=w[5][0][0]; s.aff=+s.aff;
-  s.rar=Math.min(3,Math.max(w[2],+s.rar||0)); s.two=!!s.two; return s; }
+  s.rar=Math.min(3,Math.max(w[2],+s.rar||0)); s.two=!!s.two; s.pt=+s.pt===1&&w[4][1]!==w[4][0]?1:0; return s; }
 const curWeapon = () => { const s=weaponState(), w=WBYN[s.name]; return {w,v:w[5].find(v=>v[0]===s.aff),s}; };
 // CalcCorrectGraph: piecewise curve, % of the scaling coefficient you get at stat x
 function curveVal(id,x){ const c=WCURVE[id]; if(!c) return 0; const [st,gr,ex]=c; if(x<=st[0]) return gr[0];
@@ -595,7 +611,7 @@ function weaponAR(cw, a){
 }
 // what the damage maths needs from the chosen weapon
 function weaponHit(a){ const cw=curWeapon(), r=weaponAR(cw,a); const ar=p=>Math.floor(p.base)+Math.floor(p.bonus);
-  return {arP:ar(r.parts[0]),els:[['mag',1],['fire',2],['ltng',3],['holy',4]].map(([k,i])=>[k,ar(r.parts[i])]).filter(e=>e[1]>0),ptype:PHYS_OF[cw.w[4][0]]||'std',wtype:cw.w[1]}; }
+  return {arP:ar(r.parts[0]),els:[['mag',1],['fire',2],['ltng',3],['holy',4]].map(([k,i])=>[k,ar(r.parts[i])]).filter(e=>e[1]>0),ptype:PHYS_OF[cw.w[4][cw.s.pt||0]]||'std',wtype:cw.w[1]}; }
 // shape the damage maths expects
 const bossOf = e => { const x=enemyNow(e); return {k:e.id,n:e.n,x:e.loc,neg:x.neg,res:x.res.map(v=>Math.round(v)),hpNow:x.hp}; };
 
@@ -1186,13 +1202,30 @@ function calcStats(list){
   return {base,a,hp,fp,st,hp0:20*base.vig+80,fp0:5*base.mnd+45,st0:2*base.end+48,neg0:neg,neg:neg.map((v,i)=>1-(1-v)*negMul[i]),res0:ch.res,res,poise:ch.poise,poiseM,cdM,ultM,restage};
 }
 
+/* ============ PAGES ============ */
+// Relics (the planner) and Damage (the calculator); the page lives in the address as #damage
+const curPage = () => (location.hash==='#damage'?'damage':'relics');
+function showPage(){ const pg=curPage();
+  ['relics','damage'].forEach(k=>{ const m=$('#pg-'+k); if(m) m.hidden=k!==pg; });
+  document.querySelectorAll('#pages button').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.page===pg))); }
+window.addEventListener('hashchange',showPage);
+
 /* ============ RENDER ============ */
-function renderAll(){ renderStore(); renderPickers(); renderSlots(); renderLibrary(); renderEnemy(); renderCombat(); renderResults(); }
+function renderAll(){ showPage(); renderStore(); renderPickers(); renderSlots(); renderLibrary(); renderEnemy(); renderCombat(); renderResults(); }
 const ENEG = [['Standard','d-phys'],['Strike','d-phys'],['Slash','d-phys'],['Pierce','d-phys'],['Magic','d-mag'],['Fire','d-fire'],['Lightning','d-ltng'],['Holy','d-holy']];
 const enLabel = e => e.n+(e.loc?` · ${e.loc}`:'');
 const STATN = {str:'STR',dex:'DEX',int:'INT',fth:'FTH',arc:'ARC'};
 const DMGN = [['Physical','d-phys'],['Magic','d-mag'],['Fire','d-fire'],['Lightning','d-ltng'],['Holy','d-holy']];
 const PHYSN = ['Slash','Strike','Pierce','Standard'];
+function renderDmgBuild(a){
+  const sel=$('#d-preset'); if(!sel) return; normBuild();
+  const ch=build.char, act=build.activePreset[ch], groups={};
+  build.presets.forEach(p=>{ (groups[p.char]=groups[p.char]||[]).push(p); });
+  sel.innerHTML=`<option value="">${esc(ch)} · current relics</option>`+Object.keys(groups).sort().map(c=>`<optgroup label="${esc(c)}">${groups[c].map(p=>`<option value="${esc(p.id)}" ${p.id===act&&p.char===ch?'selected':''}>${esc(p.name)}</option>`).join('')}</optgroup>`).join('');
+  const n=curSlots().filter((x,i)=>x&&(i<3||build.don)).length;
+  const sum=$('#d-sum'); if(sum) sum.innerHTML=`${esc(ch)} · ${esc(curVessel())} · ${n} relic${n===1?'':'s'} · ${STAT5.map(k=>`${STATN[k]} <b>${a[k]}</b>`).join(' ')}`;
+  sum&&sum.classList.add('dsum');
+}
 function renderWeapon(a){
   const host=$('#weapon'); if(!host) return;
   const cw=curWeapon(), {w,v,s}=cw, r=weaponAR(cw,a);
@@ -1207,7 +1240,7 @@ function renderWeapon(a){
   const colA=[];
   r.parts.forEach((p,i)=>{ if(p.base>0) colA.push(row(DMGN[i][0],`${int(Math.floor(p.base))} + ${int(Math.floor(p.bonus))}`,{c:DMGN[i][1],t:'base + bonus from your stats'})); });
   const pts=[...new Set(w[4])].map(x=>PHYSN[x]).filter(Boolean);
-  if(r.parts[0].base>0) colA.push(grp('Physical type'), row(pts.join(' / '),'',{t:'Light / heavy attacks'}));
+  if(r.parts[0].base>0) colA.push(grp('Physical type'), row(pts.join(' / '),'',{t:'The weapon\'s physical damage types; pick the one for your attack under Fight'}));
   const colB=[];
   STAT5.forEach((k,i)=>{ const c=r.coef[i]; if(c>0) colB.push(row(STATN[k],`${grade(c)} · ${int(c)}`,{t:`Your ${STATN[k]}: ${r.stats[i]}${k==='str'&&r.stats[i]!==a.str?` (${a.str} ×1.5 two-handed)`:''}`})); });
   if(!colB.length) colB.push(row('None','—',{cls:'faint'}));
@@ -1420,7 +1453,7 @@ function shortName(n,ch){
   return pre+t;
 }
 function renderSlots(){
-  { const dn=$('#don'); if(dn) dn.checked=!!build.don; }
+  document.querySelectorAll('#don, #don2').forEach(dn=>dn.checked=!!build.don);
   const code=vesselCode(build.char,curVessel()), slots=curSlots();
   const seen=new Map(), seenG=new Map(), dead={};
   slots.forEach((rid,i)=>{ const r=rid?relicById(rid):null; if(!r || !slotOk(code,i,r)) return;
@@ -1504,19 +1537,16 @@ function renderCombat(){
     return `<label class="cond ${c.cond[k]?'on':''} ${imm?'na':''}"><input type="checkbox" data-cond="${k}" ${c.cond[k]?'checked':''}>${COND[k]}${imm?' (immune)':''}</label>`; }).join('');
   const stacks=list.filter(a=>a.ok&&a.eff.stack).map(a=>`<label class="stackf">${esc(a.eff.stack.label)} <input type="number" min="0" max="${a.eff.stack.max||30}" data-stack="${a.eff.stack.k}" value="${+c.stacks[a.eff.stack.k]||0}"></label>`).join('');
   const opt=(arr,v)=>arr.map(([k,n])=>`<option value="${k}" ${k===v?'selected':''}>${esc(n)}</option>`).join('');
+  const cw=curWeapon(), pts=[...new Set(cw.w[4])], ptOpt=pts.map((x,i)=>`<option value="${cw.w[4].indexOf(x)}" ${cw.w[4].indexOf(x)===(cw.s.pt||0)||(pts.length===1)?'selected':''}>${esc(PHYSN[x])}</option>`).join('');
   const talOpt=v=>`<option value="">— none —</option>`+TAL.map(t=>`<option value="${t.id}" ${t.id===v?'selected':''}>${esc(t.n)} — ${esc(describe(t).replace(" · doesn't stack with itself",''))}</option>`).join('');
   $('#combat').innerHTML = `
   <div class="form">
-    <div class="field"><label for="f-arP">Physical AR</label><input id="f-arP" type="number" min="0" data-c="arP" value="${c.arP}"></div>
-    <div class="field"><label for="f-ptype">Physical type</label><select id="f-ptype" data-c="ptype">${opt(PTYPES.map(p=>[p[0],p[1]]),c.ptype)}</select></div>
-    <div class="field"><label for="f-arE">Affinity AR</label><input id="f-arE" type="number" min="0" data-c="arE" value="${c.arE}"></div>
-    <div class="field"><label for="f-etype">Affinity</label><select id="f-etype" data-c="etype">${opt(ELEMS.map(p=>[p[0],p[1]]),c.etype)}</select></div>
-    <div class="field"><label for="f-wtype">Weapon type</label><select id="f-wtype" data-c="wtype">${opt(WT.map(w=>[w[0],w[1]]),c.wtype)}</select></div>
+    <div class="field"><label for="f-wpt">Physical damage</label><select id="f-wpt">${ptOpt}</select></div>
     <div class="field"><label for="f-spell">Spell element</label><select id="f-spell" data-c="spellEl">${opt(ELEMS.map(p=>[p[0],p[1]]),c.spellEl)}</select></div>
     <div class="field"><label for="f-tal0">Talisman 1</label><select id="f-tal0" data-tal="0">${talOpt(c.tal[0])}</select></div>
     <div class="field"><label for="f-tal1">Talisman 2</label><select id="f-tal1" data-tal="1">${talOpt(c.tal[1])}</select></div>
   </div>
-  <div class="sub">RIGHT NOW</div>
+  <div class="sub">Right now</div>
   <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:8px"><span class="msg">Your HP</span><div class="seg">${[['full','100%'],['high','85–99%'],['low','20–85%'],['crit','< 20%']].map(([k,n])=>`<button data-hp="${k}" aria-pressed="${c.hp===k}">${n}</button>`).join('')}</div></div>
   <div class="conds">${condHtml}</div>
   ${stacks?`<div class="stacks">${stacks}</div>`:''}`;
@@ -1539,7 +1569,7 @@ function renderResults(){
     return `<div class="tr"${has&&!o.delta?` title="${ds}"`:''}><span class="tl">${o.c?`<i style="--c:var(--${o.c})"></i>`:''}${label}</span>${o.cb||''}<span class="tv ${has?(d>0?'up':'dn'):''}">${o.pct?(v*100).toFixed(1)+'%':int(v)}</span>${o.delta?`<span class="td ${d>0?'up':'dn'}">${ds}</span>`:''}</div>`; };
   const plain=(label,val)=>`<div class="tr"><span class="tl">${label}</span><span class="tv">${val}</span><span class="td"></span></div>`;
   const lvl=curLevel();
-  { const ls=$('#f-level'); if(ls){ if(!ls.options.length) ls.innerHTML=Array.from({length:15},(_,i)=>`<option value="${i+1}">${i+1}</option>`).join(''); ls.value=String(lvl); } }
+  document.querySelectorAll('#f-level, #f-level2').forEach(ls=>{ if(!ls.options.length) ls.innerHTML=Array.from({length:15},(_,i)=>`<option value="${i+1}">${i+1}</option>`).join(''); ls.value=String(lvl); });
   const colA=[...ATTR.map(([k])=>tr(ABBR[k],s.a[k],s.base[k],{delta:true})), grp('Other'), plain('Poise',int(s.poise))];
   if(s.poiseM!==1) colA.push(plain('Poise dmg taken',fx(s.poiseM))); if(s.cdM!==1) colA.push(plain('Skill cooldown',fx(s.cdM))); if(s.ultM!==1) colA.push(plain('Ult charge',fx(s.ultM)));
   const colB=[grp('Physical'), ...DEF_ROWS.slice(0,4).map(([N,i,col],j)=>tr(j===0?'Standard':N,s.neg[i],s.neg0[i],{c:col,pct:true})), grp('Elemental'), ...DEF_ROWS.slice(4).map(([N,i,col])=>tr(N,s.neg[i],s.neg0[i],{c:col,pct:true}))];
@@ -1559,19 +1589,19 @@ function renderResults(){
   if(est.length) h+=`<p class="msg" style="margin:10px 0 0">${est.join('. ')}.</p>`;
   h+=curseBlock(list);
   $('#stats').innerHTML=h;
-  renderWeapon(s.a);
+  renderWeapon(s.a); renderDmgBuild(s.a);
 
   // damage
   const r=hitOn(list,boss,'normal');
   const hp=bossHP(boss); const hits=hp&&r.dmg>0?Math.ceil(hp/r.dmg):null;
   const kinds=[['skill','Weapon skill'],['charged','Charged'],['crit','Critical'],['gc','Guard counter']];
   const ctx=ctxFrom(); const fS=factors(list,ctx,'normal','spell',c.spellEl); const spellM=prod(fS,false)*prod(fS,true);
-  const allF=[...r.fP.map(f=>Object.assign({p:'phys'},f)),...(+c.arE>0?r.fE.map(f=>Object.assign({p:'affinity'},f)):[])];
+  const WH=weaponHit(s.a); const allF=[...r.fP.map(f=>Object.assign({p:'phys'},f)),...(WH.els.length?r.fE.map(f=>Object.assign({p:'affinity'},f)):[])];
   const merged=[]; allF.forEach(f=>{ const m=merged.find(x=>x.label===f.label&&x.m===f.m); if(m){ if(!m.p.includes(f.p)) m.p+=' + '+f.p; } else merged.push(Object.assign({},f)); });
   const physTot=prod(r.fP,false)*prod(r.fP,true);
-  const pi=(PTYPES.find(p=>p[0]===c.ptype)||PTYPES[0])[2]; const negP=boss.neg[pi];
+  const pi=(PTYPES.find(p=>p[0]===WH.ptype)||PTYPES[0])[2]; const negP=boss.neg[pi];
   let d=`<div class="hero"><div class="big">${r.dmg>0?int(r.dmg):'—'}<small> per hit</small></div><div class="meta"><span>Buffs on the physical part <b>${f2(physTot)}</b></span><span>Vs. a bare hit, defense included <b>${r.base>0?f2(r.dmg/r.base):'—'}</b></span><span>${hp?`${esc(boss.n)} HP <b>${int(hp)}</b> → <b>${hits??'—'}</b> hits`:'HP unknown for this boss'}</span></div></div>`;
-  d+=`<div class="lines">${kinds.map(([k,n])=>{ const x=hitOn(list,boss,k); return `<div class="line"><span>${n}</span><b>${int(x.dmg)}</b><span>${x.base>0?f2(x.dmg/x.base):''} vs bare</span></div>`; }).join('')}<div class="line"><span>Spells (${(ELEMS.find(e=>e[0]===c.spellEl)||[])[1]})</span><b>${f2(spellM)}</b><span>multiplier</span></div></div>`;
+  d+=`<div class="lines">${kinds.map(([k,n])=>{ const x=hitOn(list,boss,k); return `<div class="line"><span>${n}</span><b>${x.base>0?fx(x.dmg/x.base):'—'}</b><span>buffs from relics</span></div>`; }).join('')}<div class="line"><span>Spells (${(ELEMS.find(e=>e[0]===c.spellEl)||[])[1]})</span><b>${fx(spellM)}</b><span>buffs from relics</span></div></div>`;
   d+=`<ul class="brk">${merged.length?merged.map(f=>`<li><span title="${esc(f.label)}">${esc(f.label)} <span class="msg">· ${f.p}</span></span><span class="num ${f.m<1?'dn':''}">${fx(f.m)}</span></li>`).join(''):'<li><span>No damage bonus active right now</span><span></span></li>'}<li class="tot"><span>${PTYPES[pi][1]} vs ${esc(boss.n)}: ${negP===0?'no resistance':negP<0?`weak ${-negP}%`:`resists ${negP}%`}</span><span class="num">${fx(1-negP/100)}</span></li></ul>`;
   $('#dmgfor').textContent = `${boss.n} · ${['solo','duo','trio'][enemyState().players-1]}`;
   $('#damage').innerHTML=d;
@@ -1986,6 +2016,7 @@ document.addEventListener('click', async ev=>{
   if(t.dataset.vessel){ build.vessel[build.char]=t.dataset.vessel; ui.pick=null; toggleVlist(false); $('#vbtn').focus(); saveBuildSoon(); renderAll(); return; }
   if(t.dataset.lf){ if(t.dataset.lf==='f'&&!flaggedCount()){ toast('No flagged relics: none of your relics look edited.'); return; } ui.lf=t.dataset.lf; ui.limit=60; renderLibrary(); return; }
   if(t.dataset.plf){ ui.plf=t.dataset.plf; ui.plimit=60; renderSlotPick(); return; }
+  if(t.dataset.page){ location.hash=t.dataset.page==='damage'?'damage':''; if(t.dataset.page!=='damage') history.replaceState(null,'',location.pathname+location.search); showPage(); return; }
   if(t.dataset.wr){ weaponState().rar=+t.dataset.wr; saveBuildSoon(); renderCombat(); renderResults(); return; }
   if(t.dataset.enp){ enemyState().players=+t.dataset.enp; saveBuildSoon(); renderEnemy(); renderCombat(); renderResults(); return; }
   if(t.dataset.hp){ build.combat.hp=t.dataset.hp; saveBuildSoon(); renderCombat(); renderResults(); return; }
@@ -2069,11 +2100,16 @@ document.addEventListener('click', async ev=>{
 document.addEventListener('change', ev=>{
   const t=ev.target;
   if(t.id==='savefile'){ const f=t.files&&t.files[0]; t.value=''; onSaveFile(f); return; }
+  if(t.id==='don2'){ build.don=t.checked; saveBuildSoon(); renderSlots(); renderCombat(); renderResults(); return; }
   if(t.id==='don'){ build.don=t.checked; saveBuildSoon(); renderSlots(); renderCombat(); renderResults(); return; }
   if(t.id==='f-preset'){ normBuild(); const p=build.presets.find(x=>x.id===t.value);
     if(!p){ build.activePreset[build.char]=null; saveBuildSoon(); renderPresets(); return; }
     build.vessel[p.char]=p.vessel; build.slots[p.char+'|'+p.vessel]=p.slots.slice(); build.activePreset[p.char]=p.id; ui.pick=null; saveBuildSoon(); renderAll(); return; }
+  if(t.id==='f-wpt'){ weaponState().pt=+t.value; saveBuildSoon(); renderResults(); return; }
+  if(t.id==='d-preset'){ normBuild(); const p=build.presets.find(x=>x.id===t.value); if(!p) return;
+    build.char=p.char; build.vessel[p.char]=p.vessel; build.slots[p.char+'|'+p.vessel]=p.slots.slice(); build.activePreset[p.char]=p.id; ui.pick=null; saveBuildSoon(); renderAll(); return; }
   if(t.id==='f-char'){ build.char=t.value; ui.pick=null; saveBuildSoon(); renderAll(); return; }
+  if(t.id==='f-level2'){ build.level=+t.value; saveBuildSoon(); renderResults(); return; }
   if(t.id==='f-level'){ build.level=+t.value; saveBuildSoon(); renderResults(); return; }
   if(t.id==='w-pick'||t.id==='w-aff'||t.id==='w-two'){ const ws=weaponState();
     if(t.id==='w-pick'){ ws.name=t.value; const w=WBYN[ws.name]; if(!w[5].some(x=>x[0]===ws.aff)) ws.aff=w[5][0][0]; ws.rar=Math.max(ws.rar,w[2]); } else if(t.id==='w-aff') ws.aff=+t.value; else ws.two=t.checked;
