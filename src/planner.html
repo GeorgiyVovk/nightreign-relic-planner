@@ -1202,6 +1202,24 @@ function calcStats(list){
   return {base,a,hp,fp,st,hp0:20*base.vig+80,fp0:5*base.mnd+45,st0:2*base.end+48,neg0:neg,neg:neg.map((v,i)=>1-(1-v)*negMul[i]),res0:ch.res,res,poise:ch.poise,poiseM,cdM,ultM,restage};
 }
 
+/* ============ CALCULATOR BUILD ============ */
+// The Damage page has its own preset, Deep of Night and level. With no preset it uses the relics slotted on the Relics page.
+// It never changes the Relics page: withCalcBuild swaps them in only while the calculator renders, then puts everything back.
+function calcState(){ let c=build.calc; if(!c||typeof c!=='object') c=build.calc={preset:null,don:build.don!==false,level:+build.level||15};
+  c.don=!!c.don; c.level=Math.min(15,Math.max(1,+c.level||15)); if(c.preset&&!(build.presets||[]).some(p=>p.id===c.preset)) c.preset=null; return c; }
+let calcPlannerChar=null;
+function withCalcBuild(fn){
+  normBuild(); const cs=calcState(), p=cs.preset?build.presets.find(x=>x.id===cs.preset):null;
+  const sv={char:build.char,don:build.don,level:build.level}; calcPlannerChar=build.char;
+  const has=(o,k)=>Object.prototype.hasOwnProperty.call(o,k); let sk=null, hadV=false, oldV, hadS=false, oldS;
+  if(p){ hadV=has(build.vessel,p.char); oldV=build.vessel[p.char]; sk=p.char+'|'+p.vessel; hadS=has(build.slots,sk); oldS=build.slots[sk];
+    build.char=p.char; build.vessel[p.char]=p.vessel; build.slots[sk]=p.slots.slice(); }
+  build.don=cs.don; build.level=cs.level;
+  try{ return fn(); }
+  finally{ build.char=sv.char; build.don=sv.don; build.level=sv.level;
+    if(p){ if(hadV) build.vessel[p.char]=oldV; else delete build.vessel[p.char]; if(hadS) build.slots[sk]=oldS; else delete build.slots[sk]; } }
+}
+
 /* ============ PAGES ============ */
 // Relics (the planner) and Damage (the calculator); the page lives in the address as #damage
 const curPage = () => (location.hash==='#damage'?'damage':'relics');
@@ -1219,9 +1237,11 @@ const DMGN = [['Physical','d-phys'],['Magic','d-mag'],['Fire','d-fire'],['Lightn
 const PHYSN = ['Slash','Strike','Pierce','Standard'];
 function renderDmgBuild(a){
   const sel=$('#d-preset'); if(!sel) return; normBuild();
-  const ch=build.char, act=build.activePreset[ch], groups={};
+  const cs=calcState(), ch=build.char, groups={};
   build.presets.forEach(p=>{ (groups[p.char]=groups[p.char]||[]).push(p); });
-  sel.innerHTML=`<option value="">${esc(ch)} · current relics</option>`+Object.keys(groups).sort().map(c=>`<optgroup label="${esc(c)}">${groups[c].map(p=>`<option value="${esc(p.id)}" ${p.id===act&&p.char===ch?'selected':''}>${esc(p.name)}</option>`).join('')}</optgroup>`).join('');
+  sel.innerHTML=`<option value="">${esc(calcPlannerChar||ch)} · relics from the Relics page</option>`+Object.keys(groups).sort().map(c=>`<optgroup label="${esc(c)}">${groups[c].map(p=>`<option value="${esc(p.id)}" ${p.id===cs.preset?'selected':''}>${esc(p.name)}</option>`).join('')}</optgroup>`).join('');
+  const d2=$('#don2'); if(d2) d2.checked=cs.don;
+  const l2=$('#f-level2'); if(l2){ if(!l2.options.length) l2.innerHTML=Array.from({length:15},(_,i)=>`<option value="${i+1}">${i+1}</option>`).join(''); l2.value=String(cs.level); }
   const n=curSlots().filter((x,i)=>x&&(i<3||build.don)).length;
   const sum=$('#d-sum'); if(sum) sum.innerHTML=`${esc(ch)} · ${esc(curVessel())} · ${n} relic${n===1?'':'s'} · ${STAT5.map(k=>`${STATN[k]} <b>${a[k]}</b>`).join(' ')}`;
   sum&&sum.classList.add('dsum');
@@ -1453,7 +1473,7 @@ function shortName(n,ch){
   return pre+t;
 }
 function renderSlots(){
-  document.querySelectorAll('#don, #don2').forEach(dn=>dn.checked=!!build.don);
+  { const dn=$('#don'); if(dn) dn.checked=!!build.don; }
   const code=vesselCode(build.char,curVessel()), slots=curSlots();
   const seen=new Map(), seenG=new Map(), dead={};
   slots.forEach((rid,i)=>{ const r=rid?relicById(rid):null; if(!r || !slotOk(code,i,r)) return;
@@ -1528,7 +1548,8 @@ function renderSlotPick(){
   const shown=rs.slice(0,ui.plimit);
   b.innerHTML=`<div class="relics">${shown.map(r=>relicCard(r,true,unowned&&unowned.has(r.id))).join('')}</div>`+(rs.length>shown.length?`<div class="libmore"><button class="btn" data-act="pmore">Show more · ${rs.length-shown.length} left</button></div>`:'');
 }
-function renderCombat(){
+function renderCombat(){ withCalcBuild(renderCombat0); }
+function renderCombat0(){
   const c=build.combat; const {list}=collect();
   const used=new Set(['vsPoison','vsRot','vsFrost']);
   list.forEach(a=>{ if(a.ok&&a.eff.cond&&COND[a.eff.cond]) used.add(a.eff.cond); if(a.ok&&a.eff.startMult) used.add('startWpn'); if(a.ok&&a.eff.three) used.add('three'); });
@@ -1569,7 +1590,7 @@ function renderResults(){
     return `<div class="tr"${has&&!o.delta?` title="${ds}"`:''}><span class="tl">${o.c?`<i style="--c:var(--${o.c})"></i>`:''}${label}</span>${o.cb||''}<span class="tv ${has?(d>0?'up':'dn'):''}">${o.pct?(v*100).toFixed(1)+'%':int(v)}</span>${o.delta?`<span class="td ${d>0?'up':'dn'}">${ds}</span>`:''}</div>`; };
   const plain=(label,val)=>`<div class="tr"><span class="tl">${label}</span><span class="tv">${val}</span><span class="td"></span></div>`;
   const lvl=curLevel();
-  document.querySelectorAll('#f-level, #f-level2').forEach(ls=>{ if(!ls.options.length) ls.innerHTML=Array.from({length:15},(_,i)=>`<option value="${i+1}">${i+1}</option>`).join(''); ls.value=String(lvl); });
+  document.querySelectorAll('#f-level').forEach(ls=>{ if(!ls.options.length) ls.innerHTML=Array.from({length:15},(_,i)=>`<option value="${i+1}">${i+1}</option>`).join(''); ls.value=String(lvl); });
   const colA=[...ATTR.map(([k])=>tr(ABBR[k],s.a[k],s.base[k],{delta:true})), grp('Other'), plain('Poise',int(s.poise))];
   if(s.poiseM!==1) colA.push(plain('Poise dmg taken',fx(s.poiseM))); if(s.cdM!==1) colA.push(plain('Skill cooldown',fx(s.cdM))); if(s.ultM!==1) colA.push(plain('Ult charge',fx(s.ultM)));
   const colB=[grp('Physical'), ...DEF_ROWS.slice(0,4).map(([N,i,col],j)=>tr(j===0?'Standard':N,s.neg[i],s.neg0[i],{c:col,pct:true})), grp('Elemental'), ...DEF_ROWS.slice(4).map(([N,i,col])=>tr(N,s.neg[i],s.neg0[i],{c:col,pct:true}))];
@@ -1589,6 +1610,10 @@ function renderResults(){
   if(est.length) h+=`<p class="msg" style="margin:10px 0 0">${est.join('. ')}.</p>`;
   h+=curseBlock(list);
   $('#stats').innerHTML=h;
+  withCalcBuild(renderDamagePage);
+}
+function renderDamagePage(){
+  const {list,warn}=collect(); const s=calcStats(list); const c=build.combat; const boss=bossById(c.boss);
   renderWeapon(s.a); renderDmgBuild(s.a);
 
   // damage
@@ -2100,16 +2125,15 @@ document.addEventListener('click', async ev=>{
 document.addEventListener('change', ev=>{
   const t=ev.target;
   if(t.id==='savefile'){ const f=t.files&&t.files[0]; t.value=''; onSaveFile(f); return; }
-  if(t.id==='don2'){ build.don=t.checked; saveBuildSoon(); renderSlots(); renderCombat(); renderResults(); return; }
+  if(t.id==='don2'){ calcState().don=t.checked; saveBuildSoon(); renderCombat(); renderResults(); return; }
   if(t.id==='don'){ build.don=t.checked; saveBuildSoon(); renderSlots(); renderCombat(); renderResults(); return; }
   if(t.id==='f-preset'){ normBuild(); const p=build.presets.find(x=>x.id===t.value);
     if(!p){ build.activePreset[build.char]=null; saveBuildSoon(); renderPresets(); return; }
     build.vessel[p.char]=p.vessel; build.slots[p.char+'|'+p.vessel]=p.slots.slice(); build.activePreset[p.char]=p.id; ui.pick=null; saveBuildSoon(); renderAll(); return; }
   if(t.id==='f-wpt'){ weaponState().pt=+t.value; saveBuildSoon(); renderResults(); return; }
-  if(t.id==='d-preset'){ normBuild(); const p=build.presets.find(x=>x.id===t.value); if(!p) return;
-    build.char=p.char; build.vessel[p.char]=p.vessel; build.slots[p.char+'|'+p.vessel]=p.slots.slice(); build.activePreset[p.char]=p.id; ui.pick=null; saveBuildSoon(); renderAll(); return; }
+  if(t.id==='d-preset'){ calcState().preset=t.value||null; saveBuildSoon(); renderCombat(); renderResults(); return; }
   if(t.id==='f-char'){ build.char=t.value; ui.pick=null; saveBuildSoon(); renderAll(); return; }
-  if(t.id==='f-level2'){ build.level=+t.value; saveBuildSoon(); renderResults(); return; }
+  if(t.id==='f-level2'){ calcState().level=+t.value; saveBuildSoon(); renderCombat(); renderResults(); return; }
   if(t.id==='f-level'){ build.level=+t.value; saveBuildSoon(); renderResults(); return; }
   if(t.id==='w-pick'||t.id==='w-aff'||t.id==='w-two'){ const ws=weaponState();
     if(t.id==='w-pick'){ ws.name=t.value; const w=WBYN[ws.name]; if(!w[5].some(x=>x[0]===ws.aff)) ws.aff=w[5][0][0]; ws.rar=Math.max(ws.rar,w[2]); } else if(t.id==='w-aff') ws.aff=+t.value; else ws.two=t.checked;
