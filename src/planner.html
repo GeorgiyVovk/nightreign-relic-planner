@@ -1319,7 +1319,7 @@ function renderEnemy(){
   const row=(label,val,o={})=>`<div class="tr${o.cls2?' '+o.cls2:''}"${o.t?` title="${esc(o.t)}"`:''}><span class="tl">${o.c?`<i style="--c:var(--${o.c})"></i>`:''}${label}</span><span class="tv ${o.cls||''}">${val}</span></div>`;
   const mul=v=>'×'+(+v.toFixed(3));
   const P=x.parts, colA=[grp('Stance'), row('Stance',e.dummy?'—':int(x.stance))];
-  if(Math.abs(x.stanceTaken-1)>1e-4) colA.push(row('Stance DMG',mul(x.stanceTaken),{t:'Stance damage you deal is multiplied by this'}));
+  colA.push(row('Stance DMG',mul(x.stanceTaken),{t:'Stance damage you deal is multiplied by this (Duo, Trio and Deep of Night lower it)'}));
   colA.push(grp('HP'), row('Base',int(e.hp))); if(!e.dummy) colA.push(row('Enemy scaling',mul(P.scale)));
   if(P.players!==1) colA.push(row(['','Duo','Trio'][st.players-1],mul(P.players)));
   if(st.depth>0) colA.push(row('Depth '+st.depth,mul(P.depth)));
