@@ -289,6 +289,9 @@ select{-webkit-appearance:none;appearance:none;cursor:pointer;border:1px solid v
 .cond.on{border-color:var(--accent);background:var(--accent-soft)}
 .cond.na{opacity:.5}
 .enconds{margin:0 0 16px}
+button.cond{color:inherit;font:inherit;font-size:12px;cursor:pointer}
+.cond .cbox{display:inline-grid;place-items:center;min-width:16px;height:16px;padding:0 2px;border:1px solid var(--line2);border-radius:4px;font-size:10px;font-weight:700;line-height:1}
+.cond.on .cbox{border-color:var(--accent);background:var(--accent);color:var(--accent-fg)}
 .sub.ensub{margin-top:6px}
 .stacks{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
 .stackf{display:flex;align-items:center;gap:6px;font-size:12px;background:var(--surface2);border-radius:7px;padding:4px 8px}
@@ -709,7 +712,7 @@ const ENEMY_DEBUFFS = [
   {k:'vsSleep', n:'Asleep', st:'sleep', m:1.2, t:'+20% damage taken while it sleeps'},
   {k:'vsBreak', n:'Stance broken', m:1.2, t:'+20% damage taken while staggered'},
   {k:'vsCrit', n:'After a crit', m:1.15, t:'Weapons with "Damage boosted after critical hit" leave +15% damage taken for 30 s'},
-  {k:'vsStifle', n:'Soul Stifler', m:1.15, t:"Winged Greathorn's skill: +15% damage taken for 60 s"},
+  {k:'vsStifle', n:'Soul Stifler', m:1.15, max:2, t:"Winged Greathorn's skill: +15% damage taken for 60 s; two can be on the enemy at once. Click again for the second"},
   {k:'vsKaa', n:'Knowledge Above All', m:1.1, el:['mag','holy'], t:"Scepter of the All-Knowing's skill: +10% magic and holy damage taken for 60 s"},
   {k:'vsOil', n:'Oiled', m:1.5, el:['fire'], t:'Oil Pot: +50% fire damage taken for 30 s'},
   {k:'vsWeak', n:'Weakness hit', m:1.06, only:['Caligo','Gladius','Heolstor'], t:'Hit by the element it is weak to: +6% damage taken for 30 s'},
@@ -1262,7 +1265,8 @@ function factors(list, ctx, kind, part, el){
     if(e.startMult && ctx.cond.startWpn && !isSp(part)) out.push({label:e.n,m:e.startMult});
   });
   ENEMY_DEBUFFS.forEach(d=>{ if(!d.m||!condOn(d.k,ctx)||!debuffFits(d,ctx.boss)) return; if(d.el&&!((part==='elem'||part==='spell')&&d.el.includes(el))) return;
-    out.push({label:`${d.n} on the enemy (+${Math.round((d.m-1)*100)}% ${d.el?d.el.map(x=>(ELEMS.find(e=>e[0]===x)||[0,x])[1].toLowerCase()).join(' & ')+' ':''}damage taken)`,m:d.m,post:true}); });
+    const n=d.max?Math.min(d.max,Math.max(1,+ctx.cond[d.k]||0)):1;
+    out.push({label:`${d.n}${n>1?' ×'+n:''} on the enemy (+${Math.round((d.m-1)*100)}% ${d.el?d.el.map(x=>(ELEMS.find(e=>e[0]===x)||[0,x])[1].toLowerCase()).join(' & ')+' ':''}damage taken${n>1?' each':''})`,m:Math.pow(d.m,n),post:true}); });
   return out;
 }
 const prod = (arr,post) => arr.filter(f=>!!f.post===!!post).reduce((p,f)=>p*f.m,1);
@@ -1424,6 +1428,7 @@ function renderEnemy(){
   h+=`</div><p class="enwhere">${e.dummy?'Training dummy: no damage negation, no status resistance, nothing scales its HP':esc(ENEMY_CATS[e.cat])}</p>`;
   { const c=build.combat, b=bossOf(e);
     h+=`<div class="sub ensub">On the enemy</div><div class="conds enconds">${ENEMY_DEBUFFS.filter(d=>debuffFits(d,b)).map(d=>{ const imm=d.st&&immune(b,d.st), on=!!c.cond[d.k]&&!imm;
+      if(d.max){ const n=Math.min(d.max,+c.cond[d.k]||0); return `<button class="cond ${n?'on':''}" data-stk="${d.k}" aria-pressed="${n>0}" title="${esc(d.t)}"><span class="cbox" aria-hidden="true">${n?'×'+n:''}</span>${d.n}</button>`; }
       return `<label class="cond ${on?'on':''} ${imm?'na':''}" title="${esc(imm?`${e.n} is immune`:d.t)}"><input type="checkbox" data-cond="${d.k}" ${on?'checked':''} ${imm?'disabled':''}>${d.n}${imm?' (immune)':''}</label>`; }).join('')}</div>`; }
   const grp=t=>`<div class="tr grp">${t}</div>`;
   const row=(label,val,o={})=>`<div class="tr${o.cls2?' '+o.cls2:''}"${o.t?` title="${esc(o.t)}"`:''}><span class="tl">${o.c?`<i style="--c:var(--${o.c})"></i>`:''}${label}</span><span class="tv ${o.cls||''}">${val}</span></div>`;
@@ -2220,6 +2225,7 @@ document.addEventListener('click', async ev=>{
   if(t.dataset.lc){ const lc=ui.lc||(ui.lc=[]), c=t.dataset.lc, i=lc.indexOf(c); if(i>=0) lc.splice(i,1); else lc.push(c); ui.limit=60; renderLibrary(); return; }
   if(t.dataset.lf){ if(t.dataset.lf==='f'&&!flaggedCount()){ toast('No flagged relics: none of your relics look edited.'); return; } ui.lf=t.dataset.lf; ui.limit=60; renderLibrary(); return; }
   if(t.dataset.plf){ ui.plf=t.dataset.plf; ui.plimit=60; renderSlotPick(); return; }
+  if(t.dataset.stk){ const d=ENDEB[t.dataset.stk], c=build.combat.cond; c[d.k]=((+c[d.k]||0)+1)%((d.max||1)+1); saveBuildSoon(); renderEnemy(); renderResults(); return; }
   if(t.dataset.cr!=null){ const ws=weaponState(); ws.crar[ws.mode]=+t.dataset.cr; saveBuildSoon(); renderCombat(); renderResults(); return; }
   if(t.dataset.wmode){ const ws=weaponState(); if(ws.mode===t.dataset.wmode) return; ws.mode=t.dataset.wmode; saveBuildSoon(); renderCombat(); renderResults(); return; }
   if(t.dataset.page){ if(t.dataset.page===curPage()) return; history.pushState(null,'',location.pathname+location.search+(t.dataset.page==='damage'?'#calculator':'')); showPage(); window.scrollTo(0,0); return; }
