@@ -12,6 +12,7 @@
   --accent:#3E5F94; --accent-fg:#FFFFFF; --accent-soft:#E2E9F4; --bg-glow:#F7F9FC; --glow:0 0 0 1px var(--accent); --hov:rgba(30,45,70,.06);
   --r:#78141A; --b:#1C2D71; --y:#845A1B; --g:#12704A; --w:#7F7C77;
   --good:#2C8549; --warn:#A86E12; --bad:#BC3A2E;
+  --rar0:#6B7180; --rar1:#2D68BE; --rar2:#7B4BC4; --rar3:#8C5F08;
   --good-soft:#E3F2E7; --warn-soft:#F8EEDB; --bad-soft:#F8E3E0;
   --hp:#B5473A; --fp:#4C8AA0; --st:#5A9A4C;
   --d-phys:#7A7F8C; --d-mag:#3E6BD6; --d-fire:#D25E22; --d-ltng:#C9A40E; --d-holy:#A88C4A;
@@ -31,6 +32,7 @@
     --glow:0 0 0 1px var(--accent); --hov:rgba(255,255,255,.06);
     --r:#78141A; --b:#1C2D71; --y:#845A1B; --g:#12704A; --w:#7F7C77;
     --good:#5BAA78; --warn:#C9A04A; --bad:#D6503F;
+    --rar0:#C3C9D4; --rar1:#6FA3EA; --rar2:#B48AE8; --rar3:#E2B24F;
     --good-soft:#13261C; --warn-soft:#2A2312; --bad-soft:#2E1716;
     --d-phys:#80868F; --d-mag:#4672D6; --d-fire:#D0612A; --d-ltng:#C4A01F; --d-holy:#A88E55;
     --s-poison:#469544; --s-rot:#C2512F; --s-bleed:#B02A44; --s-frost:#3F96C2; --s-sleep:#6E5BC2; --s-mad:#C77C22; --s-blight:#6F747F;
@@ -46,6 +48,7 @@
   --glow:0 0 0 1px var(--accent); --hov:rgba(255,255,255,.06);
   --r:#78141A; --b:#1C2D71; --y:#845A1B; --g:#12704A; --w:#7F7C77;
   --good:#5BAA78; --warn:#C9A04A; --bad:#D6503F;
+  --rar0:#C3C9D4; --rar1:#6FA3EA; --rar2:#B48AE8; --rar3:#E2B24F;
   --good-soft:#13261C; --warn-soft:#2A2312; --bad-soft:#2E1716;
   --d-phys:#80868F; --d-mag:#4672D6; --d-fire:#D0612A; --d-ltng:#C4A01F; --d-holy:#A88E55;
   --s-poison:#469544; --s-rot:#C2512F; --s-bleed:#B02A44; --s-frost:#3F96C2; --s-sleep:#6E5BC2; --s-mad:#C77C22; --s-blight:#6F747F;
@@ -191,6 +194,12 @@ select{-webkit-appearance:none;appearance:none;cursor:pointer;border:1px solid v
 .seg button{border:0;background:transparent;min-height:calc(var(--h) - 8px);padding:0 11px;border-radius:var(--r-sm);font-size:13px;color:var(--muted)}
 .seg button:hover{color:var(--fg)}
 .seg button[aria-pressed="true"]{background:var(--accent-soft);color:var(--fg);box-shadow:inset 0 0 0 1px var(--accent)}
+/* rarity buttons in the game's colours: common grey, uncommon blue, rare purple, legendary gold */
+.seg button.rar{color:var(--rc)}
+.seg button.rar[aria-pressed="true"]{color:var(--rc);background:color-mix(in srgb,var(--rc) 14%,transparent);box-shadow:inset 0 0 0 1px var(--rc)}
+.flab{font-size:12px;color:var(--muted)}
+.flab.blk{display:block;margin:0 0 4px}
+.weaponp > .ph{margin-bottom:6px}
 .switch{display:inline-flex;align-items:center;gap:8px;font-size:12px;color:var(--muted)}
 .switch input{width:16px;height:16px;accent-color:var(--accent)}
 
@@ -505,7 +514,7 @@ select:hover{background-image:linear-gradient(to top right,transparent 50%,var(-
     <div class="wgroup">
     <div class="tabs" id="wtabs" role="tablist" aria-label="Attack with"><button role="tab" data-wmode="wep" aria-pressed="true">Weapons</button><button role="tab" data-wmode="s" aria-pressed="false">Sorceries</button><button role="tab" data-wmode="i" aria-pressed="false">Incantations</button></div>
     <section class="panel weaponp">
-      <div class="ph"><h2 id="w-title">Weapon</h2><div class="phr"><label class="tgl" id="w-twol" title="Two-handing counts your Strength ×1.5"><input type="checkbox" id="w-two" role="switch"><span class="knob" aria-hidden="true"></span><span class="tt" id="w-twot">Two-handed</span></label></div></div>
+      <div class="ph"><label class="flab" id="w-title" for="w-pick">Weapon</label><div class="phr"><label class="tgl" id="w-twol" title="Two-handing counts your Strength ×1.5"><input type="checkbox" id="w-two" role="switch"><span class="knob" aria-hidden="true"></span><span class="tt" id="w-twot">Two-handed</span></label></div></div>
       <div id="weapon"></div>
     </section>
     </div>
@@ -1317,7 +1326,7 @@ function renderWeapon(a){
   const host=$('#weapon'); if(!host) return;
   const ws=weaponState(), cs=curSpell();
   document.querySelectorAll('#wtabs button').forEach(b=>{ b.setAttribute('aria-pressed',String(b.dataset.wmode===ws.mode)); b.setAttribute('aria-selected',String(b.dataset.wmode===ws.mode)); });
-  const ttl=$('#w-title'); if(ttl) ttl.textContent=cs?SPELL_KIND[cs.k].one:'Weapon';
+  const ttl=$('#w-title'); if(ttl){ ttl.textContent=cs?'Catalyst':'Weapon'; ttl.htmlFor=cs?'sp-cat':'w-pick'; }
   const two=$('#w-two'), twl=$('#w-twol'), twt=$('#w-twot');
   if(two){ if(cs){ two.checked=cs.ch; two.disabled=!cs.sp[5]; twt.textContent='Charged'; twl.title=cs.sp[5]?'Hold the cast to charge it':`${cs.sp[1]} can't be charged`; }
     else { two.checked=ws.two; two.disabled=false; twt.textContent='Two-handed'; twl.title='Two-handing counts your Strength ×1.5'; } }
@@ -1327,7 +1336,7 @@ function renderWeapon(a){
   const opts=`<optgroup label="Nightfarers">${WEAPONS.filter(x=>x[6]).map(opt).join('')}</optgroup>`+types.map(t=>`<optgroup label="${esc(wtLabel(t))}">${WEAPONS.filter(x=>x[1]===t&&!x[6]).map(opt).join('')}</optgroup>`).join('');
   let h=`<div class="enrow"><select id="w-pick" aria-label="Weapon">${opts}</select>`;
   if(w[5].length>1) h+=`<select id="w-aff" class="waff" aria-label="Affinity">${w[5].map(x=>`<option value="${x[0]}" ${x[0]===v[0]?'selected':''}>${esc(WAFF[x[0]]||'Affinity')}</option>`).join('')}</select>`;
-  h+=`<div class="seg" role="group" aria-label="Rarity">${RARITY.map((n,i)=>i<w[2]?'':`<button data-wr="${i}" aria-pressed="${i===s.rar}">${n}</button>`).join('')}</div></div>`;
+  h+=`<div class="seg" role="group" aria-label="Rarity">${RARITY.map((n,i)=>i<w[2]?'':`<button class="rar" style="--rc:var(--rar${i})" data-wr="${i}" aria-pressed="${i===s.rar}">${n}</button>`).join('')}</div></div>`;
   const grp=t=>`<div class="tr grp">${t}</div>`;
   const row=(label,val,o={})=>`<div class="tr${o.cls2?' '+o.cls2:''}"${o.t?` title="${esc(o.t)}"`:''}><span class="tl">${o.c?`<i style="--c:var(--${o.c})"></i>`:''}${label}</span><span class="tv ${o.cls||''}">${val}</span></div>`;
   const colA=[];
@@ -1356,8 +1365,8 @@ function renderSpell(a,cs){
   const opts=(own.length?`<optgroup label="${esc(cs.cat[0])}">${own.map(id=>so(SPBY[id])).join('')}</optgroup>`:'')+`<optgroup label="Other ${K.many.toLowerCase()}">${SPELLS.filter(x=>x[2]===cs.k&&!own.includes(x[0])).map(so).join('')}</optgroup>`;
   const co=c=>`<option ${c[0]===cs.cat[0]?'selected':''}>${esc(c[0])}</option>`, cats=CATALYSTS.filter(c=>c[1]===cs.k);
   const catOpts=`<optgroup label="Nightfarers">${cats.filter(c=>c[6]).map(co).join('')}</optgroup><optgroup label="${K.tool==='staff'?'Staffs':'Seals'}">${cats.filter(c=>!c[6]).map(co).join('')}</optgroup>`;
-  let h=`<div class="enrow"><select id="sp-cat" aria-label="${K.tool==='staff'?'Staff':'Seal'}">${catOpts}</select><div class="seg" role="group" aria-label="Rarity">${RARITY.map((n,i)=>cs.cat[3][i]==null?'':`<button data-cr="${i}" aria-pressed="${i===cs.rar}">${n}</button>`).join('')}</div></div>`;
-  h+=`<div class="enrow"><select id="sp-pick" aria-label="${K.one}">${opts}</select></div>`;
+  let h=`<div class="enrow"><select id="sp-cat" aria-label="${K.tool==='staff'?'Staff':'Seal'}">${catOpts}</select><div class="seg" role="group" aria-label="Rarity">${RARITY.map((n,i)=>cs.cat[3][i]==null?'':`<button class="rar" style="--rc:var(--rar${i})" data-cr="${i}" aria-pressed="${i===cs.rar}">${n}</button>`).join('')}</div></div>`;
+  h+=`<label class="flab blk" for="sp-pick">${K.one}</label><div class="enrow"><select id="sp-pick">${opts}</select></div>`;
   const grp=t=>`<div class="tr grp">${t}</div>`;
   const row=(label,val,o={})=>`<div class="tr"${o.t?` title="${esc(o.t)}"`:''}><span class="tl">${o.c?`<i style="--c:var(--${o.c})"></i>`:''}${label}</span><span class="tv ${o.cls||''}">${val}</span></div>`;
   const colA=[]; r.parts.forEach((v,i)=>{ if(v>0) colA.push(row(DMGN[i][0],int(v),{c:DMGN[i][1],t:`${cs.cast[i]} spell damage × ${int(r.sc[i])}% ${K.one.toLowerCase()} scaling`})); });
