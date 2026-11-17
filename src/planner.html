@@ -123,6 +123,8 @@ select{-webkit-appearance:none;appearance:none;cursor:pointer;border:1px solid v
 .gem{--c:var(--w);width:15px;height:15px;border-radius:4px;background:var(--c);flex:none;display:inline-block}
 .gem.deep{background:#121218;background:color-mix(in srgb,var(--c) 18%,#0C0C11);box-shadow:inset 0 0 0 3px var(--c)}
 .cfilter{display:flex;align-items:center;gap:4px}
+#libcount{font-variant-numeric:tabular-nums}
+@media (max-width:560px){ .libphr,#libcolors{flex-basis:100%} }
 .cfilter .sep{width:1px;height:18px;background:var(--line2);margin:0 4px}
 .cf{width:30px;height:30px;display:grid;place-items:center;padding:0;border:1px solid var(--line2);border-radius:var(--r-sm);background:var(--surface2)}
 .cf[aria-pressed="true"]{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent);background-color:var(--accent-soft)}
@@ -466,7 +468,7 @@ select:hover{background-image:linear-gradient(to top right,transparent 50%,var(-
     </section>
   </div>
     <section class="panel full">
-    <div class="ph"><h2>My relics</h2><div class="phr"><div class="cfilter" id="libcolors" role="group" aria-label="Filter by color"></div><span class="hint" id="libcount"></span></div></div>
+    <div class="ph"><h2>My relics</h2><div class="phr libphr"><span class="hint" id="libcount"></span><div class="cfilter" id="libcolors" role="group" aria-label="Filter by color"></div></div></div>
     <div class="libbar">
       <div class="btns">
         <button class="btn" data-act="new">+ New relic</button>
