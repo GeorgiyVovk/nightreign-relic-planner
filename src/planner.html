@@ -342,6 +342,9 @@ table.bt{border-collapse:collapse;width:100%;font-size:12px;min-width:600px}
 .trows > .tr.grp:first-child{border-top:0}
 .tl{flex:1;min-width:0;display:flex;align-items:center;gap:7px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .tl i{width:8px;height:8px;border-radius:50%;background:var(--c);flex:none}
+.tr.fold{flex-wrap:wrap;align-content:center;row-gap:0;line-height:1.15}
+.tr.fold .tl{flex:1 0 auto}
+.tr.fold .tv{margin-left:auto}
 .tv{font-family:var(--f-mono);font-variant-numeric:tabular-nums;font-weight:600}
 .td{font-family:var(--f-mono);font-size:11px;width:24px;text-align:right;flex:none}
 .tr select{padding:0 4px;font-family:var(--f-mono);font-size:12px;color:var(--fg)}
@@ -1276,7 +1279,7 @@ function renderWeapon(a){
   if(w[5].length>1) h+=`<select id="w-aff" class="waff" aria-label="Affinity">${w[5].map(x=>`<option value="${x[0]}" ${x[0]===v[0]?'selected':''}>${esc(WAFF[x[0]]||'Affinity')}</option>`).join('')}</select>`;
   h+=`<div class="seg" role="group" aria-label="Rarity">${RARITY.map((n,i)=>i<w[2]?'':`<button data-wr="${i}" aria-pressed="${i===s.rar}">${n}</button>`).join('')}</div></div>`;
   const grp=t=>`<div class="tr grp">${t}</div>`;
-  const row=(label,val,o={})=>`<div class="tr"${o.t?` title="${esc(o.t)}"`:''}><span class="tl">${o.c?`<i style="--c:var(--${o.c})"></i>`:''}${label}</span><span class="tv ${o.cls||''}">${val}</span></div>`;
+  const row=(label,val,o={})=>`<div class="tr${o.cls2?' '+o.cls2:''}"${o.t?` title="${esc(o.t)}"`:''}><span class="tl">${o.c?`<i style="--c:var(--${o.c})"></i>`:''}${label}</span><span class="tv ${o.cls||''}">${val}</span></div>`;
   const colA=[];
   r.parts.forEach((p,i)=>{ if(p.base>0) colA.push(row(DMGN[i][0],`${int(Math.floor(p.base))} + ${int(Math.floor(p.bonus))}`,{c:DMGN[i][1],t:'base + bonus from your stats'})); });
   const pts=[...new Set(w[4])].map(x=>PHYSN[x]).filter(Boolean);
@@ -1312,10 +1315,10 @@ function renderEnemy(){
   if(st.depth>0&&e.mut) h+=tg('en-aura',st.aura,'Red aura',`Mutated in Deep of Night: ×${e.mut} HP and more damage`);
   h+=`</div><p class="enwhere">${e.dummy?'Training dummy: no damage negation, no status resistance, nothing scales its HP':esc(ENEMY_CATS[e.cat])}</p>`;
   const grp=t=>`<div class="tr grp">${t}</div>`;
-  const row=(label,val,o={})=>`<div class="tr"${o.t?` title="${esc(o.t)}"`:''}><span class="tl">${o.c?`<i style="--c:var(--${o.c})"></i>`:''}${label}</span><span class="tv ${o.cls||''}">${val}</span></div>`;
+  const row=(label,val,o={})=>`<div class="tr${o.cls2?' '+o.cls2:''}"${o.t?` title="${esc(o.t)}"`:''}><span class="tl">${o.c?`<i style="--c:var(--${o.c})"></i>`:''}${label}</span><span class="tv ${o.cls||''}">${val}</span></div>`;
   const mul=v=>'×'+(+v.toFixed(3));
   const P=x.parts, colA=[grp('Stance'), row('Stance',e.dummy?'—':int(x.stance))];
-  if(Math.abs(x.stanceTaken-1)>1e-4) colA.push(row('Your stance damage',mul(x.stanceTaken),{t:'Stance damage you deal is multiplied by this'}));
+  if(Math.abs(x.stanceTaken-1)>1e-4) colA.push(row('Stance damage mult',mul(x.stanceTaken),{t:'Stance damage you deal is multiplied by this',cls2:'fold'}));
   colA.push(grp('HP'), row('Base',int(e.hp))); if(!e.dummy) colA.push(row('Enemy scaling',mul(P.scale)));
   if(P.players!==1) colA.push(row(['','Duo','Trio'][st.players-1],mul(P.players)));
   if(st.depth>0) colA.push(row('Depth '+st.depth,mul(P.depth)));
