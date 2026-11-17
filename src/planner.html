@@ -418,7 +418,8 @@ details.more summary{cursor:pointer;font-size:13px;color:var(--accent)}
 @media (prefers-reduced-motion: no-preference){ .slot,.relic,.btn,.cond,.vopt,.seg button,.prof,.colorbtn,.saveitem,.efbtn,select,.vbtn,.search{transition:border-color .15s,background-color .15s,box-shadow .15s,color .15s} }
 /* hover, everywhere (kept last so no variant's own background wins over it): the fill gets a light veil; borders and text stay as they are */
 .btn:hover,.tier:hover,.vbtn:hover,.efbtn:hover,.saveitem:hover,.prof:not([aria-current]):hover,.colorbtn:hover,.seg button:hover,.slot.add:hover,.vopt:hover{background-image:linear-gradient(var(--hov),var(--hov))}
-select:hover{background-image:linear-gradient(to top right,transparent 50%,var(--muted) 50%),linear-gradient(to top left,transparent 50%,var(--muted) 50%),linear-gradient(var(--hov),var(--hov));background-size:5px 6px,5px 6px,100% 100%}
+select:hover{background-image:linear-gradient(to top right,transparent 50%,var(--muted) 50%),linear-gradient(to top left,transparent 50%,var(--muted) 50%),linear-gradient(var(--hov),var(--hov));background-size:5px 6px,5px 6px,100% 100%;background-position:right 17px center,right 12px center,0 0}
+.lvlbox select:hover,.tr select:hover{background-position:right 13px center,right 8px center,0 0}
 .btn:disabled{opacity:.45;cursor:default;pointer-events:none}
 </style>
 
