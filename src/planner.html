@@ -2278,7 +2278,9 @@ document.addEventListener('click', async ev=>{
 document.addEventListener('change', ev=>{
   const t=ev.target;
   if(t.id==='savefile'){ const f=t.files&&t.files[0]; t.value=''; onSaveFile(f); return; }
-  if(t.id==='don2'){ calcState().don=t.checked; saveBuildSoon(); renderCombat(); renderResults(); return; }
+  // Deep of Night on the Build card and the enemy's mode are one setting: keep them in step
+  if(t.id==='don2'){ calcState().don=t.checked; const st=enemyState(); if(t.checked&&st.depth===0) st.depth=1; else if(!t.checked) st.depth=0;
+    saveBuildSoon(); renderEnemy(); renderCombat(); renderResults(); return; }
   if(t.id==='don'){ build.don=t.checked; saveBuildSoon(); renderSlots(); renderCombat(); renderResults(); return; }
   if(t.id==='f-preset'){ normBuild(); const p=build.presets.find(x=>x.id===t.value);
     if(!p){ build.activePreset[build.char]=null; saveBuildSoon(); renderPresets(); return; }
@@ -2302,7 +2304,7 @@ document.addEventListener('change', ev=>{
     else if(o.on&&APP&&APP.overlay){ if(t.id==='ov-key') APP.overlay.hotkey(o.key).catch(e=>toast(`Overlay: ${e}`,'bad')); APP.overlay.config({key:o.key,secs:o.secs}); }
     return; }
   if(t.id==='en-pick'||t.id==='en-mode'||t.id==='en-day2'||t.id==='en-aura'){ const st=enemyState();
-    if(t.id==='en-pick') st.id=+t.value; else if(t.id==='en-mode') st.depth=+t.value; else if(t.id==='en-day2') st.day2=t.checked; else st.aura=t.checked;
+    if(t.id==='en-pick') st.id=+t.value; else if(t.id==='en-mode'){ st.depth=+t.value; calcState().don=st.depth>0; } else if(t.id==='en-day2') st.day2=t.checked; else st.aura=t.checked;
     saveBuildSoon(); renderEnemy(); renderCombat(); renderResults(); return; }
   if(t.dataset.cond){ build.combat.cond[t.dataset.cond]=t.checked; t.closest('.cond').classList.toggle('on',t.checked); saveBuildSoon(); renderResults(); return; }
   if(t.dataset.tal!=null){ build.combat.tal[+t.dataset.tal]=t.value; saveBuildSoon(); renderCombat(); renderResults(); return; }
