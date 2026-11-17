@@ -61,7 +61,9 @@ button,input,select,textarea{font:inherit;color:inherit}
 button{cursor:pointer}
 button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 select,input,textarea{outline:none;-webkit-tap-highlight-color:transparent}
-select:focus,input:focus,textarea:focus,select:focus-visible,input:focus-visible,textarea:focus-visible{outline:none;box-shadow:none}
+select:focus,input:focus,textarea:focus{outline:none;box-shadow:none}
+html.kbd select:focus-visible,input:focus-visible,textarea:focus-visible{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
+.dlg:focus{outline:none}
 select{-webkit-appearance:none;appearance:none;cursor:pointer;border:1px solid var(--line2);background-color:var(--surface2);border-radius:var(--r-md);height:var(--h);padding:0 12px;background-image:linear-gradient(to top right,transparent 50%,var(--muted) 50%),linear-gradient(to top left,transparent 50%,var(--muted) 50%);background-size:5px 6px,5px 6px;background-repeat:no-repeat;background-position:right 17px center,right 12px center;padding-right:34px!important}
 .lvlbox select,.tr select{height:var(--h-sm);background-position:right 13px center,right 8px center;padding-right:26px!important}
 .vopt:focus-visible{outline:none}
@@ -245,7 +247,7 @@ select{-webkit-appearance:none;appearance:none;cursor:pointer;border:1px solid v
 .slist li .l{flex:1;min-width:0;display:flex;align-items:center;gap:7px;color:var(--fg);white-space:nowrap}
 .slist li .l>span{overflow:hidden;text-overflow:ellipsis}
 .slist li.div{border-top:1px solid var(--line);margin:5px 0;padding:0}
-.slist li.grp{font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--faint);padding:6px 0 1px;margin-top:4px;border-top:1px solid var(--line)}
+.slist li.grp{font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);padding:6px 0 1px;margin-top:4px;border-top:1px solid var(--line)}
 .slist li.grp:first-child{border-top:0;margin-top:0;padding-top:0}
 .slist li .l i{width:8px;height:8px;border-radius:50%;background:var(--c);flex:none}
 .slist li .v{font-family:var(--f-mono);font-variant-numeric:tabular-nums;font-weight:600}
@@ -336,7 +338,7 @@ table.bt{border-collapse:collapse;width:100%;font-size:12px;min-width:600px}
 .scol .sh3{margin:0 0 2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .trows{display:grid;grid-template-rows:repeat(var(--n),minmax(26px,31px))}
 .tr{display:flex;align-items:center;gap:8px;min-width:0;font-size:13px}
-.tr.grp{align-items:flex-end;padding-bottom:2px;font-size:10px;font-weight:600;letter-spacing:.09em;text-transform:uppercase;color:var(--faint);border-top:1px solid var(--line)}
+.tr.grp{align-items:flex-end;padding-bottom:2px;font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);border-top:1px solid var(--line)}
 .trows > .tr.grp:first-child{border-top:0}
 .tl{flex:1;min-width:0;display:flex;align-items:center;gap:7px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .tl i{width:8px;height:8px;border-radius:50%;background:var(--c);flex:none}
@@ -413,7 +415,7 @@ table.bt{border-collapse:collapse;width:100%;font-size:12px;min-width:600px}
 .tier.cn{color:var(--bad)}
 .tier[aria-pressed="true"]{background:var(--accent-soft);box-shadow:inset 0 0 0 1px var(--accent)}
 .plist{display:flex;flex-direction:column;max-height:min(56vh,520px);overflow-y:auto;border:1px solid var(--line);border-radius:var(--r-md)}
-.plist .grp{position:sticky;top:0;background:var(--surface2);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);padding:5px 10px;border-bottom:1px solid var(--line);z-index:1}
+.plist .grp{position:sticky;top:0;background:var(--surface2);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);padding:5px 10px;border-bottom:1px solid var(--line);z-index:1}
 .pitem{display:flex;flex-direction:column;gap:1px;text-align:left;border:0;border-bottom:1px solid var(--line);background:var(--surface);padding:8px 12px}
 .pitem:hover,.pitem:focus-visible{background:var(--accent-soft)}
 .pitem b{font-weight:500;font-size:13px}
@@ -1680,8 +1682,34 @@ function renderDamagePage(){
 
 /* ============ OVERLAYS ============ */
 let editing=null, pickerFor=null, pickerTab='all';
-function openOv(html){ const o=$('#ov'); o.innerHTML=html; o.hidden=false; const f=o.querySelector('[data-autofocus]'); if(f) setTimeout(()=>f.focus(),20); }
-function closeOv(){ if(ovlMoving) ovlLock(true); const o=$('#ov'); o.hidden=true; o.innerHTML=''; editing=null; pickerFor=null; if(ui.pick!=null){ ui.pick=null; renderSlots(); } }
+const FOCUSABLE='a[href],button:not([disabled]),input:not([disabled]):not([type=hidden]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])';
+let ovReturn=null, ovFocusSel=null;
+// selects show the focus ring only when you got there with the keyboard (a mouse pick shouldn't leave it lit)
+addEventListener('keydown',e=>{ if(!['Shift','Control','Alt','Meta'].includes(e.key)) document.documentElement.classList.add('kbd'); },true);
+addEventListener('pointerdown',()=>document.documentElement.classList.remove('kbd'),true);
+// a selector that finds the same control again after a re-render
+const focusSel=el=>{ if(!el||el===document.body) return null; if(el.id) return '#'+CSS.escape(el.id);
+  const d=[...el.attributes].filter(a=>a.name.startsWith('data-')&&a.name!=='data-autofocus').map(a=>`[${a.name}="${CSS.escape(a.value)}"]`).join('');
+  return d?el.tagName.toLowerCase()+d:null; };
+function openOv(html){ const o=$('#ov'), fresh=o.hidden;
+  if(fresh){ const a=document.activeElement; ovReturn={el:a,sel:focusSel(a)}; for(const e of document.body.children) if(e!==o&&e.id!=='toast') e.inert=true; }
+  const had=o.contains(document.activeElement), keep=!fresh&&had?focusSel(document.activeElement):null;
+  o.innerHTML=html; o.hidden=false;
+  let f=o.querySelector('[data-focusnow]'); if(!f&&ovFocusSel){ f=o.querySelector(ovFocusSel); if(f) ovFocusSel=null; }
+  f=f||(keep&&o.querySelector(keep))||o.querySelector('[data-autofocus]');
+  if(!f&&(fresh||had)){ f=o.querySelector('[role="dialog"]'); if(f&&!f.hasAttribute('tabindex')) f.tabIndex=-1; }
+  if(f) setTimeout(()=>{ if(o.contains(f)) f.focus(); },20); }
+function trapOv(ev){ const o=$('#ov'); const f=[...o.querySelectorAll(FOCUSABLE)].filter(e=>e.getClientRects().length); if(!f.length){ ev.preventDefault(); return; }
+  const a=document.activeElement, first=f[0], last=f[f.length-1];
+  if(!o.contains(a)||a.getAttribute('role')==='dialog'){ ev.preventDefault(); (ev.shiftKey?last:first).focus(); }
+  else if(ev.shiftKey&&a===first){ ev.preventDefault(); last.focus(); }
+  else if(!ev.shiftKey&&a===last){ ev.preventDefault(); first.focus(); } }
+function closeOv(){ if(ovlMoving) ovlLock(true); const o=$('#ov'); o.hidden=true; o.innerHTML=''; editing=null; pickerFor=null; if(ui.pick!=null){ ui.pick=null; renderSlots(); }
+  for(const e of document.body.children) e.inert=false;
+  const r=ovReturn; ovReturn=null; ovFocusSel=null;
+  if(r) setTimeout(()=>{ if(!o.hidden) return; const a=document.activeElement; if(a&&a!==document.body&&a.isConnected) return;
+    const ok=e=>e&&e.isConnected&&e.getClientRects().length&&!e.disabled; const el=ok(r.el)?r.el:(r.sel?document.querySelector(r.sel):null);
+    if(ok(el)) el.focus({preventScroll:true}); },0); }
 function openEditor(r){ editing = r ? JSON.parse(JSON.stringify(r)) : {id:null,name:'',color:'R',deep:false,effects:[],curses:[]}; if(!editing.curses) editing.curses=[];
   let j=0; editing.ca=editing.effects.map(e=>editing.deep&&NEEDC.has(e)?(editing.curses[j++]||null):null); renderEditor(); }
 function renderEditor(msg){
@@ -1696,7 +1724,7 @@ function renderEditor(msg){
     <div class="colors">${COLORS.map(([k,n])=>`<button class="colorbtn" data-act="setcolor" data-v="${k}" aria-pressed="${e.color===k}" title="${esc(n)}">${gem(k,e.deep)}${esc(n.split(' · ')[1].replace(/^./,c=>c.toUpperCase()))}</button>`).join('')}</div>
     <div class="field"><label>Effects (up to 3)</label><div style="display:flex;flex-direction:column;gap:6px">${Array.from({length:nE},(_,i)=>efRow(e.effects,i,false)+(e.deep&&e.effects[i]&&NEEDC.has(e.effects[i])?curseRow(i):'')).join('')}</div></div>
     ${e._del
-      ? `<div class="dh"><span class="msg bad">Delete this relic? It also leaves any slot it's in.</span><div class="btns"><button class="btn" data-act="delno">Keep</button><button class="btn danger" data-act="delyes">Delete</button></div></div>`
+      ? `<div class="dh"><span class="msg bad">Delete this relic? It also leaves any slot it's in.</span><div class="btns"><button class="btn" data-act="delno" data-focusnow>Keep</button><button class="btn danger" data-act="delyes">Delete</button></div></div>`
       : `<div class="dh"><div>${e.id?`<button class="btn sm danger" data-act="delask">Delete relic</button>`:''}</div><div class="btns"><button class="btn" data-act="close">Cancel</button><button class="btn pri" data-act="saverelic">Save</button></div></div>`}
   </div>`);
 }
@@ -2098,7 +2126,7 @@ document.addEventListener('click', async ev=>{
   if(a==='close'){ closeOv(); return; }
   if(a==='setdeep'){ editing.name=$('#ed-name').value; editing.deep=t.dataset.v==='1'; const keep=editing.effects.map(e=>{const x=EBY[e]; return !!x&&(editing.deep?x.deep!=='n':x.deep!=='d');}); editing.effects=editing.effects.filter((_,k)=>keep[k]); editing.ca=editing.ca.filter((_,k)=>keep[k]); if(!editing.deep) editing.ca=editing.effects.map(()=>null); renderEditor(); return; }
   if(a==='setcolor'){ editing.name=$('#ed-name').value; editing.color=t.dataset.v; renderEditor(); return; }
-  if(a==='pickfx'){ openPicker(t.dataset.kind,+t.dataset.i); return; }
+  if(a==='pickfx'){ ovFocusSel=focusSel(t); openPicker(t.dataset.kind,+t.dataset.i); return; }
   if(a==='clrfx'){ editing.name=$('#ed-name').value; const i=+t.dataset.i; if(t.dataset.kind==='c') editing.ca[i]=null; else { editing.effects.splice(i,1); editing.ca.splice(i,1); } renderEditor(); return; }
   if(a==='choosefx'){ const i=pickerFor.i, id=t.dataset.id;
     if(pickerFor.kind==='c') editing.ca[i]=id;
@@ -2110,7 +2138,7 @@ document.addEventListener('click', async ev=>{
     editing.curses=editing.deep?editing.effects.map((x,k)=>NEEDC.has(x)?editing.ca[k]:null).filter(Boolean):[];
     const isNew=!editing.id; delete editing._del; const err=await saveRelic(editing); if(err){ toast(err,'bad'); return; } closeOv(); renderAll(); toast(isNew?'Relic added.':'Relic saved.'); return; }
   if(a==='delask'){ editing.name=$('#ed-name').value; editing._del=true; renderEditor(); return; }
-  if(a==='delno'){ editing._del=false; renderEditor(); return; }
+  if(a==='delno'){ editing._del=false; ovFocusSel='button[data-act="delask"]'; renderEditor(); return; }
   if(a==='delyes'){ const id=editing.id; closeOv(); await deleteRelic(id); renderAll(); toast('Relic deleted.'); return; }
   if(a==='io'){ openIO(); return; }
   if(a==='copyio'){ const ta=$('#iotext'); try{ await navigator.clipboard.writeText(ta.value); toast('Copied to clipboard.'); }catch(e){ ta.focus(); ta.select(); toast('Press Ctrl+C to copy the selected text.'); } return; }
@@ -2184,6 +2212,7 @@ document.addEventListener('input', ev=>{
 });
 function placeRelic(id){ if(ui.pick==null) return; const s=curSlots(); s.forEach((x,i)=>{ if(x===id) s[i]=null; }); s[ui.pick]=id; ui.pick=null; closeOv(); saveBuildSoon(); renderSlots(); renderLibrary(); renderCombat(); renderResults(); }
 document.addEventListener('keydown', ev=>{
+  if(ev.key==='Tab' && !$('#ov').hidden){ trapOv(ev); return; }
   if(ev.key==='Enter' && ev.target.id==='pr-name'){ ev.preventDefault(); const b=document.querySelector('#ov .btn.pri'); if(b) b.click(); return; }
   if((ev.key==='Enter'||ev.key===' ') && ev.target.dataset && ev.target.dataset.place){ ev.preventDefault(); placeRelic(ev.target.dataset.place); return; }
   if(!$('#vlist').hidden){
