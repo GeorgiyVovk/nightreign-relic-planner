@@ -29,7 +29,7 @@ npm run app:build    # build the Windows installer
 ## Pages
 
 - **Relics**: your Nightfarer, vessel, slots, stats and relic library.
-- **Damage calculator** (`#calculator`): pick a preset (or keep the relics slotted on the Relics page), a weapon and an enemy, and see attack power, status buildup, damage per hit and hits to kill.
+- **Damage calculator** (`#calculator`): pick a preset (or keep the relics slotted on the Relics page), a weapon, sorcery or incantation (charged or not) and an enemy, and see attack power, status buildup, damage per hit and hits to kill.
 
 ## Overlay (desktop app)
 
@@ -41,6 +41,6 @@ The version lives in `package.json` (the app reads it from there). Each push to 
 
 ## Credits
 
-Not affiliated with FromSoftware or Bandai Namco. Save reading is ported from [Relic Vault](https://github.com/tonydavis629/nightreign-relic-vault) and [RelicBrowser](https://github.com/metinc/nightreign-relic-browser) (both MIT). See [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md). Weapons (attack power, scaling, status buildup), enemies (HP, negation, resistances, stance and how they scale), character stats, vessel colors and effect values come from or are checked against the game's 1.03.5 regulation, read with [Smithbox](https://github.com/vawser/Smithbox)'s param definitions.
+Not affiliated with FromSoftware or Bandai Namco. Save reading is ported from [Relic Vault](https://github.com/tonydavis629/nightreign-relic-vault) and [RelicBrowser](https://github.com/metinc/nightreign-relic-browser) (both MIT). See [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md). Weapons (attack power, scaling, status buildup), spells (damage per hit, charged casts, staff and seal scaling; spell names from Elden Ring's rows with the same IDs), enemies (HP, negation, resistances, stance and how they scale), character stats, vessel colors and effect values come from or are checked against the game's 1.03.5 regulation, read with [Smithbox](https://github.com/vawser/Smithbox)'s param definitions.
 
 MIT License.
