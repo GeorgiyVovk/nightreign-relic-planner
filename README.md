@@ -29,7 +29,7 @@ npm run app:build    # build the Windows installer
 ## Pages
 
 - **Relics**: your Nightfarer, vessel, slots, stats and relic library.
-- **Damage** (`#damage`): pick a preset (or keep the relics slotted on the Relics page), a weapon and an enemy, and see attack power, status buildup, damage per hit and hits to kill.
+- **Damage calculator** (`#calculator`): pick a preset (or keep the relics slotted on the Relics page), a weapon and an enemy, and see attack power, status buildup, damage per hit and hits to kill.
 
 ## Overlay (desktop app)
 

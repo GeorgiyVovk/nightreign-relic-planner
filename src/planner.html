@@ -71,7 +71,12 @@ select{-webkit-appearance:none;appearance:none;cursor:pointer;border:1px solid v
 .top .wrap{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px 20px}
 .top h1{font-family:var(--f-display);font-weight:600;font-size:30px;letter-spacing:.01em;margin:0;line-height:1.1}
 .tleft{display:flex;align-items:center;gap:12px;flex-wrap:wrap;min-width:0}
-.pages{padding-block:2px 12px}
+.pages{padding-block:0 16px}
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--line)}
+.tabs button{border:0;background:transparent;padding:10px 16px 9px;font-size:14px;font-weight:600;color:var(--muted);border-bottom:2px solid transparent;margin-bottom:-1px;border-radius:var(--r-sm) var(--r-sm) 0 0}
+.tabs button:hover{color:var(--fg);background-image:linear-gradient(var(--hov),var(--hov))}
+.tabs button[aria-pressed="true"]{color:var(--fg);border-bottom-color:var(--accent)}
+.tabs button:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
 .dsum{margin:10px 0 0!important}.dsum b{color:var(--fg);font-weight:600}
 .tright{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 .ovrow{display:grid;grid-template-columns:1fr 1fr;gap:12px}
@@ -424,7 +429,7 @@ select:hover{background-image:linear-gradient(to top right,transparent 50%,var(-
   </div>
 </header>
 
-<nav class="wrap pages" aria-label="Pages"><div class="seg" id="pages"><button data-page="relics" aria-pressed="true">Relics</button><button data-page="damage" aria-pressed="false">Damage</button></div></nav>
+<nav class="wrap pages" aria-label="Pages"><div class="tabs" id="pages" role="tablist"><button role="tab" data-page="relics" aria-pressed="true">Relics</button><button role="tab" data-page="damage" aria-pressed="false">Damage calculator</button></div></nav>
 
 <main class="wrap layout" id="pg-relics">
   <div class="col">
@@ -498,7 +503,7 @@ select:hover{background-image:linear-gradient(to top right,transparent 50%,var(-
     </section>
     <section class="panel damagep">
       <div class="ph"><h2>Damage</h2><span class="hint" id="dmgfor"></span></div>
-      <div id="damage"></div>
+      <div id="dmgout"></div>
     </section>
     <section class="panel">
       <div class="ph"><h2>What's active</h2></div>
@@ -1221,12 +1226,14 @@ function withCalcBuild(fn){
 }
 
 /* ============ PAGES ============ */
-// Relics (the planner) and Damage (the calculator); the page lives in the address as #damage
-const curPage = () => (location.hash==='#damage'?'damage':'relics');
-function showPage(){ const pg=curPage();
+// Relics (the planner) and Damage (the calculator): two sheets of one page, switched by tabs.
+// The calculator lives in the address as #calculator (no element has that id, so the browser never scrolls to it).
+const curPage = () => (location.hash==='#calculator'||location.hash==='#damage'?'damage':'relics');
+function showPage(){ if(location.hash==='#damage') history.replaceState(null,'',location.pathname+location.search+'#calculator');
+  const pg=curPage();
   ['relics','damage'].forEach(k=>{ const m=$('#pg-'+k); if(m) m.hidden=k!==pg; });
-  document.querySelectorAll('#pages button').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.page===pg))); }
-window.addEventListener('hashchange',showPage);
+  document.querySelectorAll('#pages button').forEach(b=>{ b.setAttribute('aria-pressed',String(b.dataset.page===pg)); b.setAttribute('aria-selected',String(b.dataset.page===pg)); }); }
+window.addEventListener('hashchange',showPage); window.addEventListener('popstate',showPage);
 
 /* ============ RENDER ============ */
 function renderAll(){ showPage(); renderStore(); renderPickers(); renderSlots(); renderLibrary(); renderEnemy(); renderCombat(); renderResults(); }
@@ -1629,7 +1636,7 @@ function renderDamagePage(){
   d+=`<div class="lines">${kinds.map(([k,n])=>{ const x=hitOn(list,boss,k); return `<div class="line"><span>${n}</span><b>${x.base>0?fx(x.dmg/x.base):'—'}</b><span>buffs from relics</span></div>`; }).join('')}<div class="line"><span>Spells (${(ELEMS.find(e=>e[0]===c.spellEl)||[])[1]})</span><b>${fx(spellM)}</b><span>buffs from relics</span></div></div>`;
   d+=`<ul class="brk">${merged.length?merged.map(f=>`<li><span title="${esc(f.label)}">${esc(f.label)} <span class="msg">· ${f.p}</span></span><span class="num ${f.m<1?'dn':''}">${fx(f.m)}</span></li>`).join(''):'<li><span>No damage bonus active right now</span><span></span></li>'}<li class="tot"><span>${PTYPES[pi][1]} vs ${esc(boss.n)}: ${negP===0?'no resistance':negP<0?`weak ${-negP}%`:`resists ${negP}%`}</span><span class="num">${fx(1-negP/100)}</span></li></ul>`;
   $('#dmgfor').textContent = `${boss.n} · ${['solo','duo','trio'][enemyState().players-1]}`;
-  $('#damage').innerHTML=d;
+  $('#dmgout').innerHTML=d;
 
   // nightlords table
   const sc=[['base','No status',{vsPoison:false,vsRot:false,vsFrost:false,nearPR:false}],['poison','Poison',{vsPoison:true,vsRot:false,vsFrost:false,nearPR:true}],['rot','Rot',{vsPoison:false,vsRot:true,vsFrost:false,nearPR:true}],['frost','Frost',{vsPoison:false,vsRot:false,vsFrost:true,nearPR:false}],['pf','Poison + frost',{vsPoison:true,vsRot:false,vsFrost:true,nearPR:true}]];
@@ -2041,7 +2048,7 @@ document.addEventListener('click', async ev=>{
   if(t.dataset.vessel){ build.vessel[build.char]=t.dataset.vessel; ui.pick=null; toggleVlist(false); $('#vbtn').focus(); saveBuildSoon(); renderAll(); return; }
   if(t.dataset.lf){ if(t.dataset.lf==='f'&&!flaggedCount()){ toast('No flagged relics: none of your relics look edited.'); return; } ui.lf=t.dataset.lf; ui.limit=60; renderLibrary(); return; }
   if(t.dataset.plf){ ui.plf=t.dataset.plf; ui.plimit=60; renderSlotPick(); return; }
-  if(t.dataset.page){ location.hash=t.dataset.page==='damage'?'damage':''; if(t.dataset.page!=='damage') history.replaceState(null,'',location.pathname+location.search); showPage(); return; }
+  if(t.dataset.page){ if(t.dataset.page===curPage()) return; history.pushState(null,'',location.pathname+location.search+(t.dataset.page==='damage'?'#calculator':'')); showPage(); window.scrollTo(0,0); return; }
   if(t.dataset.wr){ weaponState().rar=+t.dataset.wr; saveBuildSoon(); renderCombat(); renderResults(); return; }
   if(t.dataset.enp){ enemyState().players=+t.dataset.enp; saveBuildSoon(); renderEnemy(); renderCombat(); renderResults(); return; }
   if(t.dataset.hp){ build.combat.hp=t.dataset.hp; saveBuildSoon(); renderCombat(); renderResults(); return; }
