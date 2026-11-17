@@ -79,7 +79,8 @@ select{-webkit-appearance:none;appearance:none;cursor:pointer;border:1px solid v
 .tabs button:hover{color:var(--fg);background-image:linear-gradient(var(--hov),var(--hov))}
 .tabs button[aria-pressed="true"]{color:var(--fg);border-bottom-color:var(--accent)}
 .tabs button:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
-.dsum{margin:10px 0 0!important}.dsum b{color:var(--fg);font-weight:600}
+.dsum{margin:10px 0 0!important}
+.form.tals{margin-top:14px;grid-template-columns:repeat(auto-fit,minmax(220px,1fr))}.dsum b{color:var(--fg);font-weight:600}
 .tright{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 .ovrow{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .savepill{display:inline-flex;align-items:center;gap:7px;height:30px;border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:0 12px;font-size:12px;color:var(--muted)}
@@ -342,9 +343,6 @@ table.bt{border-collapse:collapse;width:100%;font-size:12px;min-width:600px}
 .trows > .tr.grp:first-child{border-top:0}
 .tl{flex:1;min-width:0;display:flex;align-items:center;gap:7px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .tl i{width:8px;height:8px;border-radius:50%;background:var(--c);flex:none}
-.tr.fold{flex-wrap:wrap;align-content:center;row-gap:0;line-height:1.15}
-.tr.fold .tl{flex:1 0 auto}
-.tr.fold .tv{margin-left:auto}
 .tv{font-family:var(--f-mono);font-variant-numeric:tabular-nums;font-weight:600}
 .td{font-family:var(--f-mono);font-size:11px;width:24px;text-align:right;flex:none}
 .tr select{padding:0 4px;font-family:var(--f-mono);font-size:12px;color:var(--fg)}
@@ -499,13 +497,14 @@ select:hover{background-image:linear-gradient(to top right,transparent 50%,var(-
       <div class="ph"><h2>Build</h2><div class="phr"><label class="tgl" title="Count deep relics, as in Deep of Night"><input type="checkbox" id="don2" role="switch"><span class="knob" aria-hidden="true"></span><span class="tt">Deep of Night</span></label><div class="lvlbox"><label for="f-level2">Level</label><select id="f-level2"></select></div></div></div>
       <div class="pickrow"><select id="d-preset" aria-label="Preset"></select></div>
       <p class="enwhere" id="d-sum"></p>
+      <div class="form tals" id="d-tals"></div>
     </section>
     <section class="panel weaponp">
       <div class="ph"><h2>Weapon</h2><div class="phr"><label class="tgl" title="Two-handing counts your Strength ×1.5"><input type="checkbox" id="w-two" role="switch"><span class="knob" aria-hidden="true"></span><span class="tt">Two-handed</span></label></div></div>
       <div id="weapon"></div>
     </section>
     <section class="panel">
-      <div class="ph"><h2>Fight</h2><span class="hint">talismans and what is going on</span></div>
+      <div class="ph"><h2>Fight</h2><span class="hint">damage type and what is going on</span></div>
       <div id="combat"></div>
     </section>
   </div>
@@ -876,9 +875,9 @@ T('magscorp','Magic Scorpion Charm',{dmg:[D('mag',1.15)],neg:{phys:-.10}});
 T('holyscorp','Sacred Scorpion Charm',{dmg:[D('holy',1.15)],neg:{phys:-.10}});
 T('graven','Graven-School Talisman',{dmg:[D('spell',1.11)],note:'sorceries'});
 T('faithful',"Faithful's Canvas Talisman",{dmg:[D('spell',1.11)],note:'incantations'});
-T('claw','Claw Talisman',{note:'jump attacks ×1.12'});
-T('twinblade','Twinblade Talisman',{note:'chain finisher ×1.15'});
-T('spear','Spear Talisman',{note:'counter hits ×1.2'});
+T('claw','Claw Talisman',{note:'jump attacks ×1.12',xdmg:true});
+T('twinblade','Twinblade Talisman',{note:'chain finisher ×1.15',xdmg:true});
+T('spear','Spear Talisman',{note:'counter hits ×1.2',xdmg:true});
 T('crimson','Crimson Amber Medallion',{hpM:1.12});
 T('cerulean','Cerulean Amber Medallion',{fpM:1.12});
 T('viridian','Viridian Amber Medallion',{stM:1.12});
@@ -921,6 +920,8 @@ T('silverscarab','Silver Scarab',{note:'+40 discovery'});
 T('avarice','Symbol of Avarice',{note:'runes +20%, −10 HP/s'});
 T('twig','Sacrificial Twig',{note:'no level loss on death'});
 TAL.sort((a,b)=>a.n.localeCompare(b.n));
+// the calculator offers only talismans that add damage in some way
+const TAL_DMG=TAL.filter(t=>t.dmg||t.xdmg);
 
 /* ---- fixed game relics (colors and effects from Eldenpedia) ---- */
 const PRESETS = [
@@ -1318,7 +1319,7 @@ function renderEnemy(){
   const row=(label,val,o={})=>`<div class="tr${o.cls2?' '+o.cls2:''}"${o.t?` title="${esc(o.t)}"`:''}><span class="tl">${o.c?`<i style="--c:var(--${o.c})"></i>`:''}${label}</span><span class="tv ${o.cls||''}">${val}</span></div>`;
   const mul=v=>'×'+(+v.toFixed(3));
   const P=x.parts, colA=[grp('Stance'), row('Stance',e.dummy?'—':int(x.stance))];
-  if(Math.abs(x.stanceTaken-1)>1e-4) colA.push(row('Stance damage mult',mul(x.stanceTaken),{t:'Stance damage you deal is multiplied by this',cls2:'fold'}));
+  if(Math.abs(x.stanceTaken-1)>1e-4) colA.push(row('Stance DMG',mul(x.stanceTaken),{t:'Stance damage you deal is multiplied by this'}));
   colA.push(grp('HP'), row('Base',int(e.hp))); if(!e.dummy) colA.push(row('Enemy scaling',mul(P.scale)));
   if(P.players!==1) colA.push(row(['','Duo','Trio'][st.players-1],mul(P.players)));
   if(st.depth>0) colA.push(row('Depth '+st.depth,mul(P.depth)));
@@ -1580,6 +1581,15 @@ function renderSlotPick(){
   b.innerHTML=`<div class="relics">${shown.map(r=>relicCard(r,true,unowned&&unowned.has(r.id))).join('')}</div>`+(rs.length>shown.length?`<div class="libmore"><button class="btn" data-act="pmore">Show more · ${rs.length-shown.length} left</button></div>`:'');
 }
 function renderCombat(){ withCalcBuild(renderCombat0); }
+// talisman picks live at the bottom of the Build card; a saved pick that adds no damage is dropped
+function renderTals(c=build.combat){
+  const host=$('#d-tals'); if(!host) return;
+  let drop=false; c.tal=(c.tal||['','']).map(v=>{ if(v&&!TAL_DMG.some(t=>t.id===v)){ drop=true; return ''; } return v||''; }); if(drop) saveBuildSoon();
+  if(!host.children.length){
+    const talOpt=v=>`<option value="">— none —</option>`+TAL_DMG.map(t=>`<option value="${t.id}" ${t.id===v?'selected':''}>${esc(t.n)} — ${esc(describe(t).replace(" · doesn't stack with itself",''))}</option>`).join('');
+    host.innerHTML=[0,1].map(i=>`<div class="field"><label for="f-tal${i}">Talisman ${i+1}</label><select id="f-tal${i}" data-tal="${i}">${talOpt(c.tal[i])}</select></div>`).join('');
+  } else [0,1].forEach(i=>{ const s=$('#f-tal'+i); if(s&&s.value!==c.tal[i]) s.value=c.tal[i]; });
+}
 function renderCombat0(){
   const c=build.combat; const {list}=collect();
   const used=new Set(['vsPoison','vsRot','vsFrost']);
@@ -1590,13 +1600,11 @@ function renderCombat0(){
   const stacks=list.filter(a=>a.ok&&a.eff.stack).map(a=>`<label class="stackf">${esc(a.eff.stack.label)} <input type="number" min="0" max="${a.eff.stack.max||30}" data-stack="${a.eff.stack.k}" value="${+c.stacks[a.eff.stack.k]||0}"></label>`).join('');
   const opt=(arr,v)=>arr.map(([k,n])=>`<option value="${k}" ${k===v?'selected':''}>${esc(n)}</option>`).join('');
   const cw=curWeapon(), pts=[...new Set(cw.w[4])], ptOpt=pts.map((x,i)=>`<option value="${cw.w[4].indexOf(x)}" ${cw.w[4].indexOf(x)===(cw.s.pt||0)||(pts.length===1)?'selected':''}>${esc(PHYSN[x])}</option>`).join('');
-  const talOpt=v=>`<option value="">— none —</option>`+TAL.map(t=>`<option value="${t.id}" ${t.id===v?'selected':''}>${esc(t.n)} — ${esc(describe(t).replace(" · doesn't stack with itself",''))}</option>`).join('');
+  renderTals(c);
   $('#combat').innerHTML = `
   <div class="form">
     <div class="field"><label for="f-wpt">Physical damage</label><select id="f-wpt">${ptOpt}</select></div>
     <div class="field"><label for="f-spell">Spell element</label><select id="f-spell" data-c="spellEl">${opt(ELEMS.map(p=>[p[0],p[1]]),c.spellEl)}</select></div>
-    <div class="field"><label for="f-tal0">Talisman 1</label><select id="f-tal0" data-tal="0">${talOpt(c.tal[0])}</select></div>
-    <div class="field"><label for="f-tal1">Talisman 2</label><select id="f-tal1" data-tal="1">${talOpt(c.tal[1])}</select></div>
   </div>
   <div class="sub">Right now</div>
   <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:8px"><span class="msg">Your HP</span><div class="seg">${[['full','100%'],['high','85–99%'],['low','20–85%'],['crit','< 20%']].map(([k,n])=>`<button data-hp="${k}" aria-pressed="${c.hp===k}">${n}</button>`).join('')}</div></div>
