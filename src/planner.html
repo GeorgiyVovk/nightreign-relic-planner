@@ -104,7 +104,10 @@ select{-webkit-appearance:none;appearance:none;cursor:pointer;border:1px solid v
 .layout{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px 20px;align-items:stretch;padding-block:6px 40px}
 .layout > .full{grid-column:1 / -1}
 .col > .grow{flex:1}
-@media (max-width:1000px){.layout{grid-template-columns:minmax(0,1fr)}}
+@media (max-width:1000px){.layout{grid-template-columns:minmax(0,1fr)}
+  /* one column: the result comes right after the weapon, the enemy's full sheet after it */
+  #pg-damage > .col{display:contents}
+  #pg-damage .buildp{order:1} #pg-damage .wgroup{order:2} #pg-damage .damagep{order:3} #pg-damage .fightp{order:4} #pg-damage .enemyp{order:5} #pg-damage .activep{order:6} #pg-damage > .col > [hidden]{order:7}}
 .col{display:flex;flex-direction:column;gap:16px;min-width:0}
 
 .panel{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-lg);padding:16px;min-width:0}
@@ -198,7 +201,12 @@ select{-webkit-appearance:none;appearance:none;cursor:pointer;border:1px solid v
 .seg button.rar{color:var(--rc)}
 .seg button.rar[aria-pressed="true"]{color:var(--rc);background:color-mix(in srgb,var(--rc) 14%,transparent);box-shadow:inset 0 0 0 1px var(--rc)}
 .flab{font-size:12px;color:var(--muted)}
-.flab.blk{display:block;margin:0 0 4px}
+.wrow{display:flex;gap:10px;margin-bottom:10px}
+.wrow select{flex:1 1 auto;min-width:0;font-weight:600}
+.form.wsub{margin-bottom:18px}
+.form.wsub.one{grid-template-columns:minmax(0,1fr)}
+.wsub select.main{font-weight:600}
+#en-mode{font-family:var(--f-body)}
 .weaponp > .ph{margin-bottom:6px}
 .switch{display:inline-flex;align-items:center;gap:8px;font-size:12px;color:var(--muted)}
 .switch input{width:16px;height:16px;accent-color:var(--accent)}
@@ -361,7 +369,6 @@ table.bt{border-collapse:collapse;width:100%;font-size:12px;min-width:600px}
 
 .enrow{display:flex;align-items:center;gap:10px 18px;flex-wrap:wrap;margin-bottom:16px}
 .enrow select{flex:1 1 240px;min-width:0;font-weight:600}
-.waff{flex:0 1 160px!important}
 .sbar.ar{--c:var(--accent)}
 .enwhere{margin:-8px 0 14px;font-size:12px;color:var(--muted)}
 @media (max-width:560px){.sbar.blank{display:none}}
@@ -518,8 +525,8 @@ select:hover{background-image:linear-gradient(to top right,transparent 50%,var(-
       <div id="weapon"></div>
     </section>
     </div>
-    <section class="panel">
-      <div class="ph"><h2>Fight</h2><span class="hint">damage type and what is going on</span></div>
+    <section class="panel fightp">
+      <div class="ph"><h2>Fight</h2><span class="hint">what is going on</span></div>
       <div id="combat"></div>
     </section>
   </div>
@@ -532,7 +539,7 @@ select:hover{background-image:linear-gradient(to top right,transparent 50%,var(-
       <div class="ph"><h2>Damage</h2><span class="hint" id="dmgfor"></span></div>
       <div id="dmgout"></div>
     </section>
-    <section class="panel">
+    <section class="panel activep">
       <div class="ph"><h2>What's active</h2></div>
       <div id="effects"></div>
       <p class="foot">Multipliers multiply, as in FromSoft games. Damage per hit is approximate until it's checked in game: attack × buffs → enemy defense (80% gets through, measured in game) → enemy negation → frostbite. A weapon hit is a plain hit at 100% motion value, about a one-handed light attack; a spell is its first hit. Weapons, spells and enemies come from the game's 1.03.5 data. Other numbers: <a href="https://docs.google.com/spreadsheets/d/1meXOw4jR1hh7YXVMeijWwSDIXnCw6Tk4hTZPq2qvyK4/htmlview" target="_blank" rel="noopener">Nightreign Useful Info</a> v1.03.2 and the Hexinton cheat table.</p>
@@ -1334,15 +1341,15 @@ function renderWeapon(a){
   const cw=curWeapon(), {w,v,s}=cw, r=weaponAR(cw,a);
   const types=[...new Set(WEAPONS.filter(x=>!x[6]).map(x=>x[1]))], opt=x=>`<option ${x[0]===w[0]?'selected':''}>${esc(x[0])}</option>`;
   const opts=`<optgroup label="Nightfarers">${WEAPONS.filter(x=>x[6]).map(opt).join('')}</optgroup>`+types.map(t=>`<optgroup label="${esc(wtLabel(t))}">${WEAPONS.filter(x=>x[1]===t&&!x[6]).map(opt).join('')}</optgroup>`).join('');
-  let h=`<div class="enrow"><select id="w-pick" aria-label="Weapon">${opts}</select>`;
-  if(w[5].length>1) h+=`<select id="w-aff" class="waff" aria-label="Affinity">${w[5].map(x=>`<option value="${x[0]}" ${x[0]===v[0]?'selected':''}>${esc(WAFF[x[0]]||'Affinity')}</option>`).join('')}</select>`;
-  h+=`<div class="seg" role="group" aria-label="Rarity">${RARITY.map((n,i)=>i<w[2]?'':`<button class="rar" style="--rc:var(--rar${i})" data-wr="${i}" aria-pressed="${i===s.rar}">${n}</button>`).join('')}</div></div>`;
+  let h=`<div class="wrow"><select id="w-pick">${opts}</select></div>`;
+  h+=`<div class="wrow"><div class="seg" role="group" aria-label="Rarity">${RARITY.map((n,i)=>i<w[2]?'':`<button class="rar" style="--rc:var(--rar${i})" data-wr="${i}" aria-pressed="${i===s.rar}">${n}</button>`).join('')}</div></div>`;
+  const ptU=[...new Set(w[4])], ptOpt=ptU.map(x=>`<option value="${w[4].indexOf(x)}" ${w[4].indexOf(x)===(s.pt||0)||ptU.length===1?'selected':''}>${esc(PHYSN[x])}</option>`).join('');
+  h+=`<div class="form wsub">${w[5].length>1?`<div class="field"><label for="w-aff">Affinity</label><select id="w-aff">${w[5].map(x=>`<option value="${x[0]}" ${x[0]===v[0]?'selected':''}>${esc(WAFF[x[0]]||'Affinity')}</option>`).join('')}</select></div>`:''}`
+    +`<div class="field"><label for="f-wpt">Physical damage</label><select id="f-wpt" ${ptU.length<2?'disabled':''}>${ptOpt}</select></div></div>`;
   const grp=t=>`<div class="tr grp">${t}</div>`;
   const row=(label,val,o={})=>`<div class="tr${o.cls2?' '+o.cls2:''}"${o.t?` title="${esc(o.t)}"`:''}><span class="tl">${o.c?`<i style="--c:var(--${o.c})"></i>`:''}${label}</span><span class="tv ${o.cls||''}">${val}</span></div>`;
   const colA=[];
   r.parts.forEach((p,i)=>{ if(p.base>0) colA.push(row(DMGN[i][0],`${int(Math.floor(p.base))} + ${int(Math.floor(p.bonus))}`,{c:DMGN[i][1],t:'base + bonus from your stats'})); });
-  const pts=[...new Set(w[4])].map(x=>PHYSN[x]).filter(Boolean);
-  if(r.parts[0].base>0) colA.push(grp('Physical type'), row(pts.join(' / '),'',{t:'The weapon\'s physical damage types; pick the one for your attack under Fight'}));
   const colB=[];
   STAT5.forEach((k,i)=>{ const c=r.coef[i]; if(c>0) colB.push(row(STATN[k],`${grade(c)} · ${int(c)}`,{t:`Your ${STATN[k]}: ${r.stats[i]}${k==='str'&&r.stats[i]!==a.str?` (${a.str} ×1.5 two-handed)`:''}`})); });
   if(!colB.length) colB.push(row('None','—',{cls:'faint'}));
@@ -1365,8 +1372,9 @@ function renderSpell(a,cs){
   const opts=(own.length?`<optgroup label="${esc(cs.cat[0])}">${own.map(id=>so(SPBY[id])).join('')}</optgroup>`:'')+`<optgroup label="Other ${K.many.toLowerCase()}">${SPELLS.filter(x=>x[2]===cs.k&&!own.includes(x[0])).map(so).join('')}</optgroup>`;
   const co=c=>`<option ${c[0]===cs.cat[0]?'selected':''}>${esc(c[0])}</option>`, cats=CATALYSTS.filter(c=>c[1]===cs.k);
   const catOpts=`<optgroup label="Nightfarers">${cats.filter(c=>c[6]).map(co).join('')}</optgroup><optgroup label="${K.tool==='staff'?'Staffs':'Seals'}">${cats.filter(c=>!c[6]).map(co).join('')}</optgroup>`;
-  let h=`<div class="enrow"><select id="sp-cat" aria-label="${K.tool==='staff'?'Staff':'Seal'}">${catOpts}</select><div class="seg" role="group" aria-label="Rarity">${RARITY.map((n,i)=>cs.cat[3][i]==null?'':`<button class="rar" style="--rc:var(--rar${i})" data-cr="${i}" aria-pressed="${i===cs.rar}">${n}</button>`).join('')}</div></div>`;
-  h+=`<label class="flab blk" for="sp-pick">${K.one}</label><div class="enrow"><select id="sp-pick">${opts}</select></div>`;
+  let h=`<div class="wrow"><select id="sp-cat">${catOpts}</select></div>`;
+  h+=`<div class="wrow"><div class="seg" role="group" aria-label="Rarity">${RARITY.map((n,i)=>cs.cat[3][i]==null?'':`<button class="rar" style="--rc:var(--rar${i})" data-cr="${i}" aria-pressed="${i===cs.rar}">${n}</button>`).join('')}</div></div>`;
+  h+=`<div class="form wsub one"><div class="field"><label for="sp-pick">${K.one}</label><select id="sp-pick" class="main">${opts}</select></div></div>`;
   const grp=t=>`<div class="tr grp">${t}</div>`;
   const row=(label,val,o={})=>`<div class="tr"${o.t?` title="${esc(o.t)}"`:''}><span class="tl">${o.c?`<i style="--c:var(--${o.c})"></i>`:''}${label}</span><span class="tv ${o.cls||''}">${val}</span></div>`;
   const colA=[]; r.parts.forEach((v,i)=>{ if(v>0) colA.push(row(DMGN[i][0],int(v),{c:DMGN[i][1],t:`${cs.cast[i]} spell damage × ${int(r.sc[i])}% ${K.one.toLowerCase()} scaling`})); });
@@ -1400,11 +1408,11 @@ function renderEnemy(){
   const mul=v=>'×'+(+v.toFixed(3));
   const P=x.parts, colA=[grp('Stance'), row('Stance',e.dummy?'—':int(x.stance))];
   colA.push(row('Stance DMG',mul(x.stanceTaken),{t:'Stance damage you deal is multiplied by this (Duo, Trio and Deep of Night lower it)'}));
-  colA.push(grp('HP'), row('Base',int(e.hp))); if(!e.dummy) colA.push(row('Enemy scaling',mul(P.scale)));
-  if(P.players!==1) colA.push(row(['','Duo','Trio'][st.players-1],mul(P.players)));
-  if(st.depth>0) colA.push(row('Depth '+st.depth,mul(P.depth)));
-  if(P.aura!==1) colA.push(row('Red aura',mul(P.aura)));
-  if(P.d2!==1) colA.push(row('Day 2',mul(P.d2)));
+  if(!e.dummy){ colA.push(grp('HP'), row('Base',int(e.hp)), row('Enemy scaling',mul(P.scale)));
+    if(P.players!==1) colA.push(row(['','Duo','Trio'][st.players-1],mul(P.players)));
+    if(st.depth>0) colA.push(row('Depth '+st.depth,mul(P.depth)));
+    if(P.aura!==1) colA.push(row('Red aura',mul(P.aura)));
+    if(P.d2!==1) colA.push(row('Day 2',mul(P.d2))); }
   const pct=v=>v===0?'0%':(v<0?'−':'')+Math.abs(v)+'%';
   const negRow=([N,c],i)=>{ const v=x.neg[i]; return row(N,pct(v),{c,cls:v<0?'weak':v>=30?'resist':'',t:v<0?`Takes ${-v}% more ${N.toLowerCase()} damage`:v>0?`Takes ${v}% less ${N.toLowerCase()} damage`:''}); };
   const colB=[grp('Physical'),...ENEG.slice(0,4).map((r,i)=>negRow(r,i)),grp('Elemental'),...ENEG.slice(4).map((r,i)=>negRow(r,i+4))];
@@ -1679,12 +1687,8 @@ function renderCombat0(){
     return `<label class="cond ${c.cond[k]?'on':''} ${imm?'na':''}"><input type="checkbox" data-cond="${k}" ${c.cond[k]?'checked':''}>${COND[k]}${imm?' (immune)':''}</label>`; }).join('');
   const stacks=list.filter(a=>a.ok&&a.eff.stack).map(a=>`<label class="stackf">${esc(a.eff.stack.label)} <input type="number" min="0" max="${a.eff.stack.max||30}" data-stack="${a.eff.stack.k}" value="${+c.stacks[a.eff.stack.k]||0}"></label>`).join('');
   const opt=(arr,v)=>arr.map(([k,n])=>`<option value="${k}" ${k===v?'selected':''}>${esc(n)}</option>`).join('');
-  const cw=curWeapon(), pts=[...new Set(cw.w[4])], ptOpt=pts.map((x,i)=>`<option value="${cw.w[4].indexOf(x)}" ${cw.w[4].indexOf(x)===(cw.s.pt||0)||(pts.length===1)?'selected':''}>${esc(PHYSN[x])}</option>`).join('');
   renderTals(c);
   $('#combat').innerHTML = `
-  <div class="form">
-    ${isSpellMode()?'':`<div class="field"><label for="f-wpt">Physical damage</label><select id="f-wpt">${ptOpt}</select></div>`}
-  </div>
   <div class="sub">Right now</div>
   <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:8px"><span class="msg">Your HP</span><div class="seg">${[['full','100%'],['high','85–99%'],['low','20–85%'],['crit','< 20%']].map(([k,n])=>`<button data-hp="${k}" aria-pressed="${c.hp===k}">${n}</button>`).join('')}</div></div>
   <div class="conds">${condHtml}</div>
@@ -1731,6 +1735,7 @@ function renderResults(){
   withCalcBuild(renderDamagePage);
 }
 function renderDamagePage(){
+  { const cs=calcState(), es=enemyState(); if(cs.don!==(es.depth>0)) es.depth=cs.don?Math.max(1,es.depth):0; }
   const {list,warn}=collect(); const s=calcStats(list); const c=build.combat; const boss=bossById(c.boss);
   renderWeapon(s.a); renderDmgBuild(s.a);
 
@@ -1747,12 +1752,13 @@ function renderDamagePage(){
   const mainEl=spm&&WH.els.length&&WH.els.reduce((m,e)=>e[1]>m[1]?e:m,WH.els[0])[1]>WH.arP?WH.els.reduce((m,e)=>e[1]>m[1]?e:m,WH.els[0]):null;
   const vsI=mainEl?(ELEMS.find(p=>p[0]===mainEl[0])||ELEMS[0])[2]:pi, vsN=mainEl?(ELEMS.find(p=>p[0]===mainEl[0])||ELEMS[0])[1]:PTYPES[pi][1], negV=boss.neg[vsI];
   let d=`<div class="hero"><div class="big">${r.dmg>0?int(r.dmg):'—'}<small> per hit</small></div><div class="meta"><span>${spm?`Buffs on the ${cs.ch?'charged ':''}${SPELL_KIND[cs.k].one.toLowerCase()} <b>${f2(mainEl?elTot:physTot)}</b>`:`Buffs on the physical part <b>${f2(physTot)}</b>`}</span><span>Vs. a bare hit, defense included <b>${r.base>0?f2(r.dmg/r.base):'—'}</b></span><span>${hp?`${esc(boss.n)} HP <b>${int(hp)}</b> → <b>${hits??'—'}</b> hits`:'HP unknown for this boss'}</span></div></div>`;
-  if(spm){ let ln=`<div class="line"><span>${esc(cs.sp[1])}${cs.ch?' · charged':''}</span><b>${r.base>0?fx(r.dmg/r.base):'—'}</b><span>buffs from relics</span></div>`;
+  const one=x=>!(x.base>0)||Math.abs(x.dmg/x.base-1)<1e-6;   // tiles only when relics change something
+  if(spm){ let ln=one(r)?'':`<div class="line"><span>${esc(cs.sp[1])}${cs.ch?' · charged':''}</span><b>${fx(r.dmg/r.base)}</b><span>buffs from relics</span></div>`;
     if(cs.sp[5]){ const o=withSpellCharge(!cs.ch,()=>hitOn(list,boss,'normal')); ln+=`<div class="line"><span>${cs.ch?'Not charged':'Charged'}</span><b>${o.dmg>0?int(o.dmg):'—'}</b><span>per hit</span></div>`; }
-    d+=`<div class="lines">${ln}</div>`; }
-  else d+=`<div class="lines">${kinds.map(([k,n])=>{ const x=hitOn(list,boss,k); return `<div class="line"><span>${n}</span><b>${x.base>0?fx(x.dmg/x.base):'—'}</b><span>buffs from relics</span></div>`; }).join('')}</div>`;
-  d+=`<ul class="brk">${merged.length?merged.map(f=>`<li><span title="${esc(f.label)}">${esc(f.label)} <span class="msg">· ${f.p}</span></span><span class="num ${f.m<1?'dn':''}">${fx(f.m)}</span></li>`).join(''):'<li><span>No damage bonus active right now</span><span></span></li>'}<li class="tot"><span>${vsN} vs ${esc(boss.n)}: ${negV===0?'no resistance':negV<0?`weak ${-negV}%`:`resists ${negV}%`}</span><span class="num">${fx(1-negV/100)}</span></li></ul>`;
-  $('#dmgfor').textContent = `${boss.n} · ${['solo','duo','trio'][enemyState().players-1]}`;
+    if(ln) d+=`<div class="lines">${ln}</div>`; }
+  else { const xs=kinds.map(([k,n])=>[n,hitOn(list,boss,k)]); if(!xs.every(([,x])=>one(x))) d+=`<div class="lines">${xs.map(([n,x])=>`<div class="line"><span>${n}</span><b>${x.base>0?fx(x.dmg/x.base):'—'}</b><span>buffs from relics</span></div>`).join('')}</div>`; }
+  d+=`<ul class="brk">${merged.length?merged.map(f=>`<li><span title="${esc(f.label)}">${esc(f.label)} <span class="msg">· ${f.p}</span></span><span class="num ${f.m<1?'dn':''}">${fx(f.m)}</span></li>`).join(''):'<li><span>No buffs</span><span></span></li>'}<li class="tot"><span>${vsN} vs ${esc(boss.n)}: ${negV===0?'no resistance':negV<0?`weak ${-negV}%`:`resists ${negV}%`}</span><span class="num">${fx(1-negV/100)}</span></li></ul>`;
+  $('#dmgfor').textContent = curEnemy().dummy ? boss.n : `${boss.n} · ${['solo','duo','trio'][enemyState().players-1]}`;
   $('#dmgout').innerHTML=d;
 
   // nightlords table
