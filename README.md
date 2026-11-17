@@ -26,6 +26,11 @@ npm run app:build    # build the Windows installer
 
 `src/planner.html` is the whole planner. `src-tauri/` is the desktop shell: it lists, reads and watches save files and nothing else.
 
+## Pages
+
+- **Relics**: your Nightfarer, vessel, slots, stats and relic library.
+- **Damage** (`#damage`): pick a preset (or keep the relics slotted on the Relics page), a weapon and an enemy, and see attack power, status buildup, damage per hit and hits to kill.
+
 ## Overlay (desktop app)
 
 The app can show a small timer on top of the game (Overlay button in the header). Press your hotkey (F8 by default) when the Dreglord relic's stacks icon disappears: it counts down 25 seconds and tells you when to sit. The overlay is a separate click-through window that only listens to the hotkey; it never reads or touches the game. It shows over the game in borderless or windowed mode.
