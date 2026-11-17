@@ -746,7 +746,7 @@ const ENEMY_DEBUFFS = [
 const ENDEB = Object.fromEntries(ENEMY_DEBUFFS.map(d=>[d.k,d]));
 const debuffFits = (d,boss) => !d.only || (!!boss && d.only.includes(boss.n));
 const CONDSHORT = {vsPoison:'vs poisoned',vsRot:'vs rotting',vsFrost:'vs frostbitten',nearPR:'poison/rot nearby',nearBleed:'blood loss nearby',nearSleep:'sleep nearby',nearMad:'madness nearby',hitTaken:'after being hit',grease:'with grease',succ:'on chains',ult:'during ult',skill:'during skill',swap:'after a swap',buff:'with a self buff',startWpn:'starting weapon',three:'with 3+ of the type',full:'at full HP',below85:'below 85% HP',low20:'below 20% HP'};
-const TLABEL = {all:'damage',phys:'phys',elem:'affinity',mag:'magic',fire:'fire',ltng:'lightning',holy:'holy',skill:'weapon skill',crit:'crits',gc:'guard counters',charged:'charged',spell:'spells',ranged:'bows',wt:'weapon type'};
+const TLABEL = {all:'damage',melee:'weapon hits',welem:'weapon affinity',phys:'phys',elem:'affinity',mag:'magic',fire:'fire',ltng:'lightning',holy:'holy',skill:'weapon skill',crit:'crits',gc:'guard counters',charged:'charged',spell:'spells',ranged:'bows',wt:'weapon type'};
 const GROUPS = {stat:'Stats',start:'Start',explore:'Exploration',off:'Attack',def:'Defense',regen:'Recovery & utility',char:'Nightfarer',curse:'Curses (deep)'};
 
 /* ---- effect catalog ---- */
@@ -780,10 +780,10 @@ add({id:'discount2',n:'Huge rune discount for shop purchases while on expedition
 add({id:'treasure',n:'Treasure marked upon map',g:'explore',st:false,note:'treasure shown on the map'});
 add({id:'hittaken',n:'Taking attacks improves attack power',g:'off',dmg:[D('all',1.15)],cond:'hitTaken',st:false,note:'10 s after you get hit, not on block'});
 [[0,'',1.04],[1,' +1',1.05],[2,' +2',1.06]].forEach(([i,s,m])=>add({id:'phys'+i,n:'Physical Attack Up'+s,g:'off',dmg:[D('phys',m)]}));
-add({id:'melee',n:'Improved Melee Attack Power',g:'off',dmg:[D('all',1.06)]});
+add({id:'melee',n:'Improved Melee Attack Power',g:'off',dmg:[D('melee',1.06)],note:'weapon hits, not spells'});
 add({id:'skillap',n:'Improved Skill Attack Power',g:'off',dmg:[D('skill',1.15)]});
 [['mag','Magic'],['fire','Fire'],['ltng','Lightning'],['holy','Holy']].forEach(([k,N])=>{[[0,'',1.045],[1,' +1',1.055],[2,' +2',1.065]].forEach(([i,s,m])=>add({id:k+i,n:`${N} Attack Power Up${s}`,g:'off',dmg:[D(k,m)]}));});
-add({id:'addedaff',n:'Boosts Attack Power of Added Affinity Attacks',g:'off',dmg:[D('elem',1.1)],note:'elemental part of the weapon, not spells'});
+add({id:'addedaff',n:'Boosts Attack Power of Added Affinity Attacks',g:'off',dmg:[D('welem',1.1)],note:'elemental part of the weapon, not spells'});
 add({id:'swapap',n:'Switching Weapons Boosts Attack Power',g:'off',dmg:[D('phys',1.1)],cond:'swap',st:false,note:'10 s after a swap'});
 add({id:'swapaff',n:'Switching Weapons Adds an Affinity Attack',g:'off',st:false,note:'+12 element for 10 s after a swap'});
 add({id:'succap',n:'Successive Attacks Boost Attack Power',g:'off',dmg:[D('all',1.09)],cond:'succ',st:false,note:'up to ×1.09 on a long chain'});
@@ -1212,7 +1212,7 @@ const gem = (c,deep,lg) => `<i class="gem c-${c} ${deep?'deep':''} ${c==='W'?'an
 function pips(code){ return code.split('').map((c,i)=>(i===3?'<span class="sep"></span>':'')+gem(c,i>=3)).join(''); }
 
 const pct = m => { const v=Math.round((m-1)*1000)/10; return (v>0?'+':v<0?'−':'')+Math.abs(v)+'%'; };
-const DLABEL = {all:'damage',phys:'physical attack',elem:'affinity attack',mag:'magic attack',fire:'fire attack',ltng:'lightning attack',holy:'holy attack',skill:'skill damage',crit:'critical hit damage',gc:'guard counter damage',charged:'charged attack damage',spell:'spell damage',ranged:'bow damage'};
+const DLABEL = {all:'damage',melee:'melee attack',welem:'added affinity attack',phys:'physical attack',elem:'affinity attack',mag:'magic attack',fire:'fire attack',ltng:'lightning attack',holy:'holy attack',skill:'skill damage',crit:'critical hit damage',gc:'guard counter damage',charged:'charged attack damage',spell:'spell damage',ranged:'bow damage'};
 function describe(e){
   const p=[];
   if(e.stat){ Object.entries(statAt(e)).forEach(([k,v])=>p.push(`${v>0?'+':''}${v} ${ABBR[k]||k}`)); if(e.s1&&curLevel()<12) p.push(`(at level ${curLevel()}, full from 12)`); }
@@ -1275,6 +1275,9 @@ function applies(t,kind,part,el,ctx){
     case 'spell': return isSp(part);
     case 'ranged': return !isSp(part) && isBow(ctx.wtype);
     case 'wt': return !isSp(part);
+    case 'melee': return !isSp(part);   // weapon hits only: Duchess level 15 with two Improved Melee Attack Power, Added Affinity and three
+                                         // Improved Affinity +2 hits for 180 with Glintstone Arc (136 bare): only the affinity ones count on spells
+    case 'welem': return part==='elem';  // the weapon's own elemental part, not spells
   }
   return false;
 }
