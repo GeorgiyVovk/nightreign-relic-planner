@@ -288,6 +288,8 @@ select{-webkit-appearance:none;appearance:none;cursor:pointer;border:1px solid v
 .cond input{accent-color:var(--accent);margin:0}
 .cond.on{border-color:var(--accent);background:var(--accent-soft)}
 .cond.na{opacity:.5}
+.enconds{margin:0 0 16px}
+.sub.ensub{margin-top:6px}
 .stacks{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
 .stackf{display:flex;align-items:center;gap:6px;font-size:12px;background:var(--surface2);border-radius:7px;padding:4px 8px}
 .stackf input{width:52px;border:1px solid var(--line2);background:var(--surface);border-radius:5px;padding:3px 5px;text-align:center}
@@ -699,6 +701,21 @@ const COND = {
   hitTaken:'Just got hit', grease:'Grease active', succ:'Attack chain', ult:'Ult active', skill:'Skill active',
   swap:'Just swapped weapon', buff:'Self buff incantation', startWpn:'Using starting weapon', three:'3+ of one weapon type'
 };
+// What's on the enemy: statuses and debuffs that raise the damage it takes (damage cut rates of their SpEffects in the 1.03.5 regulation)
+const ENEMY_DEBUFFS = [
+  {k:'vsPoison', n:'Poisoned', st:'poison', t:'Counts for relics that boost attacks on poisoned enemies'},
+  {k:'vsRot', n:'Scarlet rot', st:'rot', t:'Counts for relics that boost attacks on rotting enemies'},
+  {k:'vsFrost', n:'Frostbite', st:'frost', m:1.15, t:'+15% damage taken for 30 s'},
+  {k:'vsSleep', n:'Asleep', st:'sleep', m:1.2, t:'+20% damage taken while it sleeps'},
+  {k:'vsBreak', n:'Stance broken', m:1.2, t:'+20% damage taken while staggered'},
+  {k:'vsCrit', n:'After a crit', m:1.15, t:'Weapons with "Damage boosted after critical hit" leave +15% damage taken for 30 s'},
+  {k:'vsStifle', n:'Soul Stifler', m:1.15, t:"Winged Greathorn's skill: +15% damage taken for 60 s"},
+  {k:'vsKaa', n:'Knowledge Above All', m:1.1, el:['mag','holy'], t:"Scepter of the All-Knowing's skill: +10% magic and holy damage taken for 60 s"},
+  {k:'vsOil', n:'Oiled', m:1.5, el:['fire'], t:'Oil Pot: +50% fire damage taken for 30 s'},
+  {k:'vsWeak', n:'Weakness hit', m:1.06, only:['Caligo','Gladius','Heolstor'], t:'Hit by the element it is weak to: +6% damage taken for 30 s'},
+];
+const ENDEB = Object.fromEntries(ENEMY_DEBUFFS.map(d=>[d.k,d]));
+const debuffFits = (d,boss) => !d.only || (!!boss && d.only.includes(boss.n));
 const CONDSHORT = {vsPoison:'vs poisoned',vsRot:'vs rotting',vsFrost:'vs frostbitten',nearPR:'poison/rot nearby',nearBleed:'blood loss nearby',nearSleep:'sleep nearby',nearMad:'madness nearby',hitTaken:'after being hit',grease:'with grease',succ:'on chains',ult:'during ult',skill:'during skill',swap:'after a swap',buff:'with a self buff',startWpn:'starting weapon',three:'with 3+ of the type',full:'at full HP',below85:'below 85% HP',low20:'below 20% HP'};
 const TLABEL = {all:'damage',phys:'phys',elem:'affinity',mag:'magic',fire:'fire',ltng:'lightning',holy:'holy',skill:'weapon skill',crit:'crits',gc:'guard counters',charged:'charged',spell:'spells',ranged:'bows',wt:'weapon type'};
 const GROUPS = {stat:'Stats',start:'Start',explore:'Exploration',off:'Attack',def:'Defense',regen:'Recovery & utility',char:'Nightfarer',curse:'Curses (deep)'};
@@ -1211,6 +1228,7 @@ function condOn(c, ctx){
   if(c==='vsPoison') return !!ctx.cond.vsPoison && !immune(ctx.boss,'poison');
   if(c==='vsRot') return !!ctx.cond.vsRot && !immune(ctx.boss,'rot');
   if(c==='vsFrost') return !!ctx.cond.vsFrost && !immune(ctx.boss,'frost');
+  if(c==='vsSleep') return !!ctx.cond.vsSleep && !immune(ctx.boss,'sleep');
   return !!ctx.cond[c];
 }
 function ctxFrom(over){ const c=build.combat, sm=isSpellMode(); return {cond:Object.assign({},c.cond,(over&&over.cond)||{}),hp:c.hp,wtype:sm?'catalyst':curWeapon().w[1],sk:sm?weaponState().mode:null,stacks:c.stacks||{},boss:(over&&over.boss)||bossById(c.boss)}; }
@@ -1243,7 +1261,8 @@ function factors(list, ctx, kind, part, el){
     if(e.stack && e.stack.t==='all'){ let s=+ctx.stacks[e.stack.k]||0; if(e.stack.max) s=Math.min(s,e.stack.max); if(s>0) out.push({label:`${e.n} (${s})`,m:e.stack.vals?e.stack.vals[Math.min(s,e.stack.vals.length)-1]:Math.pow(e.stack.m,s)}); }
     if(e.startMult && ctx.cond.startWpn && !isSp(part)) out.push({label:e.n,m:e.startMult});
   });
-  if(condOn('vsFrost',ctx)) out.push({label:'Frostbite on the enemy (+20% damage taken)',m:1.2,post:true});
+  ENEMY_DEBUFFS.forEach(d=>{ if(!d.m||!condOn(d.k,ctx)||!debuffFits(d,ctx.boss)) return; if(d.el&&!((part==='elem'||part==='spell')&&d.el.includes(el))) return;
+    out.push({label:`${d.n} on the enemy (+${Math.round((d.m-1)*100)}% ${d.el?d.el.map(x=>(ELEMS.find(e=>e[0]===x)||[0,x])[1].toLowerCase()).join(' & ')+' ':''}damage taken)`,m:d.m,post:true}); });
   return out;
 }
 const prod = (arr,post) => arr.filter(f=>!!f.post===!!post).reduce((p,f)=>p*f.m,1);
@@ -1403,6 +1422,9 @@ function renderEnemy(){
   if(e.d2!==1) h+=tg('en-day2',st.day2,'Day 2',`On the second day this enemy has ×${e.d2} HP`);
   if(st.depth>0&&e.mut) h+=tg('en-aura',st.aura,'Red aura',`Mutated in Deep of Night: ×${e.mut} HP and more damage`);
   h+=`</div><p class="enwhere">${e.dummy?'Training dummy: no damage negation, no status resistance, nothing scales its HP':esc(ENEMY_CATS[e.cat])}</p>`;
+  { const c=build.combat, b=bossOf(e);
+    h+=`<div class="sub ensub">On the enemy</div><div class="conds enconds">${ENEMY_DEBUFFS.filter(d=>debuffFits(d,b)).map(d=>{ const imm=d.st&&immune(b,d.st), on=!!c.cond[d.k]&&!imm;
+      return `<label class="cond ${on?'on':''} ${imm?'na':''}" title="${esc(imm?`${e.n} is immune`:d.t)}"><input type="checkbox" data-cond="${d.k}" ${on?'checked':''} ${imm?'disabled':''}>${d.n}${imm?' (immune)':''}</label>`; }).join('')}</div>`; }
   const grp=t=>`<div class="tr grp">${t}</div>`;
   const row=(label,val,o={})=>`<div class="tr${o.cls2?' '+o.cls2:''}"${o.t?` title="${esc(o.t)}"`:''}><span class="tl">${o.c?`<i style="--c:var(--${o.c})"></i>`:''}${label}</span><span class="tv ${o.cls||''}">${val}</span></div>`;
   const mul=v=>'×'+(+v.toFixed(3));
@@ -1680,8 +1702,8 @@ function renderTals(c=build.combat){
 }
 function renderCombat0(){
   const c=build.combat; const {list}=collect();
-  const used=new Set(['vsPoison','vsRot','vsFrost']);
-  list.forEach(a=>{ if(a.ok&&a.eff.cond&&COND[a.eff.cond]) used.add(a.eff.cond); if(a.ok&&a.eff.startMult) used.add('startWpn'); if(a.ok&&a.eff.three) used.add('three'); });
+  const used=new Set();
+  list.forEach(a=>{ if(a.ok&&a.eff.cond&&COND[a.eff.cond]&&!ENDEB[a.eff.cond]) used.add(a.eff.cond); if(a.ok&&a.eff.startMult) used.add('startWpn'); if(a.ok&&a.eff.three) used.add('three'); });
   const boss=bossById(c.boss);
   const condHtml=[...used].map(k=>{ const imm=k==='vsPoison'?immune(boss,'poison'):k==='vsRot'?immune(boss,'rot'):k==='vsFrost'?immune(boss,'frost'):false;
     return `<label class="cond ${c.cond[k]?'on':''} ${imm?'na':''}"><input type="checkbox" data-cond="${k}" ${c.cond[k]?'checked':''}>${COND[k]}${imm?' (immune)':''}</label>`; }).join('');
