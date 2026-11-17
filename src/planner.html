@@ -75,6 +75,8 @@ select{-webkit-appearance:none;appearance:none;cursor:pointer;border:1px solid v
 .tleft{display:flex;align-items:center;gap:12px;flex-wrap:wrap;min-width:0}
 .pages{padding-block:0 16px}
 .tabs{display:flex;gap:4px;border-bottom:1px solid var(--line)}
+.wgroup{display:flex;flex-direction:column;gap:12px}
+.tgl input:disabled ~ *{opacity:.45;cursor:not-allowed}
 .tabs button{border:0;background:transparent;padding:10px 16px 9px;font-size:14px;font-weight:600;color:var(--muted);border-bottom:2px solid transparent;margin-bottom:-1px;border-radius:var(--r-sm) var(--r-sm) 0 0}
 .tabs button:hover{color:var(--fg);background-image:linear-gradient(var(--hov),var(--hov))}
 .tabs button[aria-pressed="true"]{color:var(--fg);border-bottom-color:var(--accent)}
@@ -355,6 +357,7 @@ table.bt{border-collapse:collapse;width:100%;font-size:12px;min-width:600px}
 .enwhere{margin:-8px 0 14px;font-size:12px;color:var(--muted)}
 @media (max-width:560px){.sbar.blank{display:none}}
 .tv.faint{color:var(--faint);font-weight:500;font-family:var(--f-body)}
+.tv.txt{font-weight:500;font-family:var(--f-body)}
 .cb{display:inline-flex;align-items:center;gap:4px;flex:none;font-size:11px;font-weight:600;color:var(--bad);white-space:nowrap;cursor:help}
 .cb i{width:11px;height:11px;background:currentColor;-webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath fill-rule='evenodd' d='M8 1C4.1 1 1.5 3.6 1.5 7c0 2 1 3.5 2.5 4.3V14h2.2v-1.6h.9V14h1.8v-1.6h.9V14H12v-2.7c1.5-.8 2.5-2.3 2.5-4.3C14.5 3.6 11.9 1 8 1zM5.6 9.2a1.6 1.6 0 1 1 0-3.2 1.6 1.6 0 0 1 0 3.2zm4.8 0a1.6 1.6 0 1 1 0-3.2 1.6 1.6 0 0 1 0 3.2z'/%3E%3C/svg%3E") center/contain no-repeat;mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath fill-rule='evenodd' d='M8 1C4.1 1 1.5 3.6 1.5 7c0 2 1 3.5 2.5 4.3V14h2.2v-1.6h.9V14h1.8v-1.6h.9V14H12v-2.7c1.5-.8 2.5-2.3 2.5-4.3C14.5 3.6 11.9 1 8 1zM5.6 9.2a1.6 1.6 0 1 1 0-3.2 1.6 1.6 0 0 1 0 3.2zm4.8 0a1.6 1.6 0 1 1 0-3.2 1.6 1.6 0 0 1 0 3.2z'/%3E%3C/svg%3E") center/contain no-repeat}
 .curses{margin-top:14px}
@@ -499,10 +502,13 @@ select:hover{background-image:linear-gradient(to top right,transparent 50%,var(-
       <p class="enwhere" id="d-sum"></p>
       <div class="form tals" id="d-tals"></div>
     </section>
+    <div class="wgroup">
+    <div class="tabs" id="wtabs" role="tablist" aria-label="Attack with"><button role="tab" data-wmode="wep" aria-pressed="true">Weapons</button><button role="tab" data-wmode="s" aria-pressed="false">Sorceries</button><button role="tab" data-wmode="i" aria-pressed="false">Incantations</button></div>
     <section class="panel weaponp">
-      <div class="ph"><h2>Weapon</h2><div class="phr"><label class="tgl" title="Two-handing counts your Strength ×1.5"><input type="checkbox" id="w-two" role="switch"><span class="knob" aria-hidden="true"></span><span class="tt">Two-handed</span></label></div></div>
+      <div class="ph"><h2 id="w-title">Weapon</h2><div class="phr"><label class="tgl" id="w-twol" title="Two-handing counts your Strength ×1.5"><input type="checkbox" id="w-two" role="switch"><span class="knob" aria-hidden="true"></span><span class="tt" id="w-twot">Two-handed</span></label></div></div>
       <div id="weapon"></div>
     </section>
+    </div>
     <section class="panel">
       <div class="ph"><h2>Fight</h2><span class="hint">damage type and what is going on</span></div>
       <div id="combat"></div>
@@ -603,6 +609,16 @@ const WREINF={"0":[1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,0,0,0],"1":[1.23,1.23
 const WCURVE={"0":[[0.0,24.0,49.0,74.0,99.0],[0.0,96.0,168.0,216.0,240.0],[1.0,1.0,1.0,1.0,1.0]],"4":[[0.0,99.0,99.0,99.0,99.0],[0.0,300.0,300.0,300.0,300.0],[1.0,1.0,1.0,1.0,1.0]],"5":[[0.0,99.0,99.0,99.0,99.0],[0.0,300.0,300.0,300.0,300.0],[1.0,1.0,1.0,1.0,1.0]],"6":[[0.0,10.0,99.0,99.0,99.0],[0.0,0.0,160.0,160.0,160.0],[1.0,1.0,1.0,1.0,1.0]]};
 // status SpEffects: [status, buildup]
 const WSTATUS={"1939":["poison",30],"105000":["bleed",30],"105001":["bleed",34],"105002":["bleed",38],"105003":["bleed",41],"105010":["bleed",45],"105011":["bleed",51],"105012":["bleed",56],"105013":["bleed",62],"105020":["bleed",55],"105021":["bleed",62],"105022":["bleed",69],"105023":["bleed",75],"105100":["bleed",38],"105101":["bleed",42],"105102":["bleed",47],"105103":["bleed",52],"105110":["bleed",56],"105111":["bleed",63],"105112":["bleed",70],"105113":["bleed",77],"105120":["bleed",69],"105121":["bleed",77],"105122":["bleed",86],"105123":["bleed",94],"105200":["bleed",45],"105201":["bleed",51],"105202":["bleed",56],"105203":["bleed",62],"105210":["bleed",68],"105211":["bleed",76],"105212":["bleed",84],"105213":["bleed",93],"105510":["sleep",45],"105511":["sleep",51],"105512":["sleep",56],"105513":["sleep",62],"106010":["poison",45],"106011":["poison",51],"106012":["poison",56],"106013":["poison",62],"106020":["poison",55],"106021":["poison",62],"106022":["poison",69],"106023":["poison",75],"106110":["poison",56],"106111":["poison",63],"106112":["poison",70],"106113":["poison",77],"106210":["poison",68],"106211":["poison",76],"106212":["poison",84],"106213":["poison",93],"107000":["rot",30],"107001":["rot",34],"107002":["rot",38],"107003":["rot",41],"107010":["rot",45],"107011":["rot",51],"107012":["rot",56],"107013":["rot",62],"107100":["rot",38],"107101":["rot",42],"107102":["rot",47],"107103":["rot",52],"107210":["rot",68],"107211":["rot",76],"107212":["rot",84],"107213":["rot",93],"107510":["frost",45],"107511":["frost",51],"107512":["frost",56],"107513":["frost",62],"107520":["frost",55],"107521":["frost",62],"107522":["frost",69],"107523":["frost",75],"107600":["frost",38],"107601":["frost",42],"107602":["frost",47],"107603":["frost",52],"107610":["frost",56],"107611":["frost",63],"107612":["frost",70],"107613":["frost",77],"107710":["frost",68],"107711":["frost",76],"107712":["frost",84],"107713":["frost",93],"108610":["madness",56],"108611":["madness",63],"108612":["madness",70],"108613":["madness",77]};
+// spells:begin (generated by gen_spells.py from the 1.03.5 regulation; names from Elden Ring's Magic rows, same IDs)
+// Every staff and every seal in Nightreign scales spells the same way, whatever its rarity:
+// spell scaling per damage type = 100 × (1 + Σ stat scaling/100 × influence/100 × curve(stat)/100)
+// catalyst: {cor: scaling (STR, DEX, INT, FTH, ARC), curve per damage type (phys, magic, fire, lightning, holy), aec: influence % of each stat per damage type (0 = doesn't scale)}
+const CATALYST={"s":{"cor":[0,0,100,0,0],"curve":[16,16,16,16,16],"aec":[[0,0,90,0,0],[0,0,90,0,0],[0,0,90,0,0],[0,0,90,0,0],[0,0,90,0,0]]},"i":{"cor":[0,0,0,100,0],"curve":[16,16,16,16,16],"aec":[[0,0,0,90,0],[0,0,0,90,0],[0,0,0,90,0],[0,0,0,90,0],[0,0,0,90,0]]}};
+const CATALYST_NAMES={"s":["Academy Glintstone Staff","Albinauric Staff","Astrologer's Staff","Azur's Glintstone Staff","Carian Glintblade Staff","Carian Glintstone Staff","Carian Regal Scepter","Crystal Staff","Demi-Human Queen's Staff","Digger's Staff","Gelmir Glintstone Staff","Glintstone Staff","Lusat's Glintstone Staff","Meteorite Staff","Prince of Death's Staff","Rotten Crystal Staff","Staff of Loss","Staff of the Guilty"],"i":["Clawmark Seal","Dragon Communion Seal","Erdtree Seal","Finger Seal","Frenzied Flame Seal","Giant's Seal","Godslayer's Seal","Golden Order Seal","Gravel Stone Seal"]};
+// spell: [Magic id, name, s = staff / i = seal, FP, normal cast, charged cast or 0]; a cast: [phys, magic, fire, lightning, holy, physical type] for its first hit
+const SPELLS=[[7520,"Aspects of the Crucible: Breath","i",28,[0,0,98,0,0,3],0],[7510,"Aspects of the Crucible: Horns","i",18,[397,0,0,0,0,3],[467,0,0,0,0,3]],[7500,"Aspects of the Crucible: Tail","i",20,[270,0,0,0,0,3],[274,0,0,0,0,3]],[7530,"Black Blade","i",26,[0,0,0,0,290,3],0],[6310,"Bloodboon","i",13,[0,0,182,0,0,3],0],[6300,"Bloodflame Talons","i",12,[0,0,236,0,0,3],0],[6000,"Catch Flame","i",10,[0,0,225,0,0,3],0],[6720,"Elden Stars","i",41,[0,0,0,0,17,3],0],[7900,"Fire's Deadly Sin","i",26,[0,0,300,0,0,3],0],[6010,"Flame Sling","i",11,[0,0,213,0,0,3],[0,0,267,0,0,3]],[7200,"Pest Threads","i",19,[36,0,0,0,0,3],0],[7050,"Placidusax's Ruin","i",62,[0,0,330,0,0,3],0],[7240,"Scarlet Aeonia","i",48,[362,0,0,0,0,3],0],[7210,"Swarm of Flies","i",14,[52,0,0,0,0,3],0],[6410,"Wrath of Gold","i",32,[0,0,0,0,420,3],[0,0,0,0,567,3]],[4600,"Ambush Shard","s",13,[0,146,0,0,0,3],0],[4080,"Cannon of Haima","s",38,[0,338,0,0,0,3],0],[4021,"Comet","s",24,[0,285,0,0,0,3],[0,390,0,0,0,3]],[4060,"Crystal Barrage","s",14,[0,15,0,0,0,3],0],[4090,"Crystal Burst","s",14,[0,30,0,0,0,3],0],[4210,"Founding Rain of Stars","s",27,[0,49,0,0,0,3],0],[4120,"Gavel of Haima","s",22,[0,365,0,0,0,3],0],[4070,"Glintstone Arc","s",9,[0,148,0,0,0,3],0],[4020,"Glintstone Cometshard","s",17,[0,275,0,0,0,3],[0,380,0,0,0,3]],[4400,"Glintstone Icecrag","s",12,[0,182,0,0,0,3],0],[4000,"Glintstone Pebble","s",7,[0,152,0,0,0,3],0],[4040,"Glintstone Stars","s",12,[0,85,0,0,0,3],[0,95,0,0,0,3]],[4001,"Great Glintstone Shard","s",12,[0,190,0,0,0,3],0],[5110,"Great Oracular Bubble","s",16,[0,426,0,0,0,3],[0,495,0,0,0,3]],[4380,"Loretta's Greatbow","s",24,[0,308,0,0,0,3],0],[4381,"Loretta's Mastery","s",39,[0,108,0,0,0,3],0],[4370,"Magic Downpour","s",18,[0,52,0,0,0,3],[0,52,0,0,0,3]],[5100,"Oracle Bubbles","s",12,[0,51,0,0,0,3],[0,59,0,0,0,3]],[4030,"Shard Spiral","s",14,[0,57,0,0,0,3],[0,67,0,0,0,3]],[4050,"Star Shower","s",23,[0,50,0,0,0,3],[0,55,0,0,0,3]],[4010,"Swift Glintstone Shard","s",5,[0,114,0,0,0,3],0]];
+Object.assign(WCURVE,{"16":[[0.0,99.0,99.0,99.0,99.0],[0.0,150.0,150.0,150.0,150.0],[1.0,1.0,1.0,1.0,1.0]]});
+// spells:end
 const WBYN = Object.fromEntries(WEAPONS.map(w=>[w[0],w]));
 const wtLabel = t => ({torch:'Torches',ballista:'Ballistas'})[t] || (WT.find(w=>w[0]===t)||[0,0,t])[2];
 const RARITY = ['Common','Uncommon','Rare','Legendary'];
@@ -611,8 +627,20 @@ const STAT5 = ['str','dex','int','fth','arc'];
 const WEAPON_DEFAULT = {name:'Uchigatana',aff:0,rar:0,two:false};
 function weaponState(){ let s=build.weapon; if(!s||typeof s!=='object') s=build.weapon={...WEAPON_DEFAULT};
   const w=WBYN[s.name]||WBYN[WEAPON_DEFAULT.name]; s.name=w[0]; if(!w[5].some(v=>v[0]===+s.aff)) s.aff=w[5][0][0]; s.aff=+s.aff;
-  s.rar=Math.min(3,Math.max(w[2],+s.rar||0)); s.two=!!s.two; s.pt=+s.pt===1&&w[4][1]!==w[4][0]?1:0; return s; }
+  s.rar=Math.min(3,Math.max(w[2],+s.rar||0)); s.two=!!s.two; s.pt=+s.pt===1&&w[4][1]!==w[4][0]?1:0;
+  s.mode=['wep','s','i'].includes(s.mode)?s.mode:'wep'; if(!s.sp||typeof s.sp!=='object') s.sp={}; ['s','i'].forEach(k=>{ const x=SPBY[s.sp[k]]; if(!x||x[2]!==k) s.sp[k]=SPELL_DEFAULT[k]; }); s.ch=!!s.ch; return s; }
 const curWeapon = () => { const s=weaponState(), w=WBYN[s.name]; return {w,v:w[5].find(v=>v[0]===s.aff),s}; };
+// spells: the Weapon card has Weapons / Sorceries / Incantations tabs; a spell replaces the weapon hit in the damage maths
+const SPBY = Object.fromEntries(SPELLS.map(x=>[x[0],x]));
+const SPELL_DEFAULT = {s:4000,i:6010};
+const SPELL_KIND = {s:{one:'Sorcery',many:'Sorceries',tool:'staff',stat:'int'}, i:{one:'Incantation',many:'Incantations',tool:'seal',stat:'fth'}};
+const isSpellMode = () => weaponState().mode!=='wep';
+const curSpell = () => { const s=weaponState(); if(s.mode==='wep') return null; const sp=SPBY[s.sp[s.mode]]; const ch=s.ch&&!!sp[5]; return {sp,k:s.mode,ch,cast:ch?sp[5]:sp[4]}; };
+// the catalyst's spell scaling per damage type (100 = the spell's own numbers)
+function spellScaling(k,a){ const c=CATALYST[k], stats=STAT5.map(x=>a[x]);
+  return [0,1,2,3,4].map(t=>{ let sc=1; c.cor.forEach((v,i)=>{ if(v&&c.aec[t][i]) sc+=v/100*c.aec[t][i]/100*curveVal(c.curve[t],stats[i])/100; }); return 100*sc; }); }
+function spellAR(cs,a){ const sc=spellScaling(cs.k,a), parts=cs.cast.slice(0,5).map((v,t)=>v?Math.floor(v*sc[t]/100):0); return {sc,parts,total:parts.reduce((x,y)=>x+y,0)}; }
+function withSpellCharge(on,fn){ const s=weaponState(), was=s.ch; s.ch=on; try{ return fn(); } finally{ s.ch=was; } }
 // CalcCorrectGraph: piecewise curve, % of the scaling coefficient you get at stat x
 function curveVal(id,x){ const c=WCURVE[id]; if(!c) return 0; const [st,gr,ex]=c; if(x<=st[0]) return gr[0];
   for(let i=0;i<4;i++){ if(x<=st[i+1]){ const span=st[i+1]-st[i]; let r=span>0?(x-st[i])/span:1; const e=ex[i]; r=e>0?Math.pow(r,e):1-Math.pow(1-r,-e); return gr[i]+(gr[i+1]-gr[i])*r; } }
@@ -630,7 +658,9 @@ function weaponAR(cw, a){
   return {parts,stats,coef,status,total:parts.reduce((t,p)=>t+Math.floor(p.base)+Math.floor(p.bonus),0)};
 }
 // what the damage maths needs from the chosen weapon
-function weaponHit(a){ const cw=curWeapon(), r=weaponAR(cw,a); const ar=p=>Math.floor(p.base)+Math.floor(p.bonus);
+function weaponHit(a){ const cs=curSpell();
+  if(cs){ const r=spellAR(cs,a); return {arP:r.parts[0],els:[['mag',1],['fire',2],['ltng',3],['holy',4]].map(([k,i])=>[k,r.parts[i]]).filter(e=>e[1]>0),ptype:PHYS_OF[cs.cast[5]]||'std',wtype:'catalyst',spell:cs.k}; }
+  const cw=curWeapon(), r=weaponAR(cw,a); const ar=p=>Math.floor(p.base)+Math.floor(p.bonus);
   return {arP:ar(r.parts[0]),els:[['mag',1],['fire',2],['ltng',3],['holy',4]].map(([k,i])=>[k,ar(r.parts[i])]).filter(e=>e[1]>0),ptype:PHYS_OF[cw.w[4][cw.s.pt||0]]||'std',wtype:cw.w[1]}; }
 // shape the damage maths expects
 const bossOf = e => { const x=enemyNow(e); return {k:e.id,n:e.n,x:e.loc,neg:x.neg,res:x.res.map(v=>Math.round(v)),imm:e.res.map(v=>v===0&&!e.dummy),hpNow:x.hp}; };
@@ -873,8 +903,8 @@ T('firescorp','Fire Scorpion Charm',{dmg:[D('fire',1.15)],neg:{phys:-.10}});
 T('ltngscorp','Lightning Scorpion Charm',{dmg:[D('ltng',1.15)],neg:{phys:-.10}});
 T('magscorp','Magic Scorpion Charm',{dmg:[D('mag',1.15)],neg:{phys:-.10}});
 T('holyscorp','Sacred Scorpion Charm',{dmg:[D('holy',1.15)],neg:{phys:-.10}});
-T('graven','Graven-School Talisman',{dmg:[D('spell',1.11)],note:'sorceries'});
-T('faithful',"Faithful's Canvas Talisman",{dmg:[D('spell',1.11)],note:'incantations'});
+T('graven','Graven-School Talisman',{dmg:[D('spell',1.11)],note:'sorceries',sk:'s'});
+T('faithful',"Faithful's Canvas Talisman",{dmg:[D('spell',1.11)],note:'incantations',sk:'i'});
 T('claw','Claw Talisman',{note:'jump attacks ×1.12',xdmg:true});
 T('twinblade','Twinblade Talisman',{note:'chain finisher ×1.15',xdmg:true});
 T('spear','Spear Talisman',{note:'counter hits ×1.2',xdmg:true});
@@ -1159,20 +1189,21 @@ function condOn(c, ctx){
   if(c==='vsFrost') return !!ctx.cond.vsFrost && !immune(ctx.boss,'frost');
   return !!ctx.cond[c];
 }
-function ctxFrom(over){ const c=build.combat; return {cond:Object.assign({},c.cond,(over&&over.cond)||{}),hp:c.hp,wtype:curWeapon().w[1],stacks:c.stacks||{},boss:(over&&over.boss)||bossById(c.boss)}; }
+function ctxFrom(over){ const c=build.combat, sm=isSpellMode(); return {cond:Object.assign({},c.cond,(over&&over.cond)||{}),hp:c.hp,wtype:sm?'catalyst':curWeapon().w[1],sk:sm?weaponState().mode:null,stacks:c.stacks||{},boss:(over&&over.boss)||bossById(c.boss)}; }
+const isSp = part => part==='spell'||part==='sphys';
 function applies(t,kind,part,el,ctx){
   switch(t){
     case 'all': return true;
-    case 'phys': return part==='phys';
+    case 'phys': return part==='phys'||part==='sphys';
     case 'elem': return part==='elem'||part==='spell';
     case 'mag': case 'fire': case 'ltng': case 'holy': return (part==='elem'||part==='spell') && el===t;
-    case 'skill': return kind==='skill' && part!=='spell';
-    case 'charged': return kind==='charged' && part!=='spell';
-    case 'crit': return kind==='crit' && part!=='spell';
-    case 'gc': return kind==='gc' && part!=='spell';
-    case 'spell': return part==='spell';
-    case 'ranged': return part!=='spell' && isBow(ctx.wtype);
-    case 'wt': return part!=='spell';
+    case 'skill': return kind==='skill' && !isSp(part);
+    case 'charged': return kind==='charged' && !isSp(part);
+    case 'crit': return kind==='crit' && !isSp(part);
+    case 'gc': return kind==='gc' && !isSp(part);
+    case 'spell': return isSp(part);
+    case 'ranged': return !isSp(part) && isBow(ctx.wtype);
+    case 'wt': return !isSp(part);
   }
   return false;
 }
@@ -1182,10 +1213,11 @@ function factors(list, ctx, kind, part, el){
     if(!a.ok) return; const e=a.eff;
     if(e.cond && !condOn(e.cond,ctx)) return;
     if(e.wtype && ctx.wtype!==e.wtype) return;
+    if(e.sk && e.sk!==ctx.sk) return;
     if(e.three && !ctx.cond.three) return;
     (e.dmg||[]).forEach(d=>{ if(applies(d.t,kind,part,el,ctx)) out.push({label:e.n+(a.apply>1?` ×${a.apply}`:''),m:Math.pow(d.m,a.apply)}); });
     if(e.stack && e.stack.t==='all'){ let s=+ctx.stacks[e.stack.k]||0; if(e.stack.max) s=Math.min(s,e.stack.max); if(s>0) out.push({label:`${e.n} (${s})`,m:e.stack.vals?e.stack.vals[Math.min(s,e.stack.vals.length)-1]:Math.pow(e.stack.m,s)}); }
-    if(e.startMult && ctx.cond.startWpn && part!=='spell') out.push({label:e.n,m:e.startMult});
+    if(e.startMult && ctx.cond.startWpn && !isSp(part)) out.push({label:e.n,m:e.startMult});
   });
   if(condOn('vsFrost',ctx)) out.push({label:'Frostbite on the enemy (+20% damage taken)',m:1.2,post:true});
   return out;
@@ -1196,8 +1228,8 @@ function dealt(ar, pre, neg){ if(!(ar>0)) return 0; const eff=ar*pre; return eff
 function hitOn(list, boss, kind, over){
   const c=build.combat; const ctx=ctxFrom(Object.assign({},over||{},{boss}));
   const W=weaponHit(calcStats(list).a), pi=(PTYPES.find(p=>p[0]===W.ptype)||PTYPES[0])[2];
-  const fP=factors(list,ctx,kind,'phys',W.els[0]?W.els[0][0]:c.etype); let fE=[], dE=0, baseE=0;
-  W.els.forEach(([et,ar])=>{ const ei=(ELEMS.find(p=>p[0]===et)||ELEMS[0])[2]; fE=factors(list,ctx,kind,'elem',et); dE+=dealt(ar,prod(fE,false),boss.neg[ei])*prod(fE,true); baseE+=dealt(ar,1,boss.neg[ei]); });
+  const sp=!!W.spell, fP=factors(list,ctx,kind,sp?'sphys':'phys',W.els[0]?W.els[0][0]:c.etype); let fE=[], dE=0, baseE=0;
+  W.els.forEach(([et,ar])=>{ const ei=(ELEMS.find(p=>p[0]===et)||ELEMS[0])[2]; fE=factors(list,ctx,kind,sp?'spell':'elem',et); dE+=dealt(ar,prod(fE,false),boss.neg[ei])*prod(fE,true); baseE+=dealt(ar,1,boss.neg[ei]); });
   const dP=dealt(W.arP,prod(fP,false),boss.neg[pi])*prod(fP,true);
   return {dmg:dP+dE, base:dealt(W.arP,1,boss.neg[pi])+baseE, fP, fE};
 }
@@ -1272,8 +1304,14 @@ function renderDmgBuild(a){
 }
 function renderWeapon(a){
   const host=$('#weapon'); if(!host) return;
+  const ws=weaponState(), cs=curSpell();
+  document.querySelectorAll('#wtabs button').forEach(b=>{ b.setAttribute('aria-pressed',String(b.dataset.wmode===ws.mode)); b.setAttribute('aria-selected',String(b.dataset.wmode===ws.mode)); });
+  const ttl=$('#w-title'); if(ttl) ttl.textContent=cs?SPELL_KIND[cs.k].one:'Weapon';
+  const two=$('#w-two'), twl=$('#w-twol'), twt=$('#w-twot');
+  if(two){ if(cs){ two.checked=cs.ch; two.disabled=!cs.sp[5]; twt.textContent='Charged'; twl.title=cs.sp[5]?'Hold the cast to charge it':`${cs.sp[1]} can't be charged`; }
+    else { two.checked=ws.two; two.disabled=false; twt.textContent='Two-handed'; twl.title='Two-handing counts your Strength ×1.5'; } }
+  if(cs) return renderSpell(a,cs);
   const cw=curWeapon(), {w,v,s}=cw, r=weaponAR(cw,a);
-  const two=$('#w-two'); if(two) two.checked=s.two;
   const types=[...new Set(WEAPONS.map(x=>x[1]))];
   const opts=types.map(t=>`<optgroup label="${esc(wtLabel(t))}">${WEAPONS.filter(x=>x[1]===t).map(x=>`<option ${x[0]===w[0]?'selected':''}>${esc(x[0])}</option>`).join('')}</optgroup>`).join('');
   let h=`<div class="enrow"><select id="w-pick" aria-label="Weapon">${opts}</select>`;
@@ -1299,6 +1337,24 @@ function renderWeapon(a){
   const bar=`<div class="sbar ar"><div class="bk"><span class="bl">ATTACK POWER</span></div><div class="bv">${int(r.total)}</div><div class="track"><i style="width:${Math.min(100,r.total/400*100).toFixed(1)}%"></i></div></div>`;
   const blank=`<div class="sbar blank" aria-hidden="true"><div class="bk">&nbsp;</div><div class="bv">&nbsp;</div><div class="track" style="visibility:hidden"></div></div>`;
   h+=`<div class="stable">${col(bar,'Attack',colA)}${col(blank,'Scaling',colB)}${col(blank,'Status buildup',colC)}</div>`;
+  host.innerHTML=h;
+}
+function renderSpell(a,cs){
+  const host=$('#weapon'), K=SPELL_KIND[cs.k], r=spellAR(cs,a), sp=cs.sp;
+  const opts=SPELLS.filter(x=>x[2]===cs.k).map(x=>`<option value="${x[0]}" ${x[0]===sp[0]?'selected':''}>${esc(x[1])}</option>`).join('');
+  let h=`<div class="enrow"><select id="sp-pick" aria-label="${K.one}">${opts}</select></div><p class="enwhere">Every ${K.tool} casts it the same way in Nightreign: only your ${STATN[K.stat]} counts</p>`;
+  const grp=t=>`<div class="tr grp">${t}</div>`;
+  const row=(label,val,o={})=>`<div class="tr"${o.t?` title="${esc(o.t)}"`:''}><span class="tl">${o.c?`<i style="--c:var(--${o.c})"></i>`:''}${label}</span><span class="tv ${o.cls||''}">${val}</span></div>`;
+  const colA=[]; r.parts.forEach((v,i)=>{ if(v>0) colA.push(row(DMGN[i][0],int(v),{c:DMGN[i][1],t:`${cs.cast[i]} spell damage × ${int(r.sc[i])}% ${K.one.toLowerCase()} scaling`})); });
+  if(r.parts[0]>0) colA.push(grp('Physical type'), row(PHYSN[cs.cast[5]]||'Standard',''));
+  const main=r.parts.findIndex(v=>v>0);
+  const colB=[row(STATN[K.stat],int(a[K.stat])), row(`${K.one} scaling`,int(r.sc[Math.max(0,main)]),{t:`100 + your ${STATN[K.stat]} along the ${K.tool}'s curve`})];
+  const colC=[row('FP',int(sp[3])), row('Charged',sp[5]?(cs.ch?'On':'Off'):'No',{cls:sp[5]?'txt':'faint',t:sp[5]?`Charged: ${sp[5].slice(0,5).filter(Boolean).join(' / ')} spell damage instead of ${sp[4].slice(0,5).filter(Boolean).join(' / ')}`:`${sp[1]} can't be charged`})];
+  const n=Math.max(colA.length,colB.length,colC.length);
+  const col=(b,title,rows)=>`<div class="scol">${b}<h3 class="sh3">${title}</h3><div class="trows" style="--n:${n}">${rows.join('')}</div></div>`;
+  const bar=`<div class="sbar ar"><div class="bk"><span class="bl">ATTACK POWER</span></div><div class="bv">${int(r.total)}</div><div class="track"><i style="width:${Math.min(100,r.total/400*100).toFixed(1)}%"></i></div></div>`;
+  const blank=`<div class="sbar blank" aria-hidden="true"><div class="bk">&nbsp;</div><div class="bv">&nbsp;</div><div class="track" style="visibility:hidden"></div></div>`;
+  h+=`<div class="stable">${col(bar,'Attack',colA)}${col(blank,'Scaling',colB)}${col(blank,'Cast',colC)}</div>`;
   host.innerHTML=h;
 }
 function renderEnemy(){
@@ -1603,8 +1659,7 @@ function renderCombat0(){
   renderTals(c);
   $('#combat').innerHTML = `
   <div class="form">
-    <div class="field"><label for="f-wpt">Physical damage</label><select id="f-wpt">${ptOpt}</select></div>
-    <div class="field"><label for="f-spell">Spell element</label><select id="f-spell" data-c="spellEl">${opt(ELEMS.map(p=>[p[0],p[1]]),c.spellEl)}</select></div>
+    ${isSpellMode()?'':`<div class="field"><label for="f-wpt">Physical damage</label><select id="f-wpt">${ptOpt}</select></div>`}
   </div>
   <div class="sub">Right now</div>
   <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:8px"><span class="msg">Your HP</span><div class="seg">${[['full','100%'],['high','85–99%'],['low','20–85%'],['crit','< 20%']].map(([k,n])=>`<button data-hp="${k}" aria-pressed="${c.hp===k}">${n}</button>`).join('')}</div></div>
@@ -1659,14 +1714,20 @@ function renderDamagePage(){
   const r=hitOn(list,boss,'normal');
   const hp=bossHP(boss); const hits=hp&&r.dmg>0?Math.ceil(hp/r.dmg):null;
   const kinds=[['skill','Weapon skill'],['charged','Charged'],['crit','Critical'],['gc','Guard counter']];
-  const ctx=ctxFrom(); const fS=factors(list,ctx,'normal','spell',c.spellEl); const spellM=prod(fS,false)*prod(fS,true);
-  const WH=weaponHit(s.a); const allF=[...r.fP.map(f=>Object.assign({p:'phys'},f)),...(WH.els.length?r.fE.map(f=>Object.assign({p:'affinity'},f)):[])];
+  const WH=weaponHit(s.a), cs=curSpell(), spm=!!cs;
+  const allF=[...(!spm||WH.arP>0?r.fP.map(f=>Object.assign({p:spm?'spell':'phys'},f)):[]),...(WH.els.length?r.fE.map(f=>Object.assign({p:spm?'spell':'affinity'},f)):[])];
   const merged=[]; allF.forEach(f=>{ const m=merged.find(x=>x.label===f.label&&x.m===f.m); if(m){ if(!m.p.includes(f.p)) m.p+=' + '+f.p; } else merged.push(Object.assign({},f)); });
-  const physTot=prod(r.fP,false)*prod(r.fP,true);
+  const physTot=prod(r.fP,false)*prod(r.fP,true), elTot=prod(r.fE,false)*prod(r.fE,true);
   const pi=(PTYPES.find(p=>p[0]===WH.ptype)||PTYPES[0])[2]; const negP=boss.neg[pi];
-  let d=`<div class="hero"><div class="big">${r.dmg>0?int(r.dmg):'—'}<small> per hit</small></div><div class="meta"><span>Buffs on the physical part <b>${f2(physTot)}</b></span><span>Vs. a bare hit, defense included <b>${r.base>0?f2(r.dmg/r.base):'—'}</b></span><span>${hp?`${esc(boss.n)} HP <b>${int(hp)}</b> → <b>${hits??'—'}</b> hits`:'HP unknown for this boss'}</span></div></div>`;
-  d+=`<div class="lines">${kinds.map(([k,n])=>{ const x=hitOn(list,boss,k); return `<div class="line"><span>${n}</span><b>${x.base>0?fx(x.dmg/x.base):'—'}</b><span>buffs from relics</span></div>`; }).join('')}<div class="line"><span>Spells (${(ELEMS.find(e=>e[0]===c.spellEl)||[])[1]})</span><b>${fx(spellM)}</b><span>buffs from relics</span></div></div>`;
-  d+=`<ul class="brk">${merged.length?merged.map(f=>`<li><span title="${esc(f.label)}">${esc(f.label)} <span class="msg">· ${f.p}</span></span><span class="num ${f.m<1?'dn':''}">${fx(f.m)}</span></li>`).join(''):'<li><span>No damage bonus active right now</span><span></span></li>'}<li class="tot"><span>${PTYPES[pi][1]} vs ${esc(boss.n)}: ${negP===0?'no resistance':negP<0?`weak ${-negP}%`:`resists ${negP}%`}</span><span class="num">${fx(1-negP/100)}</span></li></ul>`;
+  // what the bottom line compares: the physical type, or for a spell its main element
+  const mainEl=spm&&WH.els.length&&WH.els.reduce((m,e)=>e[1]>m[1]?e:m,WH.els[0])[1]>WH.arP?WH.els.reduce((m,e)=>e[1]>m[1]?e:m,WH.els[0]):null;
+  const vsI=mainEl?(ELEMS.find(p=>p[0]===mainEl[0])||ELEMS[0])[2]:pi, vsN=mainEl?(ELEMS.find(p=>p[0]===mainEl[0])||ELEMS[0])[1]:PTYPES[pi][1], negV=boss.neg[vsI];
+  let d=`<div class="hero"><div class="big">${r.dmg>0?int(r.dmg):'—'}<small> per hit</small></div><div class="meta"><span>${spm?`Buffs on the ${cs.ch?'charged ':''}${SPELL_KIND[cs.k].one.toLowerCase()} <b>${f2(mainEl?elTot:physTot)}</b>`:`Buffs on the physical part <b>${f2(physTot)}</b>`}</span><span>Vs. a bare hit, defense included <b>${r.base>0?f2(r.dmg/r.base):'—'}</b></span><span>${hp?`${esc(boss.n)} HP <b>${int(hp)}</b> → <b>${hits??'—'}</b> hits`:'HP unknown for this boss'}</span></div></div>`;
+  if(spm){ let ln=`<div class="line"><span>${esc(cs.sp[1])}${cs.ch?' · charged':''}</span><b>${r.base>0?fx(r.dmg/r.base):'—'}</b><span>buffs from relics</span></div>`;
+    if(cs.sp[5]){ const o=withSpellCharge(!cs.ch,()=>hitOn(list,boss,'normal')); ln+=`<div class="line"><span>${cs.ch?'Not charged':'Charged'}</span><b>${o.dmg>0?int(o.dmg):'—'}</b><span>per hit</span></div>`; }
+    d+=`<div class="lines">${ln}</div>`; }
+  else d+=`<div class="lines">${kinds.map(([k,n])=>{ const x=hitOn(list,boss,k); return `<div class="line"><span>${n}</span><b>${x.base>0?fx(x.dmg/x.base):'—'}</b><span>buffs from relics</span></div>`; }).join('')}</div>`;
+  d+=`<ul class="brk">${merged.length?merged.map(f=>`<li><span title="${esc(f.label)}">${esc(f.label)} <span class="msg">· ${f.p}</span></span><span class="num ${f.m<1?'dn':''}">${fx(f.m)}</span></li>`).join(''):'<li><span>No damage bonus active right now</span><span></span></li>'}<li class="tot"><span>${vsN} vs ${esc(boss.n)}: ${negV===0?'no resistance':negV<0?`weak ${-negV}%`:`resists ${negV}%`}</span><span class="num">${fx(1-negV/100)}</span></li></ul>`;
   $('#dmgfor').textContent = `${boss.n} · ${['solo','duo','trio'][enemyState().players-1]}`;
   $('#dmgout').innerHTML=d;
 
@@ -2107,6 +2168,7 @@ document.addEventListener('click', async ev=>{
   if(t.dataset.lc){ const lc=ui.lc||(ui.lc=[]), c=t.dataset.lc, i=lc.indexOf(c); if(i>=0) lc.splice(i,1); else lc.push(c); ui.limit=60; renderLibrary(); return; }
   if(t.dataset.lf){ if(t.dataset.lf==='f'&&!flaggedCount()){ toast('No flagged relics: none of your relics look edited.'); return; } ui.lf=t.dataset.lf; ui.limit=60; renderLibrary(); return; }
   if(t.dataset.plf){ ui.plf=t.dataset.plf; ui.plimit=60; renderSlotPick(); return; }
+  if(t.dataset.wmode){ const ws=weaponState(); if(ws.mode===t.dataset.wmode) return; ws.mode=t.dataset.wmode; saveBuildSoon(); renderCombat(); renderResults(); return; }
   if(t.dataset.page){ if(t.dataset.page===curPage()) return; history.pushState(null,'',location.pathname+location.search+(t.dataset.page==='damage'?'#calculator':'')); showPage(); window.scrollTo(0,0); return; }
   if(t.dataset.wr){ weaponState().rar=+t.dataset.wr; saveBuildSoon(); renderCombat(); renderResults(); return; }
   if(t.dataset.enp){ enemyState().players=+t.dataset.enp; saveBuildSoon(); renderEnemy(); renderCombat(); renderResults(); return; }
@@ -2201,6 +2263,8 @@ document.addEventListener('change', ev=>{
   if(t.id==='f-char'){ build.char=t.value; ui.pick=null; saveBuildSoon(); renderAll(); return; }
   if(t.id==='f-level2'){ calcState().level=+t.value; saveBuildSoon(); renderCombat(); renderResults(); return; }
   if(t.id==='f-level'){ build.level=+t.value; saveBuildSoon(); renderResults(); return; }
+  if(t.id==='sp-pick'){ const ws=weaponState(); ws.sp[ws.mode]=+t.value; saveBuildSoon(); renderCombat(); renderResults(); return; }
+  if(t.id==='w-two'&&isSpellMode()){ weaponState().ch=t.checked; saveBuildSoon(); renderCombat(); renderResults(); return; }
   if(t.id==='w-pick'||t.id==='w-aff'||t.id==='w-two'){ const ws=weaponState();
     if(t.id==='w-pick'){ ws.name=t.value; const w=WBYN[ws.name]; if(!w[5].some(x=>x[0]===ws.aff)) ws.aff=w[5][0][0]; ws.rar=Math.max(ws.rar,w[2]); } else if(t.id==='w-aff') ws.aff=+t.value; else ws.two=t.checked;
     saveBuildSoon(); renderCombat(); renderResults(); return; }
