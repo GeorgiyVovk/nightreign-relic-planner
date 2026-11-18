@@ -29,7 +29,7 @@ npm run app:build    # build the Windows installer
 ## Pages
 
 - **Relics**: your Nightfarer, vessel, slots, stats and relic library.
-- **Damage calculator** (`#calculator`): pick a preset (or keep the relics slotted on the Relics page), talismans, a weapon (one- or two-handed) or a sorcery or incantation (charged or not), and an enemy (the Sparring Grounds' Training Post and Marionette Soldier are in the list for checking numbers in game). The weapon card shows what the game's menu shows (attack power, or a catalyst's scaling); the Damage panel works out a whole R1, R2 or charged R2 chain hit by hit, status buildup and hits to kill.
+- **Damage calculator** (`#calculator`): pick a preset (or keep the relics slotted on the Relics page), talismans, a weapon (one- or two-handed) or a sorcery or incantation (charged or not), and an enemy. The weapon card shows what the game's menu shows (attack power, or a catalyst's scaling); the Damage panel works out a whole R1, R2 or charged R2 chain hit by hit, status buildup and hits to kill.
 
 ## How the damage is worked out
 
