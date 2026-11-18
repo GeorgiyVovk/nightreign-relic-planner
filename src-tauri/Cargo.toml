@@ -1,6 +1,6 @@
 [package]
 name = "nightreign-relic-planner"
-version = "0.21.0"
+version = "0.22.0"
 description = "Plan Elden Ring Nightreign relic loadouts from your own save"
 authors = ["GeorgiyVovk"]
 license = "MIT"
