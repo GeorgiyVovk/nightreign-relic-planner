@@ -205,7 +205,13 @@ select{-webkit-appearance:none;appearance:none;cursor:pointer;border:1px solid v
 .wrow select{flex:1 1 auto;min-width:0;font-weight:600}
 .form.wsub{margin-bottom:18px}
 .atkrow{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin-bottom:12px}
-.lines.chain{margin-top:10px}
+.chaint{width:100%;border-collapse:collapse;margin-top:12px;font-size:13px}
+.chaint th{font-size:11px;font-weight:500;color:var(--muted);text-align:left;padding:0 0 4px;border-bottom:1px solid var(--line)}
+.chaint td{padding:5px 0;border-bottom:1px solid var(--line)}
+.chaint .r{text-align:right;font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+.chaint .b{font-weight:600}
+.chaint th.r{font-family:inherit}
+.chaint tfoot td{border-bottom:0;font-weight:600}
 #combat{margin-top:16px}
 .form.wsub.one{grid-template-columns:minmax(0,1fr)}
 .wsub select.main{font-weight:600}
@@ -1831,11 +1837,11 @@ function renderDamagePage(){
   const hand=MV?(MV.two?'two':'one')+'-handed':'', seg=MV?`<div class="atkrow"><div class="seg" role="group" aria-label="Attack">${['r1','r2','ch'].map(k=>`<button data-atk="${k}" aria-pressed="${MV.atk===k}" ${MV.has[k]?'':'disabled title="Not on this weapon"'}>${ATK_NAME[k]}</button>`).join('')}</div><span class="msg">${hand}</span></div>`:'';
   const mvLine=MV?(multi?`<span>${MV.hits.length} ${MV.hits.length===1?'attack':'hits'} in the chain · ${hand}</span>`:`<span>Motion value <b>${+MV.hits[0].mv[0].toFixed(1)}%</b> · ${ATK_NAME[MV.atk]}, ${hand}</span>`):'';
   let d=seg+`<div class="hero"><div class="big">${CH.total>0?int(CH.total):'—'}<small> ${multi?`per ${ATK_NAME[MV.atk]} chain`:'per hit'}</small></div><div class="meta"><span>${spm?`Buffs on the ${cs.ch?'charged ':''}${SPELL_KIND[cs.k].one.toLowerCase()} <b>${f2(mainEl?elTot:physTot)}</b>`:`Buffs on the physical part <b>${f2(physTot)}</b>`}</span>${mvLine}<span>Vs. a bare hit, defense included <b>${r.base>0?f2(r.dmg/r.base):'—'}</b></span><span>${hp?`${esc(boss.n)} HP <b>${int(hp)}</b> → <b>${hits??'—'}</b> ${multi?'hits round the chain':'hits'}`:'HP unknown for this boss'}</span></div></div>`;
-  if(multi) d+=`<div class="lines chain">${CH.hs.map(x=>`<div class="line"><span>${x.h.label}</span><b>${int(x.dmg)}</b><span>${(PTYPES.find(p=>p[0]===x.h.ptype)||PTYPES[0])[1]} · ${+x.h.mv[0].toFixed(1)}%${x.h.hits>1?` · lands ${x.h.hits===2?'twice':x.h.hits+' times'}`:''}</span></div>`).join('')}</div>`;
+  if(multi) d+=`<table class="chaint"><thead><tr><th>Hit</th><th>Type</th><th class="r">Motion value</th><th class="r">Damage</th></tr></thead><tbody>${CH.hs.map(x=>`<tr><td>${x.h.label}${x.h.hits>1?` <span class="msg">×${x.h.hits}</span>`:''}</td><td>${(PTYPES.find(p=>p[0]===x.h.ptype)||PTYPES[0])[1]}</td><td class="r">${+x.h.mv[0].toFixed(1)}%</td><td class="r b">${int(x.dmg)}</td></tr>`).join('')}</tbody><tfoot><tr><td colspan="3">Chain</td><td class="r b">${int(CH.total)}</td></tr></tfoot></table>`;
   // the weapon's status buildup against this enemy
   if(MV){ const cw=curWeapon(), en=enemyNow(), stv=weaponAR(cw,s.a).status;
-    if(stv.length) d+=`<div class="lines">${stv.map(({k,val})=>{ const i=resIdx(k), st=STATUS[i], res=en.res[i], v2=Math.round(val), imm=res===0&&!en.e.dummy, n=Math.max(1,Math.ceil(res/val));
-      return `<div class="line" title="${esc(imm?'':en.e.dummy?'No resistance: it procs on every hit':`${Math.round(res)} resistance ÷ ${v2} per hit, if the hits come before it wears off`)}"><span>${st[1]}</span><b>${imm?'immune':n+(n===1?' hit':' hits')}</b><span>${imm?'':`${v2} per hit`}</span></div>`; }).join('')}</div>`; }
+    if(stv.length) d+=`<ul class="brk">${stv.map(({k,val})=>{ const i=resIdx(k), st=STATUS[i], res=en.res[i], v2=Math.round(val), imm=res===0&&!en.e.dummy, n=Math.max(1,Math.ceil(res/val));
+      return `<li title="${esc(imm?'':en.e.dummy?'No resistance: it procs on every hit':`${Math.round(res)} resistance ÷ ${v2} per hit, if the hits come before it wears off`)}"><span>${st[1]}${imm?'':` <span class="msg">· ${v2} per hit</span>`}</span><span class="num">${imm?'immune':`${n} ${n===1?'hit':'hits'} to proc`}</span></li>`; }).join('')}</ul>`; }
   const one=x=>!(x.base>0)||Math.abs(x.dmg/x.base-1)<1e-6;   // tiles only when relics change something
   if(spm){ let ln=one(r)?'':`<div class="line"><span>${esc(cs.sp[1])}${cs.ch?' · charged':''}</span><b>${fx(r.dmg/r.base)}</b><span>buffs from relics</span></div>`;
     if(cs.sp[5]){ const o=withSpellCharge(!cs.ch,()=>hitOn(list,boss,'normal')); ln+=`<div class="line"><span>${cs.ch?'Not charged':'Charged'}</span><b>${o.dmg>0?int(o.dmg):'—'}</b><span>per hit</span></div>`; }
