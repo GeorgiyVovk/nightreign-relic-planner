@@ -61,6 +61,7 @@ const CASES = [
   ["Guardian's Halberd two-handed R2, Guardian 15 (lands once)", W('Guardian', 15, "Guardian's Halberd", { two: true, atk: 'r2' }), { chain: [139, 139] }],
   ["Guardian's Halberd two-handed charged R2, Guardian 15 (53 + 161)", W('Guardian', 15, "Guardian's Halberd", { two: true, atk: 'ch' }), { chain: [53, 161, 53, 161] }],
   ['Short Spear R2, Guardian 15 (63 + 112)', W('Guardian', 15, 'Short Spear', { atk: 'r2' }), { chain: [63, 112, 63, 112] }],
+  ["Revenant's Cursed Claws two-handed R1, Revenant 15 (four presses, both hands)", W('Revenant', 15, "Revenant's Cursed Claws", { two: true }), { chain: [60, 60, 61, 61, 64, 64, 68, 68] }],
   // twinblade: two-handing shows half the attack in the menu (its two-handed R1 opens at 50%), the press then lands 50% + 103%
   ['Twinblade, Wylder 15', W('Wylder', 15, 'Twinblade'), { menu: 108, hit: 108 }],
   ['Twinblade two-handed R1, Wylder 15 (54 + 111)', W('Wylder', 15, 'Twinblade', { two: true }), { menu: 54, hit: 54, p0: 165 }],
