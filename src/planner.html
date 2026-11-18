@@ -780,7 +780,9 @@ add({id:'discount2',n:'Huge rune discount for shop purchases while on expedition
 add({id:'treasure',n:'Treasure marked upon map',g:'explore',st:false,note:'treasure shown on the map'});
 add({id:'hittaken',n:'Taking attacks improves attack power',g:'off',dmg:[D('all',1.15)],cond:'hitTaken',st:false,note:'10 s after you get hit, not on block'});
 [[0,'',1.04],[1,' +1',1.05],[2,' +2',1.06]].forEach(([i,s,m])=>add({id:'phys'+i,n:'Physical Attack Up'+s,g:'off',dmg:[D('phys',m)]}));
-add({id:'melee',n:'Improved Melee Attack Power',g:'off',dmg:[D('melee',1.06)],note:'weapon hits, not spells'});
+// SpEffect 7006600 says ×1.06, but in game one copy gives ×1.05 and two give ×1.12: Duchess level 15, charged R2 two-handed,
+// Noble's Slender Sword 141 → 148 → 158, Rapier 160 → 168 → 180, Claymore 206 → 216 → 230. Three copies aren't measured (×1.06 more each).
+add({id:'melee',n:'Improved Melee Attack Power',g:'off',dmg:[Object.assign(D('melee',1.06),{byCount:[1.05,1.12]})],note:'weapon hits, not spells; one ×1.05, two ×1.12 (measured)'});
 add({id:'skillap',n:'Improved Skill Attack Power',g:'off',dmg:[D('skill',1.15)]});
 [['mag','Magic'],['fire','Fire'],['ltng','Lightning'],['holy','Holy']].forEach(([k,N])=>{[[0,'',1.045],[1,' +1',1.055],[2,' +2',1.065]].forEach(([i,s,m])=>add({id:k+i,n:`${N} Attack Power Up${s}`,g:'off',dmg:[D(k,m)]}));});
 add({id:'addedaff',n:'Boosts Attack Power of Added Affinity Attacks',g:'off',dmg:[D('welem',1.1)],note:'elemental part of the weapon, not spells'});
@@ -1217,7 +1219,7 @@ function describe(e){
   const p=[];
   if(e.stat){ Object.entries(statAt(e)).forEach(([k,v])=>p.push(`${v>0?'+':''}${v} ${ABBR[k]||k}`)); if(e.s1&&curLevel()<12) p.push(`(at level ${curLevel()}, full from 12)`); }
   if(e.hpM) p.push(pct(e.hpM)+' max HP'); if(e.fpM) p.push(pct(e.fpM)+' max FP'); if(e.stM) p.push(pct(e.stM)+' max stamina');
-  (e.dmg||[]).forEach(d=>p.push(`${pct(d.m)} ${d.t==='wt'&&e.wtype?((WT.find(w=>w[0]===e.wtype)||[])[1]||'weapon')+' damage':DLABEL[d.t]||TLABEL[d.t]}`));
+  (e.dmg||[]).forEach(d=>p.push(`${pct(d.byCount?d.byCount[0]:d.m)} ${d.t==='wt'&&e.wtype?((WT.find(w=>w[0]===e.wtype)||[])[1]||'weapon')+' damage':DLABEL[d.t]||TLABEL[d.t]}`));
   if(e.cond) p.push(`(${CONDSHORT[e.cond]||e.cond})`);
   if(e.stack){ const s=e.stack; p.push(s.vals?`${pct(s.vals[0])} damage at 1 stack up to ${pct(s.vals[s.vals.length-1])} at ${s.vals.length}`:s.t==='arc'?`+${s.add} ARC per stack`:`${pct(s.m)} ${s.t==='all'?'damage':s.t==='hp'?'max HP':s.t==='fp'?'max FP':'max stamina'} per stack`); }
   if(e.neg) Object.entries(e.neg).forEach(([k,v])=>p.push(`${v>0?'+':''}${Math.round(v*1000)/10}% ${k==='phys'?'physical':TLABEL[k]} negation`));
@@ -1289,7 +1291,9 @@ function factors(list, ctx, kind, part, el){
     if(e.wtype && ctx.wtype!==e.wtype) return;
     if(e.sk && e.sk!==ctx.sk) return;
     if(e.three && !ctx.cond.three) return;
-    (e.dmg||[]).forEach(d=>{ if(applies(d.t,kind,part,el,ctx)) out.push({label:e.n+(a.apply>1?` ×${a.apply}`:''),m:Math.pow(d.m,a.apply)}); });
+    (e.dmg||[]).forEach(d=>{ if(!applies(d.t,kind,part,el,ctx)) return; const n=a.apply, bc=d.byCount;
+      const m=bc?(n<=bc.length?bc[n-1]:bc[bc.length-1]*Math.pow(d.m,n-bc.length)):Math.pow(d.m,n);
+      out.push({label:e.n+(n>1?` ×${n}`:''),m}); });
     if(e.stack && e.stack.t==='all'){ let s=+ctx.stacks[e.stack.k]||0; if(e.stack.max) s=Math.min(s,e.stack.max); if(s>0) out.push({label:`${e.n} (${s})`,m:e.stack.vals?e.stack.vals[Math.min(s,e.stack.vals.length)-1]:Math.pow(e.stack.m,s)}); }
     if(e.startMult && ctx.cond.startWpn && !isSp(part)) out.push({label:e.n,m:e.startMult});
   });
