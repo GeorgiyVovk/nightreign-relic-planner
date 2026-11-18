@@ -29,7 +29,19 @@ npm run app:build    # build the Windows installer
 ## Pages
 
 - **Relics**: your Nightfarer, vessel, slots, stats and relic library.
-- **Damage calculator** (`#calculator`): pick a preset (or keep the relics slotted on the Relics page), a weapon, sorcery or incantation (charged or not) and an enemy, and see attack power, status buildup, damage per hit and hits to kill.
+- **Damage calculator** (`#calculator`): pick a preset (or keep the relics slotted on the Relics page), talismans, a weapon (R1, R2 or charged R2, one- or two-handed) or a sorcery or incantation (charged or not), and an enemy, and see attack power or spell scaling, status buildup, damage per hit and hits to kill.
+
+## How the damage is worked out
+
+The numbers come from the game's regulation; the formulas that join them are measured in game on a Training Post in the Sparring Grounds, without relics, at levels 1 and 15:
+
+- **Attack** is what the game's menu shows: weapon base × upgrade, plus the stat bonus along the regulation's scaling curves, × 60%. Every enemy has defense 100, and the Training Post takes exactly that attack.
+- **Two-handing** doesn't count Strength ×1.5: the attack goes up by the moveset's two-handed rate (×1.03 for a straight sword, ×1.14 for a greataxe).
+- **Spell scaling** is (100 + Intelligence or Faith along the curve) × 90% × the staff's or seal's rate for its rarity; a spell hits for its damage × scaling × 60%.
+- **A hit** is the attack × the motion value of the first hit of R1, R2 or charged R2. Raider's Greataxe two-handed is measured where its animation differs from its row.
+- **Buffs** use the regulation's values. Checked in game so far: Improved Melee Attack Power gives ×1.05 for one and ×1.12 for two (the data says ×1.06 each), Improved Affinity Attack Power +2 counts on spells (×1.1 each, multiplied), Melee and Added Affinity don't.
+
+Other buffs, boss HP and negation, and status buildup come from the data and aren't checked in game yet.
 
 ## Overlay (desktop app)
 
