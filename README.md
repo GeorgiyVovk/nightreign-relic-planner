@@ -11,7 +11,7 @@ Plan Elden Ring Nightreign relic loadouts from your own save: pick a Nightfarer 
 - Stats for every Nightfarer at levels 1–15: HP, FP, stamina, attributes, damage negation, resistances.
 - Flags relics that can't come from the game (wrong effect count, order, curses, pools).
 - Fades effects that do nothing (another Nightfarer's effect, a duplicate that doesn't stack, a second skill change).
-- Presets per Nightfarer, search by effect (`aff atk 2, vigor`).
+- Presets per Nightfarer, including the ones you saved in the game (Relic Rites → Save as Preset), read from the save with their names and kept up to date; search by effect (`aff atk 2, vigor`).
 
 Your relics, presets and builds stay on your device.
 
