@@ -513,6 +513,7 @@ select:hover{background-image:linear-gradient(to top right,transparent 50%,var(-
 .run > summary:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
 .run .nl{font-family:var(--f-display);font-size:18px;font-weight:600;line-height:1.2;min-width:0}
 .run .nl small{font-family:var(--f-body);font-size:12px;font-weight:400;color:var(--muted);margin-left:6px}
+.run .nlunk{display:inline-block;vertical-align:2px;margin-left:8px;padding:1px 7px;border-radius:999px;font-family:var(--f-body);font-size:11px;font-weight:600;color:var(--rar2);background:color-mix(in srgb,var(--rar2) 14%,transparent);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--rar2) 45%,transparent)}
 .run .res{font-size:12px;font-weight:600;color:var(--bad);white-space:nowrap}
 .run.win .res{color:var(--good)}
 .run .meta{font-size:12px;color:var(--muted);min-width:0}
@@ -1590,7 +1591,7 @@ function histRunHtml(r){
     return `<div class="rpl"><div class="who"><b>${esc(p.name)}</b><span class="st">${nfName(p.ch)} · Lv <span class="num">${p.lv}</span></span></div>
       <div class="st"><span class="num">${p.kills}</span> kills · <span class="num">${int(p.runes)}</span> runes</div>${ws?`<ul>${ws}</ul>`:''}</div>`; }).join('');
   return `<details class="run${r.win?' win':''}"><summary>
-    <span class="nl">${esc(nlName(r.nl))}<small>${esc(NLORD[r.nl%10]?NLORD[r.nl%10][1]:'')}</small></span>
+    <span class="nl">${esc(nlName(r.nl))}<small>${esc(NLORD[r.nl%10]?NLORD[r.nl%10][1]:'')}</small>${r.u?'<span class="nlunk" title="The Nightlord was hidden until the fight">Unknown Nightlord</span>':''}</span>
     <span class="meta"><span class="res">${res}</span> · ${runDate(r.t)} · ${esc(team)}</span><span class="rt">${rt}</span></summary>
     <div class="rbody"><div class="rcount">${counts.map(([k,v])=>`<span><b>${int(v)}</b> ${k}</span>`).join('')}</div><div class="rplayers">${players}</div></div></details>`;
 }
@@ -2407,7 +2408,7 @@ function svCharacter(nameBytes, data){
 }
 // Result History (the last 100 expeditions): a 'RSCL' block, in the profile part (an older save keeps one per character slot too),
 // a 28-byte header, then 1872-byte runs. Run: +4 number, +8 date (FILETIME, the clock the game shows), +40 day reached (4 Final Day,
-// 3 Second Day), +44 [won, mode (2 Deep of Night), Nightlord 0-9, flag], +48 enemies felled, great enemies, treasure, ?, rescued allies,
+// 3 Second Day), +44 [won, mode (2 Deep of Night), Nightlord 0-9, 1 when the Nightlord was unknown (the game's purple mark)], +48 enemies felled, great enemies, treasure, ?, rescued allies,
 // +92 / +684 / +1276 the three players (you first), +1864 / +1868 Deep of Night rating before / after (rating × 256 + depth).
 // Player: name (16 UTF-16), +34 Nightfarer 1-10, +36 level, +40 flasks, +44 runes, +48 kills, +68 six weapons of 80 bytes
 // [weapon id, skill, three passives, …, +44 the item it came from: a Nightfarer weapon dropped by an invader is 1XXXX500N there,
@@ -2426,7 +2427,7 @@ function svHistory(entries){
       return {name,ch:d[q+34],lv:u(q+36),fl:u(q+40),runes:u(q+44),kills:u(q+48),w}; }).filter(Boolean);
     if(!pl.length) continue;
     const b=u(R+44), rb=u(R+1864), ra=u(R+1868);
-    out.push({n,t,day:d[R+40],win:b&255,mode:(b>>8)&255,nl:(b>>16)&255,c:[0,1,2,3,4].map(i=>u(R+48+4*i)),rb:rb>>>8,ra:ra>>>8,db:rb&255,da:ra&255,pl});
+    out.push({n,t,day:d[R+40],win:b&255,mode:(b>>8)&255,nl:(b>>16)&255,u:b>>>24?1:0,c:[0,1,2,3,4].map(i=>u(R+48+4*i)),rb:rb>>>8,ra:ra>>>8,db:rb&255,da:ra&255,pl});
   }
   return out.sort((a,b)=>b.n-a.n);
 }
@@ -2488,7 +2489,8 @@ async function importSaveSlot(slot, opt={}){
   const info={name:slot.name,file:lastFile,count:rows.length,at:Date.now()};
   if(opt.quiet){
     const hs=slot.hist||[], fresh=hs.length&&(!runs.length||runs[0].n!==hs[0].n)?hs.filter(r=>!runs.length||r.n>runs[0].n).length:0;
-    if(fresh){ setRuns(hs,Date.now()); await storeRuns(); }
+    const old=!fresh&&hs.length&&runs.length&&!('u' in runs[0]);   // kept by 0.24.0, before the unknown-Nightlord mark
+    if(fresh||old){ setRuns(hs,Date.now()); await storeRuns(); if(old) renderHistory(); }
     const sig=JSON.stringify([rows,slot.presets||[]]);
     if(sig===lastRowsSig){ if(fresh){ renderHistory(); toast(fresh===1?`New run in History: ${hs[0].win?'Victory':'Defeat'} against ${nlName(hs[0].nl)}`:`${fresh} new runs in History`); } return; }
     lastRowsSig=sig;
