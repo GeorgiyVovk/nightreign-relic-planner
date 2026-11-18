@@ -1406,7 +1406,7 @@ function renderDmgBuild(a){
   const sel=$('#d-preset'); if(!sel) return; normBuild();
   const cs=calcState(), ch=build.char, groups={};
   build.presets.forEach(p=>{ (groups[p.char]=groups[p.char]||[]).push(p); });
-  sel.innerHTML=`<option value="">${esc(calcPlannerChar||ch)} · relics from the Relics page</option>`+Object.keys(groups).sort().map(c=>`<optgroup label="${esc(c)}">${groups[c].map(p=>`<option value="${esc(p.id)}" ${p.id===cs.preset?'selected':''}>${esc(p.name)}</option>`).join('')}</optgroup>`).join('');
+  sel.innerHTML=`<option value="">${esc(calcPlannerChar||ch)} · relics from the Relics page</option>`+Object.keys(groups).sort().map(c=>`<optgroup label="${esc(c)}">${groups[c].map(p=>`<option value="${esc(p.id)}" ${p.id===cs.preset?'selected':''}>${esc(p.name)}${p.game?' · in game':''}</option>`).join('')}</optgroup>`).join('');
   const d2=$('#don2'); if(d2) d2.checked=cs.don;
   const l2=$('#f-level2'); if(l2){ if(!l2.options.length) l2.innerHTML=Array.from({length:15},(_,i)=>`<option value="${i+1}">${i+1}</option>`).join(''); l2.value=String(cs.level); }
   const n=curSlots().filter((x,i)=>x&&(i<3||build.don)).length;
@@ -1527,14 +1527,14 @@ function renderPresets(){
   const sel=$('#f-preset'); if(!sel) return; normBuild();
   const ch=build.char, v=curVessel(), ps=build.presets.filter(p=>p.char===ch), act=build.activePreset[ch];
   const same=p=>p.vessel===v && JSON.stringify(p.slots)===JSON.stringify(curSlots());
-  sel.innerHTML=`<option value="">${ps.length?'Presets…':'No presets yet'}</option>`+ps.map(p=>`<option value="${esc(p.id)}" ${p.id===act?'selected':''}>${esc(p.name)}${p.id===act&&!same(p)?' (changed)':''}</option>`).join('');
+  sel.innerHTML=`<option value="">${ps.length?'Presets…':'No presets yet'}</option>`+ps.map(p=>`<option value="${esc(p.id)}" ${p.id===act?'selected':''}>${esc(p.name)}${p.game?' · in game':''}${p.id===act&&!same(p)?' (changed)':''}</option>`).join('');
 }
 function openPresetDlg(){
   normBuild(); const ch=build.char, ap=build.presets.find(p=>p.id===build.activePreset[ch]&&p.char===ch), n=build.presets.filter(p=>p.char===ch).length;
   openOv(`<div class="dlg sm" role="dialog" aria-modal="true" aria-label="Preset"><div class="dh"><h3>${ap?'Preset':'New preset'}</h3><button class="btn sm ghost" data-act="close">Close</button></div>
-    <p class="msg" style="margin:0">Keeps ${esc(ch)}'s vessel and the six relics in it.</p>
+    <p class="msg" style="margin:0">${ap&&ap.game?'This preset comes from your save and follows the game. Save it as new to keep a copy you can change.':`Keeps ${esc(ch)}'s vessel and the six relics in it.`}</p>
     <div class="field"><label for="pr-name">Name</label><input id="pr-name" class="search" maxlength="40" value="${esc(ap?ap.name:`${ch} ${n+1}`)}" data-autofocus></div>
-    <div class="dh"><div>${ap?`<button class="btn sm danger" data-act="prdel">Delete</button>`:''}</div><div class="btns">${ap?`<button class="btn" data-act="prnew">Save as new</button><button class="btn pri" data-act="prupd">Update</button>`:`<button class="btn pri" data-act="prnew">Save</button>`}</div></div></div>`);
+    <div class="dh"><div>${ap&&!ap.game?`<button class="btn sm danger" data-act="prdel">Delete</button>`:''}</div><div class="btns">${ap&&ap.game?`<button class="btn pri" data-act="prnew">Save as new</button>`:ap?`<button class="btn" data-act="prnew">Save as new</button><button class="btn pri" data-act="prupd">Update</button>`:`<button class="btn pri" data-act="prnew">Save</button>`}</div></div></div>`);
 }
 function renderPickers(){
   const ch=build.char, v=curVessel();
@@ -2071,6 +2071,26 @@ function svRecords(region){
   }
   return recs;
 }
+// In-game relic presets (Relic Rites → Save as Preset) live in the character slot as 80-byte entries:
+// [01, Nightfarer 1–10, 00, list order][name, 20 UTF-16 characters][vessel: Nightfarer × 1000 + 0–6, or 19000–19010 for the grails]
+// [6 relic handles, slots 1–6, 0 = empty][FILETIME]. Only read, like the rest of the save.
+const SV_CHARS=['Wylder','Guardian','Ironeye','Duchess','Raider','Revenant','Recluse','Executor','Scholar','Undertaker'];
+const SV_GRAIL={19000:7,19001:8,19002:9,19010:10};
+function svPresets(data, owned){
+  const out=[], seen=new Set();
+  for(let p=0;p+80<=data.length;p+=4){
+    if(data[p]!==1||data[p+2]!==0) continue; const ch=data[p+1]; if(ch<1||ch>10) continue;
+    const v=sv32(data,p+44), own=v>=ch*1000&&v<=ch*1000+6, vi=own?v-ch*1000:SV_GRAIL[v]; if(vi===undefined) continue;
+    let name='', ok=true; for(let k=0;k<20;k++){ const c=data[p+4+2*k]|(data[p+5+2*k]<<8); if(!c) break; if(c<0x20){ ok=false; break; } name+=String.fromCharCode(c); }
+    if(!ok||!name.trim()) continue;
+    const slots=[]; let mine=0;
+    for(let k=0;k<6;k++){ const h=sv32(data,p+48+4*k)>>>0; if(h===0){ slots.push(null); continue; } if((h>>>24)!==0xc0){ ok=false; break; } if(owned.has(h)){ mine++; slots.push('s'+h); } else slots.push(null); }
+    if(!ok||!mine) continue;
+    const key=ch+'|'+data[p+3]; if(seen.has(key)) continue; seen.add(key);
+    out.push({order:data[p+3],char:SV_CHARS[ch-1],name:name.trim(),vessel:VESSEL_ORDER[vi],slots});
+  }
+  return out.sort((a,b)=>a.order-b.order);
+}
 function svCharacter(nameBytes, data){
   const name=new TextDecoder('utf-16le').decode(nameBytes).replace(/\0+$/,'');
   const anchor=bFind(data,nameBytes); if(anchor<0) return {name,relics:[]};
@@ -2079,7 +2099,8 @@ function svCharacter(nameBytes, data){
   const first=new Map();
   for(let p=tableEnd;p+10<=data.length;p++){ if(data[p+4]!==1||data[p+5]!==0||data[p+6]!==0||data[p+7]!==0) continue; const h=sv32(data,p)>>>0; if(!first.has(h)) first.set(h,p); }
   const relics=[]; for(const r of recs){ const off=first.get(r.handle); if(off===undefined) continue; relics.push(Object.assign(r,{sortKey:sv16(data,off+8)})); }
-  return {name,relics};
+  let presets=[]; try{ presets=svPresets(data,new Set(relics.map(r=>r.handle))); }catch(e){}
+  return {name,relics,presets};
 }
 async function parseSave(buffer){
   const entries=await svDecrypt(buffer); const profile=entries.get(10);
@@ -2127,26 +2148,31 @@ async function onSaveFile(file){
     await importSaveSlot(slots[0]);
   }catch(e){ openSaveDlg({step:'error',msg:e instanceof SaveParseError?e.message:"Couldn't read this file. Pick NR0000.sl2 from the Nightreign save folder."}); }
 }
+// the save's presets replace the ones from an earlier load; presets made in the planner stay
+function setGamePresets(list){ normBuild(); const keep=build.presets.filter(p=>!p.game);
+  build.presets=keep.concat((list||[]).map(p=>({id:`g-${p.char}-${p.order}`,name:p.name,char:p.char,vessel:p.vessel,slots:p.slots.slice(),game:true})));
+  for(const ch of Object.keys(build.activePreset)){ const id=build.activePreset[ch]; if(id&&!build.presets.some(p=>p.id===id)) build.activePreset[ch]=null; }
+  saveBuildSoon(); }
 async function importSaveSlot(slot, opt={}){
   const rows=slot.relics.map(r=>[r.handle,r.itemId,r.sortKey,r.eff,r.cur,1]);
   const info={name:slot.name,file:lastFile,count:rows.length,at:Date.now()};
   if(opt.quiet){
-    const sig=JSON.stringify(rows); if(sig===lastRowsSig) return; lastRowsSig=sig;
+    const sig=JSON.stringify([rows,slot.presets||[]]); if(sig===lastRowsSig) return; lastRowsSig=sig;
     const before=new Set(saveMap.keys());
-    await storeSaveRows(rows,info); setSaveRows(rows,info); renderAll();
+    await storeSaveRows(rows,info); setSaveRows(rows,info); setGamePresets(slot.presets); renderAll();
     const added=saveRelics.filter(r=>!before.has(r.id)).length, gone=[...before].filter(id=>!saveMap.has(id)).length;
     toast(`Relics updated from ${lastFile}`+(added||gone?`: ${added} new${gone?`, ${gone} gone`:''}`:''));
     return;
   }
-  lastRowsSig=JSON.stringify(rows);
+  lastRowsSig=JSON.stringify([rows,slot.presets||[]]);
   closeOv(); toast(`Loading ${slot.name}: ${rows.length} relics…`,'busy');
   const err=await storeSaveRows(rows,info);
-  setSaveRows(rows,info);
+  setSaveRows(rows,info); setGamePresets(slot.presets);
   if(!err) await clearManualRelics();
   ui.limit=60; renderAll();
   if(err){ openSaveDlg({step:'error',msg:err}); return; }
   const deep=saveRelics.filter(r=>r.deep).length, sus=saveRelics.filter(r=>r.bad&&r.bad.length).length;
-  closeOv(); toast(`Loaded ${slot.name}: ${rows.length} relics, ${rows.length-deep} standard and ${deep} deep.`+(sus?` ${sus} look edited, see Flagged.`:''), sus?'bad':'');
+  closeOv(); toast(`Loaded ${slot.name}: ${rows.length} relics, ${rows.length-deep} standard and ${deep} deep`+(slot.presets&&slot.presets.length?`, ${slot.presets.length} presets from the game`:'')+'.'+(sus?` ${sus} look edited, see Flagged.`:''), sus?'bad':'');
 }
 function toast(msg,kind){ const t=$('#toast'); if(!t) return; t.innerHTML=(kind==='busy'?'<i class="spin" aria-hidden="true"></i>':'')+`<span>${esc(msg)}</span>`; t.className='toast'+(kind?' '+kind:''); t.hidden=false; clearTimeout(toastTimer); if(kind!=='busy') toastTimer=setTimeout(()=>{ t.hidden=true; },4500); }
 function endBusyToast(){ const t=$('#toast'); if(t&&t.classList.contains('busy')) t.hidden=true; }
