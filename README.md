@@ -20,6 +20,7 @@ Your relics, presets and builds stay on your device.
 ```
 npm install
 npm run build        # dist/web (website) and dist/app (desktop page)
+npm test             # the calculator against every number measured in game (tools/measured.js)
 npm run app:dev      # run the desktop app (needs Rust)
 npm run app:build    # build the Windows installer
 ```
@@ -41,7 +42,7 @@ The numbers come from the game's regulation; the formulas that join them are mea
 - **An attack** is the whole R1, R2 or charged R2 chain: each hit is the attack × its motion value, with its own physical type, both from the moveset's rows. First hits are checked in game; later hits come from the data. Raider's Greataxe two-handed is measured where its animation differs from its rows. Bows, greatbows and crossbows hit with their ammo's moveset (arrow, greatarrow, bolt), not checked in game yet.
 - **Buffs** use the regulation's values. Checked in game so far: Improved Melee Attack Power gives ×1.05 for one and ×1.12 for two (the data says ×1.06 each), Improved Affinity Attack Power +2 counts on spells (×1.1 each, multiplied), Melee and Added Affinity don't.
 
-Other buffs, boss HP and negation, and status buildup come from the data and aren't checked in game yet.
+Other buffs, boss HP and negation, and status buildup come from the data and aren't checked in game yet. Every number measured in game is a case in `tools/measured.js`, and each build checks the calculator still gives it.
 
 ## Overlay (desktop app)
 

@@ -27,6 +27,8 @@ jobs:
           cache: npm
       - run: npm ci
       - run: node tools/build.js
+      - name: Check the calculator against in-game numbers
+        run: npm test
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist/web
@@ -58,6 +60,8 @@ jobs:
           workspaces: src-tauri
       - run: npm ci
       - run: node tools/build.js
+      - name: Check the calculator against in-game numbers
+        run: npm test
       - run: npx tauri build
       - name: Name the files
         shell: pwsh
