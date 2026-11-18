@@ -61,6 +61,9 @@ const CASES = [
   ["Guardian's Halberd two-handed R2, Guardian 15 (lands once)", W('Guardian', 15, "Guardian's Halberd", { two: true, atk: 'r2' }), { chain: [139, 139] }],
   ["Guardian's Halberd two-handed charged R2, Guardian 15 (53 + 161)", W('Guardian', 15, "Guardian's Halberd", { two: true, atk: 'ch' }), { chain: [53, 161, 53, 161] }],
   ['Short Spear R2, Guardian 15 (63 + 112)', W('Guardian', 15, 'Short Spear', { atk: 'r2' }), { chain: [63, 112, 63, 112] }],
+  // twinblade: two-handing shows half the attack in the menu (its two-handed R1 opens at 50%), the press then lands 50% + 103%
+  ['Twinblade, Wylder 15', W('Wylder', 15, 'Twinblade'), { menu: 108, hit: 108 }],
+  ['Twinblade two-handed R1, Wylder 15 (54 + 111)', W('Wylder', 15, 'Twinblade', { two: true }), { menu: 54, hit: 54, p0: 165 }],
   // physical + magic: the game rounds the sum, not each type
   ['Crystal Sword (Uncommon) R1 chain, Guardian 15', W('Guardian', 15, 'Crystal Sword', { rar: 1 }), { menu: 110, chain: [110, 111, 113, 114, 121] }],
   ["Duchess' Dagger, Duchess 15, the whole set", W('Duchess', 15, "Duchess' Dagger", { fx: [...DEEP, 'melee', 'melee', 'skillap', 'skillap', 'addedaff'] }), { menu: 70, hit: 78, tol: 1 }],
@@ -88,7 +91,7 @@ win.eval(`window.__measure = function(c){
     const cat = CATBY[c.cat]; if (!cat) throw new Error('no catalyst ' + c.cat); ws.sp[c.mode] = c.spell || [cat[4], cat[5]].find(spDmg); }
   return withCalcBuild(() => { const list = mk(c.fx || []), a = calcStats(list).a;
     const kind = c.kind === 'wep' && c.atk === 'ch' ? 'charged' : 'normal', ch = chainOn(list, bossOf(DUMMY), kind), h = ch.hs[0];
-    const out = { hit: Math.round(h.r.dmg), landed: Math.round(h.dmg), chain: ch.hs.flatMap(x => Array(x.h ? x.h.hits : 1).fill(Math.round(x.r.dmg))) };
+    const out = { hit: Math.round(h.r.dmg), landed: Math.round(h.dmg), chain: ch.hs.flatMap(x => Array(x.h ? x.h.hits : 1).fill(Math.round(x.r.dmg))), p0: Math.round(ch.press[0]) };
     if (c.kind === 'wep') out.menu = weaponAR(curWeapon(), a).total;
     else { const cs2 = curSpell(), sc = spellScaling(cs2.k, a, cs2.rate); out.ss = Math.floor(Math.max(...sc) + 1e-9); }
     return JSON.stringify(out); });
