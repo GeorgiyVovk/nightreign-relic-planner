@@ -40,6 +40,8 @@ The numbers come from the game's regulation; the formulas that join them are mea
 - **Two-handing** doesn't count Strength ×1.5: the attack goes up by the moveset's two-handed rate (×1.03 for a straight sword, ×1.14 for a greataxe).
 - **Spell scaling** is (100 + Intelligence or Faith along the curve) × 90% × the staff's or seal's rate for its rarity; a spell hits for its damage × scaling × 60%.
 - **An attack** is the whole R1, R2 or charged R2 chain: each hit is the attack × its motion value, with its own physical type, both from the moveset's rows; a press that lands more than one hit (a twinblade's second blade, both fists, a halberd's two-handed R2) shows each hit, and the big number is the whole press. First hits are checked in game; later hits come from the data. Raider's Greataxe two-handed is measured where its animation differs from its rows. Bows, greatbows and crossbows hit with their ammo's moveset (arrow, greatarrow, bolt), not checked in game yet.
+- **Rounding**: a hit's damage types (physical, magic, ...) are added up and the sum is rounded down once, not each type on its own.
+- **Bows** shoot the ammo's arrows; Ironeye's R2 and charged shot loose three arrows a press, each a hit.
 - **Buffs** use the regulation's values. Checked in game so far: Improved Melee Attack Power gives ×1.05 for one and ×1.12 for two (the data says ×1.06 each), Improved Affinity Attack Power +2 counts on spells (×1.1 each, multiplied), Melee and Added Affinity don't.
 
 Other buffs, boss HP and negation, and status buildup come from the data and aren't checked in game yet. Every number measured in game is a case in `tools/measured.js`, and each build checks the calculator still gives it.
