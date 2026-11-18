@@ -57,6 +57,10 @@ const CASES = [
   ["Ironeye's Bow R1 chain, Ironeye 15", W('Ironeye', 15, "Ironeye's Bow"), { chain: [66, 66, 67, 72] }],
   ["Ironeye's Bow charged shot, Ironeye 15 (three arrows)", W('Ironeye', 15, "Ironeye's Bow", { atk: 'ch' }), { chain: [49, 49, 49, 51, 51, 51], tol: 1 }],
   ['Longbow R1 chain, Ironeye 15', W('Ironeye', 15, 'Longbow'), { chain: [70, 71, 72, 77], tol: 1 }],
+  // presses that land more than once (chain lists every hit)
+  ["Guardian's Halberd two-handed R2, Guardian 15 (lands once)", W('Guardian', 15, "Guardian's Halberd", { two: true, atk: 'r2' }), { chain: [139, 139] }],
+  ["Guardian's Halberd two-handed charged R2, Guardian 15 (53 + 161)", W('Guardian', 15, "Guardian's Halberd", { two: true, atk: 'ch' }), { chain: [53, 161, 53, 161] }],
+  ['Short Spear R2, Guardian 15 (63 + 112)', W('Guardian', 15, 'Short Spear', { atk: 'r2' }), { chain: [63, 112, 63, 112] }],
   // physical + magic: the game rounds the sum, not each type
   ['Crystal Sword (Uncommon) R1 chain, Guardian 15', W('Guardian', 15, 'Crystal Sword', { rar: 1 }), { menu: 110, chain: [110, 111, 113, 114, 121] }],
   ["Duchess' Dagger, Duchess 15, the whole set", W('Duchess', 15, "Duchess' Dagger", { fx: [...DEEP, 'melee', 'melee', 'skillap', 'skillap', 'addedaff'] }), { menu: 70, hit: 78, tol: 1 }],
