@@ -541,6 +541,32 @@ select:hover{background-image:linear-gradient(to top right,transparent 50%,var(-
 .rpl .curse{color:var(--bad)}
 .hempty p{margin:0 0 12px;color:var(--muted);max-width:60ch}
 .hpager{display:flex;justify-content:center;margin-top:12px}
+.hstat.hbtn{border:0;text-align:left;color:inherit;cursor:pointer}
+.hstat.hbtn:hover{background-image:linear-gradient(var(--hov),var(--hov))}
+.hstat.hbtn[aria-expanded="true"]{box-shadow:inset 0 0 0 1px var(--accent)}
+.hstat.hbtn .k{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.hstat.hbtn .caret{flex:none;width:0;height:0;border-left:5px solid transparent;border-right:5px solid transparent;border-top:6px solid var(--muted)}
+.hstat.hbtn[aria-expanded="true"] .caret{transform:rotate(180deg)}
+.hchart{margin-top:14px}
+.hch{display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:4px 14px;font-size:12px;color:var(--muted);margin-bottom:6px}
+.hlegend{display:flex;gap:14px}
+.hchart.nodots .hlegend{display:none}
+.hlegend i{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:6px;vertical-align:-1px;background:var(--accent)}
+.hlegend i.o{background:var(--surface);box-shadow:inset 0 0 0 2px var(--accent)}
+.hplot{position:relative;min-height:180px}
+.hplot svg{display:block;max-width:100%;touch-action:pan-y;border-radius:4px}
+.hplot svg:focus{outline:none}
+.hplot svg:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.hplot .grid{stroke:var(--line);stroke-width:1}
+.hplot .yl,.hplot .xl{fill:var(--muted);font-family:var(--f-mono);font-size:11px}
+.hplot .yl{text-anchor:end}
+.hplot .ln{fill:none;stroke:var(--accent);stroke-width:2;stroke-linejoin:round;stroke-linecap:round}
+.hplot .dw{fill:var(--accent);stroke:var(--surface);stroke-width:2}
+.hplot .dl{fill:var(--surface);stroke:var(--accent);stroke-width:2}
+.hplot .hd{stroke-width:2.5}
+.hplot .xh{stroke:var(--line2);stroke-width:1}
+.htip{position:absolute;z-index:2;pointer-events:none;display:flex;flex-direction:column;gap:1px;padding:6px 10px;background:var(--surface);border:1px solid var(--line2);border-radius:var(--r-md);box-shadow:var(--shadow);font-size:12px;color:var(--muted);white-space:nowrap}
+.htip b{font-family:var(--f-mono);font-variant-numeric:tabular-nums;font-size:15px;font-weight:600;color:var(--fg)}
 </style>
 
 <header class="top">
@@ -1546,7 +1572,7 @@ window.addEventListener('hashchange',showPage); window.addEventListener('popstat
 
 /* ============ HISTORY ============ */
 // The save's Result History (svHistory): totals, by Nightlord, by your Nightfarer, the people you played with, and every run.
-const hist = {mode:'all', limit:20};
+const hist = {mode:'all', limit:20, chart:false};
 const NLORD=[['Gladius','Tricephalos'],['Adel','Gaping Jaw'],['Gnoster','Sentient Pest'],['Maris','Augur'],['Libra','Equilibrious Beast'],['Fulghor','Darkdrift Knight'],['Caligo','Fissure in the Fog'],['Heolstor','Night Aspect'],['Harmonia','Balancers'],['Straghess','Dreglord']];
 const nlName = n => NLORD[n%10] ? (n>=10?'Everdark ':'')+NLORD[n%10][0] : 'Nightlord '+n;
 const nfName = c => SV_CHARS[c-1] || 'Nightfarer';
@@ -1555,6 +1581,8 @@ const MONTHS=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov',
 // the save keeps the clock the game shows, so read it back as UTC
 const runDate = (t,short) => { const d=new Date(t), p=x=>String(x).padStart(2,'0'); return `${d.getUTCDate()} ${MONTHS[d.getUTCMonth()]} ${d.getUTCFullYear()}`+(short?'':`, ${p(d.getUTCHours())}:${p(d.getUTCMinutes())}`); };
 const dayName = d => d>=4?'Final Day':d>=2?'Second Day':'First Day';
+// a Deep of Night run left on the first day keeps no rating after it (0, depth 0); the next run starts where it began
+const rAfter = r => r.ra||r.da ? r.ra : r.rb, dAfter = r => r.ra||r.da ? r.da : r.db;
 const winPct = (w,n) => n?Math.round(100*w/n)+'%':'–';
 // Weapon name from the history's weapon id and the item it came from (src). Most are this regulation's weapons. A Nightfarer's
 // weapon an invader dropped is 72N000x (N: Nightfarer 1-10), its src 1XXXX500x (XXXX its base). Shadow of the Erdtree weapons
@@ -1579,9 +1607,9 @@ function histGroup(list,keys){
 }
 const wrCell = e => `<span class="wr">${winPct(e.w,e.n)}<i style="--p:${e.n?Math.round(100*e.w/e.n):0}%" aria-hidden="true"></i></span>`;
 function histRunHtml(r){
-  const don=r.mode===2, d=r.ra-r.rb, team=r.pl.map(p=>nfName(p.ch)).join(', ');
+  const don=r.mode===2, d=rAfter(r)-r.rb, team=r.pl.map(p=>nfName(p.ch)).join(', ');
   const res=r.win?'Victory':'Defeat · '+dayName(r.day);
-  const rt=don?`<span>Depth ${r.db}</span><span>${int(r.rb)} → ${int(r.ra)} <span class="${d>0?'up':d<0?'down':''}">${d>0?'+':''}${d?int(d):'±0'}</span></span>`:'<span>Expedition</span>';
+  const rt=don?`<span>Depth ${r.db}</span><span>${int(r.rb)} → ${int(rAfter(r))} <span class="${d>0?'up':d<0?'down':''}">${d>0?'+':''}${d?int(d):'±0'}</span></span>`:'<span>Expedition</span>';
   const counts=[['enemies felled',r.c[0]],['great enemies felled',r.c[1]],['treasure found',r.c[2]],['allies rescued',r.c[4]]];
   const players=r.pl.map((p,i)=>{
     const ws=p.w.filter(w=>w[0]!==110000).map(w=>{
@@ -1602,14 +1630,16 @@ function renderHistory(){
       <p>${saveInfo?'Load your save again to read its Result History: the last 100 expeditions, with the Nightlord, the result, your Deep of Night rating, the team and their weapons.':'The game keeps your last 100 expeditions in its save file: the Nightlord, the result, your Deep of Night rating, the team and their weapons. Load the save to see them here.'}</p>
       <button class="btn pri" data-act="loadsave">${saveInfo?'Load save again':'Load save'}</button></section>`; return; }
   const list=histRuns(), won=list.filter(r=>r.win).length, dons=list.filter(r=>r.mode===2), last=dons[0];
-  const best=dons.reduce((m,r)=>Math.max(m,r.ra),0), oldest=list.length?list[list.length-1].t:0;
+  const best=dons.reduce((m,r)=>Math.max(m,rAfter(r)),0), oldest=list.length?list[list.length-1].t:0;
   const seg=[['all','All'],['don','Deep of Night'],['exp','Expeditions']].map(([k,l])=>`<button data-hmode="${k}" aria-pressed="${hist.mode===k}">${l}</button>`).join('');
   let h=`<section class="panel"><div class="ph"><h2>Result history</h2><div class="phr"><div class="seg" role="group" aria-label="Show">${seg}</div></div></div>`;
   if(!list.length){ h+=`<p class="msg">No ${hist.mode==='don'?'Deep of Night runs':'expeditions'} in the last ${runs.length} runs.</p></section>`; el.innerHTML=h; return; }
   h+=`<div class="hstats"><div class="hstat"><span class="k">Runs</span><span class="v">${list.length}</span><span class="s">since ${runDate(oldest,1)}</span></div>
     <div class="hstat"><span class="k">Victories</span><span class="v">${won}</span><span class="s">${winPct(won,list.length)} of runs</span></div>`;
-  if(last) h+=`<div class="hstat"><span class="k">Deep of Night rating</span><span class="v">${int(last.ra)}</span><span class="s">depth ${last.da}${best>last.ra?` · best ${int(best)}`:''}</span></div>`;
-  h+=`</div></section>`;
+  if(last) h+=`<button class="hstat hbtn" data-act="hchart" aria-expanded="${hist.chart}" aria-controls="hchart" title="${hist.chart?'Hide':'Show'} the rating chart"><span class="k">Deep of Night rating<i class="caret" aria-hidden="true"></i></span><span class="v">${int(rAfter(last))}</span><span class="s">depth ${dAfter(last)}${best>rAfter(last)?` · best ${int(best)}`:''}</span></button>`;
+  h+=`</div>`;
+  if(last) h+=`<div class="hchart" id="hchart"${hist.chart?'':' hidden'}><div class="hch"><span>Rating after each Deep of Night run</span><span class="hlegend"><span><i aria-hidden="true"></i>Victory</span><span><i class="o" aria-hidden="true"></i>Defeat</span></span></div><div class="hplot"></div></div>`;
+  h+=`</section>`;
   const byNl=histGroup(list,r=>[[r.nl]]).sort((a,b)=>(a.k%10)-(b.k%10)||a.k-b.k);
   const byNf=histGroup(list,r=>[[r.pl[0].ch,{kills:r.pl[0].kills}]]).sort((a,b)=>b.n-a.n||a.k-b.k);
   const mates=histGroup(list,r=>r.pl.slice(1).map(p=>[p.name,{ch:p.ch}])).sort((a,b)=>b.n-a.n||b.w-a.w||a.k.localeCompare(b.k));
@@ -1627,7 +1657,49 @@ function renderHistory(){
   h+=`<section class="panel"><div class="ph"><h2>Runs</h2><span class="hint">newest first · open a run for the team and their weapons</span></div><div class="runs">${shown.map(histRunHtml).join('')}</div>
     ${list.length>shown.length?`<div class="hpager"><button class="btn" data-act="hmore">Show ${Math.min(20,list.length-shown.length)} more runs</button></div>`:''}</section>`;
   el.innerHTML=h;
+  if(hist.chart) drawRatingChart();
 }
+// Deep of Night rating after each run, oldest to newest: the line goes up on a win and down on a loss;
+// filled dots are victories, hollow ones defeats (shape, not colour). Hover, tap or arrow keys for the run.
+function drawRatingChart(){
+  const box=$('#hchart .hplot'); if(!box) return;
+  const pts=runs.filter(r=>r.mode===2).slice().reverse(), n=pts.length; if(!n){ box.textContent=''; return; }
+  const W=Math.max(260,Math.floor(box.clientWidth)), H=W<560?180:220, L=48, R=14, T=12, B=26, PW=W-L-R;
+  const v=pts.map(rAfter); let lo=Math.min(...v), hi=Math.max(...v);
+  const step=[100,250,500,1000,2000].find(st=>Math.max(hi-lo,100)/st<=5)||5000;
+  lo=Math.floor(lo/step)*step; hi=Math.ceil(hi/step)*step; if(hi===lo) hi=lo+step;
+  const x=i=>L+(n===1?PW/2:i*PW/(n-1)), y=v=>T+(hi-v)*(H-T-B)/(hi-lo), f=v=>v.toFixed(1);
+  let g='';
+  for(let v=lo;v<=hi;v+=step) g+=`<line class="grid" x1="${L}" x2="${W-R}" y1="${f(y(v))}" y2="${f(y(v))}"/><text class="yl" x="${L-8}" y="${f(y(v))}" dy="0.32em">${int(v)}</text>`;
+  const k=Math.max(2,Math.min(6,Math.floor(PW/90))), xs=[...new Set(Array.from({length:Math.min(k,n)},(_,j)=>Math.round(j*(n-1)/Math.max(1,Math.min(k,n)-1))))];
+  xs.forEach(i=>{ g+=`<text class="xl" x="${f(x(i))}" y="${H-6}" text-anchor="${n>1&&i===0?'start':n>1&&i===n-1?'end':'middle'}">${runDate(pts[i].t,1).replace(/ \d{4}$/,'')}</text>`; });
+  // the line breaks where a run doesn't start from the last one's rating (the rating was reset in between)
+  g+=`<path class="ln" d="${pts.map((r,i)=>(i&&r.rb===v[i-1]?'L':'M')+f(x(i))+' '+f(y(v[i]))).join('')}"/>`;
+  const dots=n===1||PW/(n-1)>=7; box.parentNode.classList.toggle('nodots',!dots);
+  if(dots) g+=pts.map((r,i)=>`<circle class="${r.win?'dw':'dl'}" cx="${f(x(i))}" cy="${f(y(v[i]))}" r="${r.win?4.5:3.5}"/>`).join('');
+  g+=`<line class="xh" y1="${T}" y2="${H-B}" x1="0" x2="0" visibility="hidden"/><circle class="hd" r="5" cx="0" cy="0" visibility="hidden"/>`;
+  box.innerHTML=`<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" tabindex="0" role="img" aria-label="Deep of Night rating over ${n} runs, from ${int(v[0])} to ${int(v[n-1])}. Arrow keys step through the runs.">${g}</svg><div class="htip" hidden></div>`;
+  const svg=box.querySelector('svg'), xh=svg.querySelector('.xh'), hd=svg.querySelector('.hd'), tip=box.querySelector('.htip');
+  let cur=-1;
+  const show=i=>{ cur=i; const r=pts[i], px=x(i), py=y(v[i]), d=v[i]-r.rb;
+    xh.setAttribute('x1',px); xh.setAttribute('x2',px); xh.setAttribute('visibility','visible');
+    hd.setAttribute('cx',px); hd.setAttribute('cy',py); hd.setAttribute('class','hd '+(r.win?'dw':'dl')); hd.setAttribute('visibility','visible');
+    const line=(tag,txt)=>{ const e=document.createElement(tag); e.textContent=txt; return e; };
+    tip.replaceChildren(line('b',int(v[i])), line('span',`${d>0?'+':''}${d?int(d):'±0'} · ${r.win?'Victory':'Defeat · '+dayName(r.day)}`),
+      line('span',`${nlName(r.nl)}${r.u?' (unknown)':''} · Depth ${r.db}`), line('span',`${runDate(r.t)} · #${r.n}`));
+    tip.hidden=false;
+    const tw=tip.offsetWidth, th=tip.offsetHeight; let lx=px+14; if(lx+tw>W) lx=px-14-tw; if(lx<0) lx=Math.max(0,Math.min(W-tw,px-tw/2));
+    tip.style.left=lx+'px'; tip.style.top=Math.max(0,Math.min(H-th,py-th/2))+'px'; };
+  const hide=()=>{ cur=-1; tip.hidden=true; xh.setAttribute('visibility','hidden'); hd.setAttribute('visibility','hidden'); };
+  const at=ev=>{ const b=svg.getBoundingClientRect(); return Math.max(0,Math.min(n-1,Math.round((ev.clientX-b.left-L)/(PW||1)*(n-1)))); };
+  svg.addEventListener('pointermove',ev=>show(at(ev))); svg.addEventListener('pointerdown',ev=>show(at(ev)));
+  svg.addEventListener('pointerleave',ev=>{ if(ev.pointerType==='mouse') hide(); });
+  svg.addEventListener('focus',()=>show(cur<0?n-1:cur)); svg.addEventListener('blur',hide);
+  svg.addEventListener('keydown',ev=>{ const m={ArrowLeft:-1,ArrowRight:1}[ev.key];
+    if(m){ ev.preventDefault(); show(Math.max(0,Math.min(n-1,(cur<0?n-1:cur)+m))); } else if(ev.key==='Home'){ ev.preventDefault(); show(0); } else if(ev.key==='End'){ ev.preventDefault(); show(n-1); } else if(ev.key==='Escape') hide(); });
+}
+let chartTimer=null;
+window.addEventListener('resize',()=>{ if(!hist.chart) return; clearTimeout(chartTimer); chartTimer=setTimeout(()=>{ if(curPage()==='history') drawRatingChart(); },120); });
 
 /* ============ RENDER ============ */
 function renderAll(){ showPage(); renderStore(); renderPickers(); renderSlots(); renderLibrary(); renderEnemy(); renderCombat(); renderResults(); renderHistory(); }
@@ -2699,6 +2771,7 @@ document.addEventListener('click', async ev=>{
   if(a==='prdel'){ normBuild(); const ch=build.char, id=build.activePreset[ch]; build.presets=build.presets.filter(p=>p.id!==id); build.activePreset[ch]=null; saveBuildSoon(); closeOv(); renderPresets(); toast('Preset deleted.'); return; }
   if(a==='loadsave'){ openSaveDlg({step:'intro'}); return; }
   if(a==='hmore'){ hist.limit+=20; renderHistory(); return; }
+  if(a==='hchart'){ hist.chart=!hist.chart; t.setAttribute('aria-expanded',String(hist.chart)); t.title=(hist.chart?'Hide':'Show')+' the rating chart'; const c=$('#hchart'); if(c){ c.hidden=!hist.chart; if(hist.chart) drawRatingChart(); } return; }
   if(a==='appsave'){ const x=appSaves[+t.dataset.i]; if(x) await loadAppSave(x.path); return; }
   if(a==='apppick'){ try{ const x=await APP.pickSave(); if(x&&x.path) await loadAppSave(x.path); }catch(e){} return; }
   if(a==='choosesave'){ $('#savefile').click(); return; }
