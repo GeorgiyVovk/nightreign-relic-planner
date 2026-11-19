@@ -493,8 +493,10 @@ select:hover{background-image:linear-gradient(to top right,transparent 50%,var(-
 .hstat .k{font-size:12px;color:var(--muted)}
 .hstat .v{font-family:var(--f-mono);font-variant-numeric:tabular-nums;font-size:26px;font-weight:600;line-height:1.05}
 .hstat .s{font-size:12px;color:var(--muted)}
-.hgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
-@media (max-width:1000px){.hgrid{grid-template-columns:minmax(0,1fr)}}
+.htabs{margin-top:18px;overflow-x:auto;scrollbar-width:none}
+.htabs button{white-space:nowrap}
+.htabp{padding-top:12px;max-width:760px}
+@media (max-width:560px){.htabs button{padding-inline:10px} .htabs{-webkit-mask-image:linear-gradient(to right,#000 88%,transparent);mask-image:linear-gradient(to right,#000 88%,transparent)}}
 .htab{width:100%;border-collapse:collapse;font-size:13px}
 .htab th{font-size:11px;font-weight:500;color:var(--muted);text-align:right;padding:0 0 4px 10px;border-bottom:1px solid var(--line);white-space:nowrap}
 .htab td{padding:6px 0 6px 10px;border-bottom:1px solid var(--line);text-align:right;font-family:var(--f-mono);font-variant-numeric:tabular-nums;white-space:nowrap}
@@ -1591,7 +1593,7 @@ window.addEventListener('hashchange',showPage); window.addEventListener('popstat
 
 /* ============ HISTORY ============ */
 // The save's Result History (svHistory): totals, by Nightlord, by your Nightfarer, the people you played with, and every run.
-const hist = {mode:'all', team:0, limit:20, chart:false, all:{}};   // team: 0 any, 1 solo, 2 duo, 3 trio
+const hist = {mode:'all', team:0, limit:20, chart:false, all:{}, tab:'nl'};   // team: 0 any, 1 solo, 2 duo, 3 trio
 const NLORD=[['Gladius','Tricephalos'],['Adel','Gaping Jaw'],['Gnoster','Sentient Pest'],['Maris','Augur'],['Libra','Equilibrious Beast'],['Fulghor','Darkdrift Knight'],['Caligo','Fissure in the Fog'],['Heolstor','Night Aspect'],['Harmonia','Balancers'],['Straghess','Dreglord']];
 const nlName = n => NLORD[n%10] ? (n>=10?'Everdark ':'')+NLORD[n%10][0] : 'Nightlord '+n;
 const nfName = c => SV_CHARS[c-1] || 'Nightfarer';
@@ -1684,25 +1686,27 @@ function renderHistory(){
   if(last) h+=`<button class="hstat hbtn" data-act="hchart" aria-expanded="${hist.chart}" aria-controls="hchart" title="${hist.chart?'Hide':'Show'} the rating chart"><span class="k">Deep of Night rating<i class="caret" aria-hidden="true"></i></span><span class="v">${int(rAfter(last))}</span><span class="s">depth ${dAfter(last)}${best>rAfter(last)?` · best ${int(best)}`:''}</span></button>`;
   h+=`</div>`;
   if(last) h+=`<div class="hchart" id="hchart"${hist.chart?'':' hidden'}><div class="hch"><span>Rating after each Deep of Night run</span><span class="hlegend"><span><i aria-hidden="true"></i>Victory</span><span><i class="o" aria-hidden="true"></i>Defeat</span></span></div><div class="hplot"></div></div>`;
-  h+=`</section>`;
   const byNl=histGroup(list,r=>[[r.nl]]).sort((a,b)=>(a.k%10)-(b.k%10)||a.k-b.k);
   const byNf=histGroup(list,r=>[[r.pl[0].ch,{kills:r.pl[0].kills}]]).sort((a,b)=>b.n-a.n||a.k-b.k);
   const mates=histGroup(list,r=>r.pl.slice(1).map(p=>[p.name,{ch:p.ch}])).sort((a,b)=>b.n-a.n||b.w-a.w||a.k.localeCompare(b.k));
-  const top=hist.all.m?mates:mates.slice(0,10), rest=mates.length-top.length;
+  const top=hist.all.m?mates:mates.slice(0,10);
   const more=(k,n,shown)=>n>shown?`<button class="btn sm ghost" data-act="hall" data-k="${k}">Show all ${n}</button>`:hist.all[k]&&n>(k==='m'?10:12)?`<button class="btn sm ghost" data-act="hall" data-k="${k}">Show fewer</button>`:'';
   const wmap=histGroup(list,r=>[...new Set(r.pl[0].w.filter(w=>w[0]!==110000).map(w=>wName(w[0],w[5],1)).filter(Boolean))].map(n=>[n])).sort((a,b)=>b.n-a.n||b.w-a.w||a.k.localeCompare(b.k));
   const wtop=hist.all.w?wmap:wmap.slice(0,12);
-  h+=`<div class="hgrid">
-    <section class="panel"><div class="ph"><h2>By Nightlord</h2></div><table class="htab"><thead><tr><th>Nightlord</th><th>Runs</th><th>Won</th><th>Win rate</th></tr></thead><tbody>
-      ${byNl.map(e=>`<tr><td>${esc(nlName(e.k))}<span class="s2">${esc(NLORD[e.k%10]?NLORD[e.k%10][1]:'')}</span></td><td>${e.n}</td><td>${e.w}</td><td>${wrCell(e)}</td></tr>`).join('')}</tbody></table></section>
-    <section class="panel"><div class="ph"><h2>Your Nightfarers</h2></div><table class="htab"><thead><tr><th>Nightfarer</th><th>Runs</th><th>Won</th><th>Win rate</th><th>Kills</th></tr></thead><tbody>
+  // the tables sit in the stats panel, one at a time
+  const TABS={
+    nl:['Nightlords',()=>`<table class="htab"><thead><tr><th>Nightlord</th><th>Runs</th><th>Won</th><th>Win rate</th></tr></thead><tbody>
+      ${byNl.map(e=>`<tr><td>${esc(nlName(e.k))}<span class="s2">${esc(NLORD[e.k%10]?NLORD[e.k%10][1]:'')}</span></td><td>${e.n}</td><td>${e.w}</td><td>${wrCell(e)}</td></tr>`).join('')}</tbody></table>`],
+    nf:['Nightfarers',()=>`<table class="htab"><thead><tr><th>Your Nightfarer</th><th>Runs</th><th>Won</th><th>Win rate</th><th>Kills</th></tr></thead><tbody>
       ${byNf.map(e=>`<tr><td>${nfName(e.k)}</td><td>${e.n}</td><td>${e.w}</td><td>${wrCell(e)}</td><td title="Average per run">${Math.round(e.kills/e.n)}</td></tr>`).join('')}</tbody></table>
-      <p class="hmore">Kills: average per run.</p></section>
-    <section class="panel"><div class="ph"><h2>Played with</h2></div>${top.length?`<table class="htab"><thead><tr><th>Player</th><th>Runs</th><th>Won</th><th>Win rate</th></tr></thead><tbody>
-      ${top.map(e=>`<tr><td>${esc(e.k)}<span class="s2">${[...e.chars.entries()].sort((a,b)=>b[1]-a[1]).slice(0,3).map(([c])=>nfName(c)).join(', ')}</span></td><td>${e.n}</td><td>${e.w}</td><td>${wrCell(e)}</td></tr>`).join('')}</tbody></table><div class="hmore">${more('m',mates.length,top.length)}</div>`:`<p class="msg">Only solo runs here.</p>`}</section>
-    <section class="panel"><div class="ph"><h2>Your weapons</h2></div>${wtop.length?`<table class="htab"><thead><tr><th>Weapon</th><th>Runs</th><th>Won</th><th>Win rate</th></tr></thead><tbody>
-      ${wtop.map(e=>`<tr><td>${esc(e.k)}</td><td>${e.n}</td><td>${e.w}</td><td>${wrCell(e)}</td></tr>`).join('')}</tbody></table><div class="hmore"><span>Runs you finished with it, any affinity.</span>${more('w',wmap.length,wtop.length)}</div>`:`<p class="msg">No weapons recorded.</p>`}</section>
-  </div>`;
+      <p class="hmore">Kills: average per run.</p>`],
+    mates:['Teammates',()=>top.length?`<table class="htab"><thead><tr><th>Player</th><th>Runs</th><th>Won</th><th>Win rate</th></tr></thead><tbody>
+      ${top.map(e=>`<tr><td>${esc(e.k)}<span class="s2">${[...e.chars.entries()].sort((a,b)=>b[1]-a[1]).slice(0,3).map(([c])=>nfName(c)).join(', ')}</span></td><td>${e.n}</td><td>${e.w}</td><td>${wrCell(e)}</td></tr>`).join('')}</tbody></table><div class="hmore">${more('m',mates.length,top.length)}</div>`:`<p class="msg">Only solo runs here.</p>`],
+    w:['Weapons',()=>wtop.length?`<table class="htab"><thead><tr><th>Your weapon</th><th>Runs</th><th>Won</th><th>Win rate</th></tr></thead><tbody>
+      ${wtop.map(e=>`<tr><td>${esc(e.k)}</td><td>${e.n}</td><td>${e.w}</td><td>${wrCell(e)}</td></tr>`).join('')}</tbody></table><div class="hmore"><span>Runs you finished with it, any affinity.</span>${more('w',wmap.length,wtop.length)}</div>`:`<p class="msg">No weapons recorded.</p>`]};
+  const tab=TABS[hist.tab]?hist.tab:'nl';
+  h+=`<div class="tabs htabs" role="tablist" aria-label="Statistics">${Object.entries(TABS).map(([k,[l]])=>`<button role="tab" data-htab="${k}" aria-pressed="${k===tab}" aria-selected="${k===tab}">${l}</button>`).join('')}</div>
+    <div class="htabp" role="tabpanel">${TABS[tab][1]()}</div></section>`;
   const shown=list.slice(0,hist.limit);
   h+=`<section class="panel"><div class="ph"><h2>Runs</h2><span class="hint">newest first · open a run, then a player for their weapons, talismans and relics</span></div><div class="runs">${shown.map(histRunHtml).join('')}</div>
     ${list.length>shown.length?`<div class="hpager"><button class="btn" data-act="hmore">Show ${Math.min(20,list.length-shown.length)} more runs</button></div>`:''}</section>`;
@@ -2831,6 +2835,7 @@ document.addEventListener('click', async ev=>{
   if(t.dataset.wmode){ const ws=weaponState(); if(ws.mode===t.dataset.wmode) return; ws.mode=t.dataset.wmode; saveBuildSoon(); renderCombat(); renderResults(); return; }
   if(t.dataset.page){ if(t.dataset.page===curPage()) return; history.pushState(null,'',location.pathname+location.search+(t.dataset.page==='damage'?'#calculator':t.dataset.page==='history'?'#history':'')); showPage(); window.scrollTo(0,0); return; }
   if(t.dataset.hmode){ if(hist.mode===t.dataset.hmode) return; hist.mode=t.dataset.hmode; hist.limit=20; renderHistory(); return; }
+  if(t.dataset.htab){ if(hist.tab===t.dataset.htab) return; hist.tab=t.dataset.htab; renderHistory(); return; }
   if(t.dataset.hteam){ if(hist.team===+t.dataset.hteam) return; hist.team=+t.dataset.hteam; hist.limit=20; renderHistory(); return; }
   if(t.dataset.wr){ weaponState().rar=+t.dataset.wr; saveBuildSoon(); renderCombat(); renderResults(); return; }
   if(t.dataset.atk){ if(t.disabled) return; weaponState().atk=t.dataset.atk; saveBuildSoon(); renderResults(); return; }
