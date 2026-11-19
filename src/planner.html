@@ -490,6 +490,22 @@ select:hover{background-image:linear-gradient(to top right,transparent 50%,var(-
 /* history: the save's last 100 expeditions */
 .hist{display:flex;flex-direction:column;gap:16px;padding-block:6px 40px}
 .pagewrap{padding-block:6px 40px}
+.bgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px 28px}
+@media (max-width:760px){.bgrid{grid-template-columns:minmax(0,1fr)}}
+.bcol{min-width:0}
+.bchips{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:8px 0 10px}
+.bchip{font-size:12px;padding:3px 9px;border-radius:999px;background:var(--good-soft);color:var(--fg)}
+.bchip b{font-family:var(--f-mono);font-variant-numeric:tabular-nums;color:var(--good)}
+.bchip.neg{background:var(--bad-soft)} .bchip.neg b{color:var(--bad)}
+.blist{list-style:none;margin:6px 0 0;padding:0;display:flex;flex-direction:column}
+.blist li{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 14px;padding:8px 0;border-top:1px solid var(--line);font-size:13px}
+.blist li:first-child{border-top:0}
+.blist .bn{min-width:0}
+.blist .bx{color:var(--muted);font-size:12px}
+.blist .bv{text-align:right;color:var(--fg);font-variant-numeric:tabular-nums;max-width:20em}
+.blist .bc{grid-column:1 / -1;font-size:12px;color:var(--accent)}
+.blist li.bneg .bv,.blist li.bneg .bn{color:var(--bad)}
+@media (max-width:560px){.blist li{grid-template-columns:minmax(0,1fr)} .blist .bv{text-align:left;color:var(--muted);max-width:none}}
 #pages{overflow-x:auto;scrollbar-width:none}
 #pages button{white-space:nowrap;flex:none}
 @media (max-width:600px){#pages button{padding-inline:9px} #pages .tlong{display:none}}
@@ -660,6 +676,10 @@ select:hover{background-image:linear-gradient(to top right,transparent 50%,var(-
       <div id="stats"></div>
     </section>
   </div>
+  <section class="panel full">
+    <div class="ph"><h2>Relic bonuses</h2><span class="hint">what the relics in the slots add, with Deep of Night as set above</span></div>
+    <div id="bonuses"></div>
+  </section>
 </main>
 
 <main class="wrap pagewrap" id="pg-library" hidden>
@@ -2304,6 +2324,29 @@ function curseBlock(list){
   if(!rows.length) return '';
   return `<div class="curses"><h3 class="sh3">Curses</h3>${rows.map(e=>`<div class="crow"><div class="cl"><div><span>${esc(e.n)}</span>${e.note?`<small>${esc(e.note)}</small>`:''}</div></div></div>`).join('')}</div>`;
 }
+// Relic bonuses (Build page): every attack and defense effect of the slotted relics with its value, the always-on attack
+// bonuses multiplied up per kind on top. Effects that need a condition say which.
+function bonusList(){
+  const ch=charObj(), code=vesselCode(ch.k,curVessel()), map=new Map();
+  curSlots().forEach((rid,i)=>{ if(!rid) return; const r=relicById(rid); if(!r||(i>=3&&!build.don)||!slotOk(code,i,r)) return;
+    [...(r.effects||[]),...(r.curses||[])].forEach(id=>{ const e=EBY[id]; if(!e) return; const m=map.get(id)||{eff:e,count:0}; m.count++; map.set(id,m); }); });
+  return [...map.values()].filter(a=>!(a.eff.ch&&a.eff.ch!==ch.k)&&effWorks(a.eff,ch.k)).map(a=>Object.assign(a,{apply:a.eff.st?a.count:1}));
+}
+function renderBonuses(){
+  const el=$('#bonuses'); if(!el) return;
+  const list=bonusList();
+  const isAtk=e=>(e.dmg&&e.dmg.length)||(e.stack&&e.stack.t==='all')||e.startMult||(e.g==='off'&&!e.neg&&!e.res);
+  const isDef=e=>!isAtk(e)&&(e.neg||e.res||e.poiseM||e.hpM||e.g==='def');
+  const val=e=>describe(e).split(' · ').map(x=>x.replace(/;\s*doesn't stack.*$/,'')).filter(x=>x&&!/^doesn't stack/.test(x)&&!/^\(.*\)$/.test(x)).join(' · ');
+  const item=a=>{ const e=a.eff, bad=e.g==='curse'||(e.dmg||[]).some(d=>d.m<1)||Object.values(e.neg||{}).some(v=>v<0)||Object.values(e.res||{}).some(v=>v<0);
+    return `<li class="${bad?'bneg':''}"><span class="bn">${esc(e.n)}${a.count>1?` <span class="bx">×${a.count}${!e.st?', counts once':''}</span>`:''}</span><span class="bv">${esc(val(e))}</span>${e.cond?`<span class="bc">${esc(CONDSHORT[e.cond]||e.cond)}</span>`:''}</li>`; };
+  // always-on attack, multiplied per kind
+  const tot={}; list.forEach(a=>{ const e=a.eff; if(e.cond) return; (e.dmg||[]).forEach(d=>{ if(d.byCount||d.t==='wt') return; const k=DLABEL[d.t]||d.t; tot[k]=(tot[k]||1)*Math.pow(d.m,a.apply); }); });
+  const chips=Object.entries(tot).filter(([,m])=>Math.abs(m-1)>.0005).map(([k,m])=>`<span class="bchip${m<1?' neg':''}"><b>${m>1?'+':'−'}${Math.round(Math.abs(m-1)*1000)/10}%</b> ${esc(k)}</span>`).join('');
+  const atk=list.filter(a=>isAtk(a.eff)), def=list.filter(a=>isDef(a.eff));
+  const col=(t,arr,top)=>`<div class="bcol"><h3 class="sh3">${t}</h3>${top||''}${arr.length?`<ul class="blist">${arr.map(item).join('')}</ul>`:`<p class="msg">None from these relics.</p>`}</div>`;
+  el.innerHTML=list.length?`<div class="bgrid">${col('Attack',atk,chips?`<div class="bchips"><span class="msg">Always on:</span>${chips}</div>`:'')}${col('Defense',def)}</div>`:'<p class="msg">Put relics in the slots to see what they add.</p>';
+}
 function renderResults(){
   const {list,warn}=collect(); const s=calcStats(list); const c=build.combat; const boss=bossById(c.boss);
   const bar=(cls,k,v,v0,ref)=>{ const d=Math.round(v-v0); return `<div class="sbar ${cls}"><div class="bk"><span class="bl">${k}</span>${d?`<span class="${d>0?'up':'dn'}">${d>0?'+':''}${d}</span>`:''}</div><div class="bv">${int(v)}</div><div class="track"><i style="width:${Math.min(100,v/ref*100).toFixed(1)}%"></i></div></div>`; };
@@ -2332,6 +2375,7 @@ function renderResults(){
   if(est.length) h+=`<p class="msg" style="margin:10px 0 0">${est.join('. ')}.</p>`;
   h+=curseBlock(list);
   $('#stats').innerHTML=h;
+  renderBonuses();
   withCalcBuild(renderDamagePage);
 }
 function renderDamagePage(){
