@@ -1606,11 +1606,17 @@ function histGroup(list,keys){
   return [...m.values()];
 }
 const wrCell = e => `<span class="wr">${winPct(e.w,e.n)}<i style="--p:${e.n?Math.round(100*e.w/e.n):0}%" aria-hidden="true"></i></span>`;
+// The teammates' rating in a Deep of Night run, from the team's average and yours: one teammate's own, or two teammates' average.
+function mateRating(r){
+  const k=r.pl.length; if(r.mode!==2||k<2||!('ta' in r)) return null;
+  const other=Math.ceil(r.ta*k/50)*50-r.rb; return other>=0?other/(k-1):null;
+}
 function histRunHtml(r){
   const don=r.mode===2, d=rAfter(r)-r.rb, team=r.pl.map(p=>nfName(p.ch)).join(', ');
   const res=r.win?'Victory':'Defeat · '+dayName(r.day);
   const rt=don?`<span>Depth ${r.db}</span><span>${int(r.rb)} → ${int(rAfter(r))} <span class="${d>0?'up':d<0?'down':''}">${d>0?'+':''}${d?int(d):'±0'}</span></span>`:'<span>Expedition</span>';
   const counts=[['enemies felled',r.c[0]],['great enemies felled',r.c[1]],['treasure found',r.c[2]],['allies rescued',r.c[4]]];
+  const mr=mateRating(r), mates=mr==null?'':`<span title="The game keeps the team's average rating; this is it without yours"><b>${int(mr)}</b> ${r.pl.length>2?'teammates\' average rating':'teammate\'s rating'}</span>`;
   const players=r.pl.map((p,i)=>{
     const ws=p.w.filter(w=>w[0]!==110000).map(w=>{
       const n=wName(w[0],w[5]), sk=skName(w[1]);
@@ -1621,7 +1627,7 @@ function histRunHtml(r){
   return `<details class="run${r.win?' win':''}"><summary>
     <span class="nl">${esc(nlName(r.nl))}<small>${esc(NLORD[r.nl%10]?NLORD[r.nl%10][1]:'')}</small>${r.u?'<span class="nlunk" title="The Nightlord was hidden until the fight">Unknown Nightlord</span>':''}</span>
     <span class="meta"><span class="res">${res}</span> · ${runDate(r.t)} · ${esc(team)}</span><span class="rt">${rt}</span></summary>
-    <div class="rbody"><div class="rcount">${counts.map(([k,v])=>`<span><b>${int(v)}</b> ${k}</span>`).join('')}</div><div class="rplayers">${players}</div></div></details>`;
+    <div class="rbody"><div class="rcount">${counts.map(([k,v])=>`<span><b>${int(v)}</b> ${k}</span>`).join('')}${mates}</div><div class="rplayers">${players}</div></div></details>`;
 }
 function renderHistory(){
   const el=$('#pg-history'); if(!el) return;
@@ -2481,6 +2487,7 @@ function svCharacter(nameBytes, data){
 // Result History (the last 100 expeditions): a 'RSCL' block, in the profile part (an older save keeps one per character slot too),
 // a 28-byte header, then 1872-byte runs. Run: +4 number, +8 date (FILETIME, the clock the game shows), +40 day reached (4 Final Day,
 // 3 Second Day), +44 [won, mode (2 Deep of Night), Nightlord 0-9, 1 when the Nightlord was unknown (the game's purple mark)], +48 enemies felled, great enemies, treasure, ?, rescued allies,
+// +68 the team's Deep of Night rating when matched (everyone's average, rounded down, × 256 + depth),
 // +92 / +684 / +1276 the three players (you first), +1864 / +1868 Deep of Night rating before / after (rating × 256 + depth).
 // Player: name (16 UTF-16), +34 Nightfarer 1-10, +36 level, +40 flasks, +44 runes, +48 kills, +68 six weapons of 80 bytes
 // [weapon id, skill, three passives, …, +44 the item it came from: a Nightfarer weapon dropped by an invader is 1XXXX500N there,
@@ -2498,8 +2505,8 @@ function svHistory(entries){
       const w=[]; for(let i=0;i<6;i++){ const b=q+68+80*i, id=u(b); if(id===0xffffffff||!id) continue; w.push([id,u(b+4),u(b+8),u(b+12),u(b+16),u(b+44)].map(x=>x===0xffffffff?0:x)); }
       return {name,ch:d[q+34],lv:u(q+36),fl:u(q+40),runes:u(q+44),kills:u(q+48),w}; }).filter(Boolean);
     if(!pl.length) continue;
-    const b=u(R+44), rb=u(R+1864), ra=u(R+1868);
-    out.push({n,t,day:d[R+40],win:b&255,mode:(b>>8)&255,nl:(b>>16)&255,u:b>>>24?1:0,c:[0,1,2,3,4].map(i=>u(R+48+4*i)),rb:rb>>>8,ra:ra>>>8,db:rb&255,da:ra&255,pl});
+    const b=u(R+44), rb=u(R+1864), ra=u(R+1868), tr=u(R+68);
+    out.push({n,t,day:d[R+40],win:b&255,mode:(b>>8)&255,nl:(b>>16)&255,u:b>>>24?1:0,c:[0,1,2,3,4].map(i=>u(R+48+4*i)),rb:rb>>>8,ra:ra>>>8,db:rb&255,da:ra&255,ta:tr>>>8,pl});
   }
   return out.sort((a,b)=>b.n-a.n);
 }
@@ -2561,7 +2568,7 @@ async function importSaveSlot(slot, opt={}){
   const info={name:slot.name,file:lastFile,count:rows.length,at:Date.now()};
   if(opt.quiet){
     const hs=slot.hist||[], fresh=hs.length&&(!runs.length||runs[0].n!==hs[0].n)?hs.filter(r=>!runs.length||r.n>runs[0].n).length:0;
-    const old=!fresh&&hs.length&&runs.length&&!('u' in runs[0]);   // kept by 0.24.0, before the unknown-Nightlord mark
+    const old=!fresh&&hs.length&&runs.length&&!('ta' in runs[0]);   // kept by an older version, without the unknown-Nightlord mark or the team rating
     if(fresh||old){ setRuns(hs,Date.now()); await storeRuns(); if(old) renderHistory(); }
     const sig=JSON.stringify([rows,slot.presets||[]]);
     if(sig===lastRowsSig){ if(fresh){ renderHistory(); toast(fresh===1?`New run in History: ${hs[0].win?'Victory':'Defeat'} against ${nlName(hs[0].nl)}`:`${fresh} new runs in History`); } return; }
