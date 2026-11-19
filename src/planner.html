@@ -550,13 +550,16 @@ select:hover{background-image:linear-gradient(to top right,transparent 50%,var(-
 .rplb .gearln .caret{width:0;height:0;border-top:4px solid transparent;border-bottom:4px solid transparent;border-left:5px solid currentColor}
 .dlg.pdlg{width:min(900px,100%)}
 .pdh{display:flex;flex-direction:column;gap:2px;min-width:0}
+.ptabs{overflow-x:auto;scrollbar-width:none}
+.ptabs button{white-space:nowrap}
+.ptabs .pnick{margin-left:7px;font-weight:400;color:var(--muted)}
+@media (max-width:560px){.ptabs button{padding-inline:10px} .ptabs{-webkit-mask-image:linear-gradient(to right,#000 88%,transparent);mask-image:linear-gradient(to right,#000 88%,transparent)}}
 .dlg.pdlg .dh{flex-wrap:nowrap;align-items:flex-start}
 .dlg.pdlg .dh .btn{flex:none}
 .rpl.pgear{background:none;padding:0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 28px}
-.rpl.pgear .gcol > h4:first-child{margin-top:0}
+.rpl.pgear .gcol > h4:first-child{margin-top:0;border-top:0;padding-top:0}
 .gitems{display:flex;flex-direction:column;gap:12px;margin-top:8px}
 .gitem .gname{font-size:13px;font-weight:600;color:var(--fg);line-height:1.35}
-.gitem .gname.gdim{font-weight:500;color:var(--muted);font-size:12px}
 .gitem .gsub{font-weight:400;color:var(--muted)}
 .gitem .unk{color:var(--faint);font-weight:400}
 .rpl.pgear ul.gfx{list-style:none;margin:4px 0 0;padding:0;border:0;display:flex;flex-direction:column;gap:3px;font-size:12px;line-height:1.4;color:var(--fg)}
@@ -564,9 +567,6 @@ select:hover{background-image:linear-gradient(to top right,transparent 50%,var(-
 .gfx li::before{content:"";position:absolute;left:3px;top:.62em;width:4px;height:4px;border-radius:50%;background:var(--faint)}
 .gfx li.curse{color:var(--bad)}
 .gfx li.curse::before{background:var(--bad)}
-.grel{display:grid;grid-template-columns:auto minmax(0,1fr);gap:0 10px;align-items:start}
-.grel .gem{width:13px;height:13px;border-radius:3px;margin-top:2px}
-.grel .gem.deep{box-shadow:inset 0 0 0 2.5px var(--c)}
 @media (max-width:640px){.rpl.pgear{grid-template-columns:minmax(0,1fr)} .rpl.pgear .gcol + .gcol > h4:first-child{margin-top:10px}}
 .rpl .rtal li{color:var(--fg)}
 .rpl .rrel{flex-direction:row;align-items:flex-start;gap:7px;color:var(--fg)}
@@ -1634,12 +1634,13 @@ function wName(id,src,bare){
 const skName = s => s&&s!==10 ? ((WSKILL[s]&&WSKILL[s][0])||WSKILLX[s]||'') : '';
 function histRuns(){ return runs.filter(r=>(hist.mode==='all'||(hist.mode==='don')===(r.mode===2))&&(!hist.team||r.pl.length===hist.team)); }
 // a relic from the run's record, as one line: its name if it has one, else its effects (short), then its curses
-// a relic from the run's record: its name (or size and colour), then each effect on its own line with its curse under it
-function histRelic(x){
+// a relic from the run's record, as one line: its name if it has one, else its effects (short), then its curses
+function histRelic(x,nf){
   const [item,...f]=x, ef=[], cu=[]; for(let k=0;k<3;k++) if(f[k]!==-1){ ef.push(f[k]); cu.push(f[3+k]); }
-  const r=relicFromRow([0,item,0,ef,cu,1]), nm=id=>{ const e=CTMAP[id]; return e&&EBY[e]?EBY[e].n:null; };
-  const lines=ef.map((id,k)=>{ const e=nm(id), c=cu[k]!==-1?nm(cu[k]):null; return (e?`<li>${esc(e)}</li>`:'')+(c?`<li class="curse">${esc(c)}</li>`:''); }).join('');
-  return `<div class="gitem grel">${gem(r.color,r.deep)}<div><div class="${r.name?'gname':'gname gdim'}">${esc(r.name||`${sizeName(r)} · ${COLORN[r.color]}`)}</div>${lines?`<ul class="gfx">${lines}</ul>`:''}</div></div>`;
+  const r=relicFromRow([0,item,0,ef,cu,1]), nm=e=>EBY[e]?EBY[e].n:String(e);
+  const label=r.name?esc(r.name):r.effects.map(e=>esc(shortName(nm(e),nf))).join(', ');
+  const curses=r.curses.map(e=>`<span class="curse">${esc(shortName(nm(e),nf))}</span>`);
+  return `<li class="rrel" title="${esc([...(r.name?[r.name]:[]),...r.effects.map(nm),...r.curses.map(nm)].join('\n'))}">${gem(r.color,r.deep)}<span>${label||'Relic'}${curses.length?(label?', ':'')+curses.join(', '):''}</span></li>`;
 }
 function histGroup(list,keys){
   const m=new Map();
@@ -1672,14 +1673,14 @@ function histGear(p){
     const n=wName(w[0],w[5]), sk=skName(w[1]);
     const ps=w.slice(2,5).filter(Boolean).map(x=>WPASS[x]?`<li${WPASS[x][1]&4?' class="curse"':''}>${esc(wpLabel(x))}</li>`:WGRIEF[x]?`<li>${esc(WGRIEF[x][0])} +${WGRIEF[x][1]}</li>`:'').join('');
     return `<div class="gitem"><div class="gname">${n?esc(n):`<span class="unk" title="Not in the game data the planner has (item ${w[0]})">Unknown weapon</span>`}${sk?`<span class="gsub"> · ${esc(sk)}</span>`:''}</div>${ps?`<ul class="gfx">${ps}</ul>`:''}</div>`; }).join('');
-  const tal=(p.t||[]).map(x=>`<div class="gitem"><div class="gname">${esc(TALN[x]||'Talisman '+x)}</div></div>`).join(''), rel=(p.rel||[]).map(histRelic).join('');
+  const tal=(p.t||[]).map(x=>`<div class="gitem"><div class="gname">${esc(TALN[x]||'Talisman '+x)}</div></div>`).join(''), rel=(p.rel||[]).map(x=>histRelic(x,nfName(p.ch))).join('');
   return `<div class="gcol"><h4>Weapons</h4>${ws?`<div class="gitems">${ws}</div>`:'<p class="msg">None recorded.</p>'}</div>
     <div class="gcol"><h4>Talismans</h4>${tal?`<div class="gitems">${tal}</div>`:'<p class="msg">None.</p>'}
-    <h4>Relics</h4>${rel?`<div class="gitems">${rel}</div>`:'<p class="msg">Not in this save for this run.</p>'}</div>`;
+    <h4>Relics</h4>${rel?`<ul class="rrels">${rel}</ul>`:'<p class="msg">Not in this save for this run.</p>'}</div>`;
 }
 function openPlayerDlg(n,i){
   const r=runs.find(x=>x.n===n), p=r&&r.pl[i]; if(!p) return;
-  const tabs=r.pl.length>1?`<div class="seg" role="group" aria-label="Player">${r.pl.map((q,j)=>`<button data-act="hplayer" data-run="${r.n}" data-p="${j}" aria-pressed="${j===i}"${j===i?' data-focusnow':''}>${esc(q.name)}</button>`).join('')}</div>`:'';
+  const tabs=r.pl.length>1?`<div class="tabs ptabs" role="tablist" aria-label="Player">${r.pl.map((q,j)=>`<button role="tab" data-act="hplayer" data-run="${r.n}" data-p="${j}" aria-pressed="${j===i}" aria-selected="${j===i}"${j===i?' data-focusnow':''}>${nfName(q.ch)}<span class="pnick">${esc(q.name)}</span></button>`).join('')}</div>`:'';
   openOv(`<div class="dlg pdlg" role="dialog" aria-modal="true" aria-label="${esc(p.name)}: gear"><div class="dh"><div class="pdh"><h3>${esc(p.name)}</h3><span class="msg">${nfName(p.ch)} · Lv ${p.lv} · ${p.kills} kills · ${esc(nlName(r.nl))}, ${runDate(r.t)}</span></div><button class="btn sm ghost" data-act="close"${tabs?'':' data-autofocus'}>Close</button></div>${tabs}<div class="rpl pgear">${histGear(p)}</div></div>`);
 }
 function renderHistory(){
