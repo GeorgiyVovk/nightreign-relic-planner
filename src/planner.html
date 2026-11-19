@@ -117,7 +117,8 @@ select{-webkit-appearance:none;appearance:none;cursor:pointer;border:1px solid v
 
 /* nightfarer + vessel */
 .pickrow{display:flex;gap:8px;align-items:stretch;flex-wrap:wrap}
-.presetrow{display:flex;gap:8px;margin-top:8px}
+.presetrow{display:flex;gap:8px}
+.presetrow + .pickrow{margin-top:8px}
 .presetrow select{flex:1;min-width:0}
 .pickrow select{flex:1 1 160px;min-width:0;font-weight:600}
 .vsel{position:relative;flex:0 0 auto}
@@ -634,17 +635,17 @@ select:hover{background-image:linear-gradient(to top right,transparent 50%,var(-
 <main class="wrap layout" id="pg-relics">
   <div class="col">
     <section class="panel">
-      <div class="ph"><h2>Nightfarer &amp; vessel</h2></div>
+      <div class="ph"><h2>Preset &amp; Nightfarer</h2></div>
+      <div class="presetrow">
+        <select id="f-preset" aria-label="Preset"></select>
+        <button class="btn" data-act="presetdlg">Save preset</button>
+      </div>
       <div class="pickrow">
         <select id="f-char" aria-label="Nightfarer"></select>
         <div class="vsel">
           <button class="vbtn" id="vbtn" aria-haspopup="listbox" aria-expanded="false"></button>
           <div class="vlist" id="vlist" role="listbox" aria-label="Vessel" hidden></div>
         </div>
-      </div>
-      <div class="presetrow">
-        <select id="f-preset" aria-label="Preset"></select>
-        <button class="btn" data-act="presetdlg">Save preset</button>
       </div>
     </section>
     <section class="panel grow">
@@ -1984,9 +1985,11 @@ const flaggedCount = () => saveRelics.reduce((n,r)=>n+(r.bad&&r.bad.length?1:0),
 function normBuild(){ if(!Array.isArray(build.presets)) build.presets=[]; if(!build.activePreset||typeof build.activePreset!=='object'||Array.isArray(build.activePreset)) build.activePreset={}; }
 function renderPresets(){
   const sel=$('#f-preset'); if(!sel) return; normBuild();
-  const ch=build.char, v=curVessel(), ps=build.presets.filter(p=>p.char===ch), act=build.activePreset[ch];
+  // every Nightfarer's presets, grouped; picking one of another Nightfarer switches to them
+  const ch=build.char, v=curVessel(), act=build.activePreset[ch];
   const same=p=>p.vessel===v && JSON.stringify(p.slots)===JSON.stringify(curSlots());
-  sel.innerHTML=`<option value="">${ps.length?'Presets…':'No presets yet'}</option>`+ps.map(p=>`<option value="${esc(p.id)}" ${p.id===act?'selected':''}>${esc(p.name)}${p.game?' · in game':''}${p.id===act&&!same(p)?' (changed)':''}</option>`).join('');
+  const groups=NF_ORDER.map(c=>[c,build.presets.filter(p=>p.char===c)]).filter(([,ps])=>ps.length);
+  sel.innerHTML=`<option value="">${build.presets.length?'Presets…':'No presets yet'}</option>`+groups.map(([c,ps])=>`<optgroup label="${c}">${ps.map(p=>`<option value="${esc(p.id)}" ${c===ch&&p.id===act?'selected':''}>${esc(p.name)}${p.game?' · in game':''}${c===ch&&p.id===act&&!same(p)?' (changed)':''}</option>`).join('')}</optgroup>`).join('');
 }
 function openPresetDlg(){
   normBuild(); const ch=build.char, ap=build.presets.find(p=>p.id===build.activePreset[ch]&&p.char===ch), n=build.presets.filter(p=>p.char===ch).length;
@@ -3016,7 +3019,7 @@ document.addEventListener('change', ev=>{
   if(t.id==='don'){ build.don=t.checked; saveBuildSoon(); renderSlots(); renderCombat(); renderResults(); return; }
   if(t.id==='f-preset'){ normBuild(); const p=build.presets.find(x=>x.id===t.value);
     if(!p){ build.activePreset[build.char]=null; saveBuildSoon(); renderPresets(); return; }
-    build.vessel[p.char]=p.vessel; build.slots[p.char+'|'+p.vessel]=p.slots.slice(); build.activePreset[p.char]=p.id; ui.pick=null; saveBuildSoon(); renderAll(); return; }
+    build.char=p.char; build.vessel[p.char]=p.vessel; build.slots[p.char+'|'+p.vessel]=p.slots.slice(); build.activePreset[p.char]=p.id; ui.pick=null; saveBuildSoon(); renderAll(); return; }
   if(t.id==='d-preset'){ calcState().preset=t.value||null; saveBuildSoon(); renderCombat(); renderResults(); return; }
   if(t.id==='f-char'){ build.char=t.value; ui.pick=null; saveBuildSoon(); renderAll(); return; }
   if(t.id==='f-level2'){ calcState().level=+t.value; saveBuildSoon(); renderCombat(); renderResults(); return; }
