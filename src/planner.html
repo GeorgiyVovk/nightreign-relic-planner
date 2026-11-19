@@ -88,6 +88,12 @@ select{-webkit-appearance:none;appearance:none;cursor:pointer;border:1px solid v
 .form.tals{margin-top:14px;grid-template-columns:repeat(auto-fit,minmax(220px,1fr))}.dsum b{color:var(--fg);font-weight:600}
 .tright{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 .ovrow{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.btn.sm.ibtn{width:var(--h-sm);padding:0;flex:none}
+.gear{display:block;width:15px;height:15px;background:currentColor;-webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath fill-rule='evenodd' d='M13.24 6.03 L15.15 6.55 L15.15 9.45 L13.24 9.97 L13.10 10.31 L14.08 12.03 L12.03 14.08 L10.31 13.10 L9.97 13.24 L9.45 15.15 L6.55 15.15 L6.03 13.24 L5.69 13.10 L3.97 14.08 L1.92 12.03 L2.90 10.31 L2.76 9.97 L0.85 9.45 L0.85 6.55 L2.76 6.03 L2.90 5.69 L1.92 3.97 L3.97 1.92 L5.69 2.90 L6.03 2.76 L6.55 0.85 L9.45 0.85 L9.97 2.76 L10.31 2.90 L12.03 1.92 L14.08 3.97 L13.10 5.69ZM10.3 8a2.3 2.3 0 1 0 -4.6 0a2.3 2.3 0 1 0 4.6 0Z'/%3E%3C/svg%3E") center/contain no-repeat;mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath fill-rule='evenodd' d='M13.24 6.03 L15.15 6.55 L15.15 9.45 L13.24 9.97 L13.10 10.31 L14.08 12.03 L12.03 14.08 L10.31 13.10 L9.97 13.24 L9.45 15.15 L6.55 15.15 L6.03 13.24 L5.69 13.10 L3.97 14.08 L1.92 12.03 L2.90 10.31 L2.76 9.97 L0.85 9.45 L0.85 6.55 L2.76 6.03 L2.90 5.69 L1.92 3.97 L3.97 1.92 L5.69 2.90 L6.03 2.76 L6.55 0.85 L9.45 0.85 L9.97 2.76 L10.31 2.90 L12.03 1.92 L14.08 3.97 L13.10 5.69ZM10.3 8a2.3 2.3 0 1 0 -4.6 0a2.3 2.3 0 1 0 4.6 0Z'/%3E%3C/svg%3E") center/contain no-repeat}
+.ovsec{display:flex;flex-direction:column;gap:8px}
+.ovsec .sh3{margin:0}
+.ovsec .msg{margin:0}
+.ovnow b{color:var(--fg)} .ovnow .ev{color:var(--rar2);font-weight:600}
 .savepill{display:inline-flex;align-items:center;gap:7px;height:30px;border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:0 12px;font-size:12px;color:var(--muted)}
 .savepill .fn{color:var(--muted)}
 .savepill .sep{width:1px;height:14px;background:var(--line2)}
@@ -642,7 +648,7 @@ select:hover{background-image:linear-gradient(to top right,transparent 50%,var(-
 <header class="top">
   <div class="wrap">
     <div class="tleft"><h1>Nightreign Relic Planner</h1></div>
-    <div class="tright"><span class="savepill" id="savepill" hidden></span><button class="btn sm" id="ovbtn" data-act="overlay" title="Timer on top of the game" hidden>Overlay</button></div>
+    <div class="tright"><span class="savepill" id="savepill" hidden></span><button class="btn sm ibtn" id="ovbtn" data-act="overlay" title="Overlay settings" aria-label="Overlay settings" hidden><i class="gear" aria-hidden="true"></i></button></div>
   </div>
 </header>
 
@@ -1657,6 +1663,7 @@ window.addEventListener('hashchange',showPage); window.addEventListener('popstat
 const hist = {mode:'all', team:0, limit:20, all:{}};   // team: 0 any, 1 solo, 2 duo, 3 trio
 const NLORD=[['Gladius','Tricephalos'],['Adel','Gaping Jaw'],['Gnoster','Sentient Pest'],['Maris','Augur'],['Libra','Equilibrious Beast'],['Fulghor','Darkdrift Knight'],['Caligo','Fissure in the Fog'],['Heolstor','Night Aspect'],['Harmonia','Balancers'],['Straghess','Dreglord']];
 const nlName = n => NLORD[n%10] ? (n>=10?'Everdark ':'')+NLORD[n%10][0] : 'Nightlord '+n;
+const runNl = r => (r.u?'Everdark ':'')+nlName(r.nl);   // r.u: the run's Nightlord was the Everdark Sovereign
 const nfName = c => SV_CHARS[c-1] || 'Nightfarer';
 const AFFN={5:'Fire',6:'Lightning',7:'Sacred',8:'Magic',9:'Cold',10:'Poison',11:'Blood'};
 const MONTHS=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
@@ -1724,7 +1731,7 @@ function histRunHtml(r){
   const players=r.pl.map((p,i)=>`<button class="rpl rplb" data-act="hplayer" data-run="${r.n}" data-p="${i}"><span class="who"><b>${esc(p.name)}</b><span class="st">${nfName(p.ch)} · Lv <span class="num">${p.lv}</span></span></span>
       <span class="st"><span class="num">${p.kills}</span> kills · <span class="num">${int(p.runes)}</span> runes</span><span class="gearln">Weapons, talismans and relics<i class="caret" aria-hidden="true"></i></span></button>`).join('');
   return `<details class="run${r.win?' win':''}"><summary>
-    <span class="nl">${esc(nlName(r.nl))}<small>${esc(NLORD[r.nl%10]?NLORD[r.nl%10][1]:'')}</small>${r.u?'<span class="nlunk" title="The Nightlord was hidden until the fight">Unknown Nightlord</span>':''}</span>
+    <span class="nl">${esc(nlName(r.nl))}<small>${esc(NLORD[r.nl%10]?NLORD[r.nl%10][1]:'')}</small>${r.u?'<span class="nlunk" title="Everdark Sovereign: the stronger version of this Nightlord">Everdark</span>':''}</span>
     <span class="meta"><span class="res">${res}</span> · ${runDate(r.t)} · ${esc(team)}</span><span class="rt">${rt}</span></summary>
     <div class="rbody"><div class="rcount">${counts.map(([k,v])=>`<span><b>${int(v)}</b> ${k}</span>`).join('')}${mates}</div><div class="rplayers">${players}</div></div></details>`;
 }
@@ -1749,7 +1756,7 @@ function openPlayerDlg(n,i){
   const r=runs.find(x=>x.n===n), p=r&&r.pl[i]; if(!p) return;
   const tabs=r.pl.length>1?`<div class="tabs ptabs" role="tablist" aria-label="Player">${r.pl.map((q,j)=>`<button role="tab" data-act="hplayer" data-run="${r.n}" data-p="${j}" aria-pressed="${j===i}" aria-selected="${j===i}"${j===i?' data-focusnow':''}><span class="pnf">${nfName(q.ch)}</span><span class="pnick">${esc(q.name)}</span></button>`).join('')}</div>`:'';
   const res=r.win?'Victory':'Defeat · '+dayName(r.day);
-  openOv(`<div class="dlg pdlg" role="dialog" aria-modal="true" aria-label="${esc(p.name)}: gear"><div class="dh"><div class="pdh"><h3>${esc(nlName(r.nl))}<small>${esc(NLORD[r.nl%10]?NLORD[r.nl%10][1]:'')}</small></h3><span class="msg"><span class="${r.win?'pwin':'ploss'}">${res}</span> · ${runDate(r.t)}</span></div><button class="btn sm ghost" data-act="close"${tabs?'':' data-autofocus'}>Close</button></div>${tabs}
+  openOv(`<div class="dlg pdlg" role="dialog" aria-modal="true" aria-label="${esc(p.name)}: gear"><div class="dh"><div class="pdh"><h3>${esc(runNl(r))}<small>${esc(NLORD[r.nl%10]?NLORD[r.nl%10][1]:'')}</small></h3><span class="msg"><span class="${r.win?'pwin':'ploss'}">${res}</span> · ${runDate(r.t)}</span></div><button class="btn sm ghost" data-act="close"${tabs?'':' data-autofocus'}>Close</button></div>${tabs}
     <div class="pstat">${tabs?'':`<span><b>${esc(p.name)}</b> ${nfName(p.ch)}</span>`}<span>Lv <b>${p.lv}</b></span><span><b>${p.kills}</b> kills</span><span><b>${int(p.runes)}</b> runes</span></div><div class="rpl pgear">${histGear(p)}</div></div>`);
 }
 // History (the runs) and Stats (totals, the rating chart and the tables) share the two filters
@@ -1791,21 +1798,21 @@ function renderStats(){
   h+=`<div class="hstat"><span class="k">Best win streak</span><span class="v">${best}</span><span class="s">Current streak ${now}</span></div>`;
   h+=`</div>`;
   h+=`</section>`;
-  const byNl=histGroup(list,r=>[[r.nl]]).sort((a,b)=>(a.k%10)-(b.k%10)||a.k-b.k);
+  const nlRow=e=>`<tr><td>${esc(nlName(e.k))}<span class="s2">${esc(NLORD[e.k%10]?NLORD[e.k%10][1]:'')}</span></td><td>${e.n}</td><td>${e.w}</td><td>${wrCell(e)}</td></tr>`;
+  const nlSort=(a,b)=>(a.k%10)-(b.k%10)||a.k-b.k, byNl=histGroup(list.filter(r=>!r.u),r=>[[r.nl]]).sort(nlSort), byEv=histGroup(list.filter(r=>r.u),r=>[[r.nl]]).sort(nlSort);
   const byNf=histGroup(list,r=>[[r.pl[0].ch,{kills:r.pl[0].kills}]]).sort((a,b)=>b.n-a.n||a.k-b.k);
   const mates=histGroup(list,r=>r.pl.slice(1).map(p=>[p.name,{ch:p.ch}])).sort((a,b)=>b.n-a.n||b.w-a.w||a.k.localeCompare(b.k));
   const top=hist.all.m?mates:mates.slice(0,10);
   const more=(k,n,shown)=>n>shown?`<button class="btn sm ghost" data-act="hall" data-k="${k}">Show all ${n}</button>`:hist.all[k]&&n>(k==='m'?10:12)?`<button class="btn sm ghost" data-act="hall" data-k="${k}">Show fewer</button>`:'';
   const wmap=histGroup(list,r=>[...new Set(r.pl[0].w.filter(w=>w[0]!==110000).map(w=>wName(w[0],w[5],1)).filter(Boolean))].map(n=>[n])).sort((a,b)=>b.n-a.n||b.w-a.w||a.k.localeCompare(b.k));
   const wtop=hist.all.w?wmap:wmap.slice(0,12);
-  const unk=histGroup(list.filter(r=>r.u),()=>[[1]])[0];
   const smap=histGroup(list,r=>[...new Set(r.pl[0].w.flatMap(w=>[w[6],w[7]]).map(spName).filter(Boolean))].map(n=>[n])).sort((a,b)=>b.n-a.n||b.w-a.w||a.k.localeCompare(b.k));
   const stop=hist.all.s?smap:smap.slice(0,12);
   h+=`<div class="hgrid">
     <section class="panel"><div class="ph"><h2>Nightlords</h2></div><table class="htab hnl"><thead><tr><th>Nightlord</th><th>Runs</th><th>Won</th><th>Win rate</th></tr></thead><tbody>
-      ${byNl.map(e=>`<tr><td>${esc(nlName(e.k))}<span class="s2">${esc(NLORD[e.k%10]?NLORD[e.k%10][1]:'')}</span></td><td>${e.n}</td><td>${e.w}</td><td>${wrCell(e)}</td></tr>`).join('')}</tbody>
+      ${byNl.map(nlRow).join('')}</tbody>
       </table>
-      ${unk?`<table class="htab hnl hunk"><thead><tr><th>Hidden until the fight</th><th>Runs</th><th>Won</th><th>Win rate</th></tr></thead><tbody><tr><td><span class="unkl">Unknown Nightlord</span></td><td>${unk.n}</td><td>${unk.w}</td><td>${wrCell(unk)}</td></tr></tbody></table>`:''}</section>
+      ${byEv.length?`<table class="htab hnl hunk"><thead><tr><th class="unkl">Everdark Sovereign</th><th>Runs</th><th>Won</th><th>Win rate</th></tr></thead><tbody>${byEv.map(nlRow).join('')}</tbody></table>`:''}</section>
     <section class="panel"><div class="ph"><h2>Your Nightfarers</h2></div><table class="htab"><thead><tr><th>Nightfarer</th><th>Runs</th><th>Won</th><th>Win rate</th><th>Kills</th></tr></thead><tbody>
       ${byNf.map(e=>`<tr><td>${nfName(e.k)}</td><td>${e.n}</td><td>${e.w}</td><td>${wrCell(e)}</td><td title="Average per run">${Math.round(e.kills/e.n)}</td></tr>`).join('')}</tbody></table>
       <p class="hmore">Kills: average per run.</p></section>
@@ -1845,7 +1852,7 @@ function drawRatingChart(){
     hd.setAttribute('cx',px); hd.setAttribute('cy',py); hd.setAttribute('class','hd '+(r.win?'dw':'dl')); hd.setAttribute('visibility','visible');
     const line=(tag,txt)=>{ const e=document.createElement(tag); e.textContent=txt; return e; };
     tip.replaceChildren(line('b',int(v[i])), line('span',`${d>0?'+':''}${d?int(d):'±0'} · ${r.win?'Victory':'Defeat · '+dayName(r.day)}`),
-      line('span',`${nlName(r.nl)}${r.u?' (unknown)':''} · Depth ${r.db}`), line('span',`${runDate(r.t)} · #${r.n}`));
+      line('span',`${runNl(r)} · Depth ${r.db}`), line('span',`${runDate(r.t)} · #${r.n}`));
     tip.hidden=false;
     const tw=tip.offsetWidth, th=tip.offsetHeight; let lx=px+14; if(lx+tw>W) lx=px-14-tw; if(lx<0) lx=Math.max(0,Math.min(W-tw,px-tw/2));
     tip.style.left=lx+'px'; tip.style.top=Math.max(0,Math.min(H-th,py-th/2))+'px'; };
@@ -2724,6 +2731,18 @@ function svHistory(entries){
   }
   return out.sort((a,b)=>b.n-a.n);
 }
+// The run going on now, when the game saved mid-run: right before the run history the profile keeps a block
+// with the run's mode and Nightlord (hidden ones too) and the run's stamp. Once the run ends, its record in the
+// history carries the same stamp, so only a stamp newer than every record means a run is still going.
+function svCurrentRun(entries){
+  const d=entries.get(10); if(!d) return null;
+  const R=bFind(d,[0x52,0x53,0x43,0x4c]); if(R<64) return null;
+  const sig=[0xf2,0xff,0xff,0xff,0x0e,0x00]; for(let i=0;i<sig.length;i++) if(d[R-51+i]!==sig[i]) return null;
+  const mode=d[R-43], nl=d[R-42], ev=d[R-41], stamp=sv32(d,R-39)>>>0;
+  if(mode>2||!NLORD[nl]||ev>1) return null;
+  let last=0; for(let k=0;k<100;k++){ const q=R+28+k*1872; if(q+1872>d.length) break; const n=sv32(d,q+4)>>>0; if(!n||n===0xffffffff) continue; last=Math.max(last,sv32(d,q+32)>>>0); }
+  return stamp>last?{mode,nl,ev:ev===1,stamp}:null;
+}
 async function parseSave(buffer){
   const entries=await svDecrypt(buffer); const profile=entries.get(10);
   if(!profile) throw new SaveParseError("The save's profile part is missing or unreadable.");
@@ -2735,7 +2754,8 @@ async function parseSave(buffer){
   }
   let hl=[]; try{ hl=svHistory(entries); }catch(e){}
   if(hl.length){ try{ const rel=await svRunRelics(entries); hl.forEach(r=>{ const st=rel.get(r.n); if(st&&st.length===r.pl.length) r.pl.forEach((p,i)=>{ p.rel=st[i]; }); }); }catch(e){} }
-  slots.forEach(x=>{ x.hist=hl; });
+  let cur=null; try{ cur=svCurrentRun(entries); }catch(e){}
+  slots.forEach(x=>{ x.hist=hl; x.run=cur; });
   return slots;
 }
 const profGrid = (list,cur) => `<div class="profgrid">${list.map((x,i)=>x.name===cur
@@ -2786,7 +2806,7 @@ async function importSaveSlot(slot, opt={}){
     const old=!fresh&&hs.length&&runs.length&&runs[0].v!==HIST_V;   // kept by an older version, with less in it
     if(fresh||old){ setRuns(hs,Date.now()); await storeRuns(); if(old) renderHistory(); }
     const sig=JSON.stringify([rows,slot.presets||[]]);
-    if(sig===lastRowsSig){ if(fresh){ renderHistory(); toast(fresh===1?`New run in History: ${hs[0].win?'Victory':'Defeat'} against ${nlName(hs[0].nl)}`:`${fresh} new runs in History`); } return; }
+    if(sig===lastRowsSig){ if(fresh){ renderHistory(); toast(fresh===1?`New run in History: ${hs[0].win?'Victory':'Defeat'} against ${runNl(hs[0])}`:`${fresh} new runs in History`); } return; }
     lastRowsSig=sig;
     const before=new Set(saveMap.keys());
     await storeSaveRows(rows,info); setSaveRows(rows,info); setGamePresets(slot.presets); renderAll();
@@ -2812,7 +2832,8 @@ async function loadAppSave(p, opt={}){
   if(!opt.quiet){ closeOv(); toast(`Reading ${p.split(/[\\/]/).pop()}…`,'busy'); }
   try{
     const buf=await APP.readSave(p); lastFile=p.split(/[\\/]/).pop();
-    const slots=(await parseSave(buf)).filter(x=>x.relics.length);
+    const parsed=await parseSave(buf); setCurRun(parsed.length?parsed[0].run:null);
+    const slots=parsed.filter(x=>x.relics.length);
     if(!slots.length) throw new SaveParseError('No relics found in this save.');
     lastProfiles=slots;
     if(appSavePath!==p){ appSavePath=p; try{ localStorage.setItem(LS_APP,p); }catch(e){} APP.watchSave(p); renderStore(); }
@@ -2825,24 +2846,42 @@ async function loadAppSave(p, opt={}){
   }
 }
 // overlay (desktop app only): settings live in localStorage, which the overlay window shares
-const OVL_KEY='nr-overlay', OVL_KEYS=['F1','F2','F3','F4','F5','F6','F7','F8','F9','F10','F11','F12'];
-let ovlMoving=false;
-function ovlGet(){ let o={}; try{ o=JSON.parse(localStorage.getItem(OVL_KEY)||'{}')||{}; }catch(e){} o=Object.assign({on:false,key:'F8',secs:25,x:null,y:null},o); if(!OVL_KEYS.includes(o.key)) o.key='F8'; o.secs=Math.min(600,Math.max(1,Math.round(+o.secs)||25)); return o; }
+const OVL_KEY='nr-overlay', OVL_RUN='nr-overlay-run', OVL_KEYS=['F1','F2','F3','F4','F5','F6','F7','F8','F9','F10','F11','F12'];
+let ovlMoving=false, curRun=null;
+function ovlGet(){ let o={}; try{ o=JSON.parse(localStorage.getItem(OVL_KEY)||'{}')||{}; }catch(e){} o=Object.assign({on:false,key:'F8',secs:25,x:null,y:null,nl:true,timer:true},o); if(!OVL_KEYS.includes(o.key)) o.key='F8'; o.secs=Math.min(600,Math.max(1,Math.round(+o.secs)||25)); o.nl=o.nl!==false; o.timer=o.timer!==false; return o; }
 function ovlSet(o){ try{ localStorage.setItem(OVL_KEY,JSON.stringify(o)); }catch(e){} }
+const ovlCfg = o => ({key:o.key,secs:o.secs,nl:o.nl,timer:o.timer});
+// what the overlay shows for the run going on now: names only, the overlay has no tables of its own
+const runCard = r => r?{name:NLORD[r.nl][0],title:NLORD[r.nl][1],don:r.mode===2,ev:r.ev,stamp:r.stamp}:null;
+function setCurRun(r){ const same=JSON.stringify(curRun)===JSON.stringify(r||null); curRun=r||null; if(same) return;
+  try{ localStorage.setItem(OVL_RUN,JSON.stringify(runCard(curRun))); }catch(e){}
+  if(APP&&APP.overlay&&ovlGet().on) APP.overlay.run(runCard(curRun));
+  const st=$('#ov-runst'); if(st) st.innerHTML=ovlRunStatus(); }
+function ovlRunStatus(){ if(!appSavePath) return 'Load your save in the planner: the Nightlord is read from it.';
+  if(!curRun) return 'No run going on in your save right now.';
+  const c=runCard(curRun); return `Run going on now: <b>${c.ev?'<span class="ev">Everdark</span> ':''}${esc(c.name)}</b>, ${esc(c.title)}${c.don?' · Deep of Night':''}`; }
 async function ovlApply(o){ const O=APP&&APP.overlay; if(!O) return;
-  try{ if(o.on){ await O.show(o.x,o.y); await O.hotkey(o.key); O.config({key:o.key,secs:o.secs}); } else { ovlMoving=false; await O.hotkey(''); await O.hide(); } }
+  try{ if(o.on){ await O.show(o.x,o.y); await O.hotkey(o.timer?o.key:''); O.config(ovlCfg(o)); O.run(runCard(curRun)); } else { ovlMoving=false; await O.hotkey(''); await O.hide(); } }
   catch(e){ toast(`Overlay: ${e}`,'bad'); } }
 async function ovlLock(lock){ const O=APP&&APP.overlay; if(!O) return; ovlMoving=!lock;
   try{ const p=await O.lock(lock); if(lock&&p){ const o=ovlGet(); o.x=p.x; o.y=p.y; ovlSet(o); } }catch(e){} }
+const ovTgl=(id,on,label,dis)=>`<label class="tgl"><input type="checkbox" id="${id}" role="switch" ${on?'checked':''} ${dis?'disabled':''}><span class="knob" aria-hidden="true"></span><span class="tt">${label}</span></label>`;
 function openOverlayDlg(){ const o=ovlGet();
-  openOv(`<div class="dlg sm" role="dialog" aria-modal="true" aria-label="Overlay"><div class="dh"><h3>Overlay</h3><button class="btn sm ghost" data-act="close">Close</button></div>
-    <p class="msg" style="margin:0">A small timer on top of the game for the Dreglord relic. Press the hotkey when the stacks icon disappears: it counts down and tells you when to sit.</p>
-    <label class="tgl"><input type="checkbox" id="ov-on" role="switch" ${o.on?'checked':''}><span class="knob" aria-hidden="true"></span><span class="tt">Show the overlay</span></label>
-    <div class="ovrow"><div class="field"><label for="ov-key">Hotkey</label><select id="ov-key">${OVL_KEYS.map(k=>`<option ${k===o.key?'selected':''}>${k}</option>`).join('')}</select></div><div class="field"><label for="ov-secs">Countdown, seconds</label><input id="ov-secs" type="number" min="1" max="600" value="${o.secs}"></div></div>
-    <div class="btns"><button class="btn" data-act="ovmove" ${o.on?'':'disabled'}>${ovlMoving?'Done moving':'Move'}</button><button class="btn" data-act="ovtest" ${o.on?'':'disabled'}>Test</button></div>
-    <p class="msg" style="margin:0">Works with the game in borderless or windowed mode. The overlay only listens to your hotkey and never reads the game.</p></div>`); }
+  openOv(`<div class="dlg sm" role="dialog" aria-modal="true" aria-label="Overlay settings"><div class="dh"><h3>Overlay</h3><button class="btn sm ghost" data-act="close">Close</button></div>
+    <div class="ovsec">${ovTgl('ov-on',o.on,'Show the overlay')}
+      <p class="msg">A small card on top of the game. Works with the game in borderless or windowed mode.</p>
+      <div class="btns"><button class="btn" data-act="ovmove" ${o.on?'':'disabled'}>${ovlMoving?'Done moving':'Move'}</button></div></div>
+    <div class="ovsec"><h4 class="sh3">Nightlord</h4>${ovTgl('ov-nl',o.nl,"Show this run's Nightlord")}
+      <p class="msg">Read from your save as soon as a run starts, so a hidden Nightlord isn't hidden from you.</p>
+      <p class="msg ovnow" id="ov-runst">${ovlRunStatus()}</p></div>
+    <div class="ovsec"><h4 class="sh3">Dreglord timer</h4>${ovTgl('ov-tm',o.timer,'Show the timer')}
+      <p class="msg">For the Dreglord relic. Press the hotkey when the stacks icon disappears: it counts down and tells you when to sit.</p>
+      <div class="ovrow"><div class="field"><label for="ov-key">Hotkey</label><select id="ov-key">${OVL_KEYS.map(k=>`<option ${k===o.key?'selected':''}>${k}</option>`).join('')}</select></div><div class="field"><label for="ov-secs">Countdown, seconds</label><input id="ov-secs" type="number" min="1" max="600" value="${o.secs}"></div></div>
+      <div class="btns"><button class="btn" data-act="ovtest" ${o.on&&o.timer?'':'disabled'}>Test</button></div></div>
+    <p class="msg" style="margin:0">The overlay reads your save file and listens to your hotkey. It never touches the game.</p></div>`); }
 async function startApp(){
   if(!APP) return;
+  try{ localStorage.removeItem(OVL_RUN); }catch(e){}   // a run remembered from last time is stale until the save is read again
   if(APP.overlay){ const b=$('#ovbtn'); if(b) b.hidden=false; const o=ovlGet(); if(o.on) ovlApply(o); }
   APP.onSaveChanged(p=>{ if(p===appSavePath) loadAppSave(p,{quiet:true}); });
   let p=''; try{ p=localStorage.getItem(LS_APP)||''; }catch(e){}
@@ -3077,11 +3116,12 @@ document.addEventListener('change', ev=>{
     if(t.id==='w-pick'){ ws.name=t.value; const w=WBYN[ws.name]; if(!w[5].some(x=>x[0]===ws.aff)) ws.aff=w[5][0][0]; ws.rar=Math.max(ws.rar,w[2]); delete ws.skill; } else if(t.id==='w-aff') ws.aff=+t.value; else ws.two=t.checked;
     saveBuildSoon(); renderCombat(); renderResults(); return; }
   if(t.id==='w-skill'){ weaponState().skill=+t.value; saveBuildSoon(); renderCombat(); return; }
-  if(t.id==='ov-on'||t.id==='ov-key'||t.id==='ov-secs'){ const o=ovlGet();
-    if(t.id==='ov-on') o.on=t.checked; else if(t.id==='ov-key') o.key=t.value; else o.secs=Math.min(600,Math.max(1,Math.round(+t.value)||25));
+  if(t.id==='ov-on'||t.id==='ov-key'||t.id==='ov-secs'||t.id==='ov-nl'||t.id==='ov-tm'){ const o=ovlGet();
+    if(t.id==='ov-on') o.on=t.checked; else if(t.id==='ov-nl') o.nl=t.checked; else if(t.id==='ov-tm') o.timer=t.checked; else if(t.id==='ov-key') o.key=t.value; else o.secs=Math.min(600,Math.max(1,Math.round(+t.value)||25));
     ovlSet(o);
-    if(t.id==='ov-on'){ ovlApply(o).then(()=>openOverlayDlg()); }
-    else if(o.on&&APP&&APP.overlay){ if(t.id==='ov-key') APP.overlay.hotkey(o.key).catch(e=>toast(`Overlay: ${e}`,'bad')); APP.overlay.config({key:o.key,secs:o.secs}); }
+    if(t.id==='ov-on'){ ovlApply(o).then(()=>openOverlayDlg()); return; }
+    if(t.id==='ov-tm'){ const b=document.querySelector('[data-act="ovtest"]'); if(b) b.disabled=!(o.on&&o.timer); }
+    if(o.on&&APP&&APP.overlay){ if(t.id==='ov-key'||t.id==='ov-tm') APP.overlay.hotkey(o.timer?o.key:'').catch(e=>toast(`Overlay: ${e}`,'bad')); APP.overlay.config(ovlCfg(o)); }
     return; }
   if(t.id==='en-pick'||t.id==='en-mode'||t.id==='en-day2'||t.id==='en-aura'){ const st=enemyState();
     if(t.id==='en-pick') st.id=+t.value; else if(t.id==='en-mode'){ st.depth=+t.value; calcState().don=st.depth>0; } else if(t.id==='en-day2') st.day2=t.checked; else st.aura=t.checked;

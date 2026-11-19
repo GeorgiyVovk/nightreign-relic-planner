@@ -1,7 +1,7 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "overlay",
-  "description": "The overlay window: events to hear the hotkey and settings, and dragging while it is unlocked.",
+  "description": "The overlay window: events to hear the hotkey, settings and the run, dragging while it is unlocked, and the app's overlay_fit command to size itself.",
   "windows": [
     "overlay"
   ],
