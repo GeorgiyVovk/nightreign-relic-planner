@@ -496,8 +496,8 @@ select:hover{background-image:linear-gradient(to top right,transparent 50%,var(-
 .hgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
 @media (max-width:1000px){.hgrid{grid-template-columns:minmax(0,1fr)}}
 .hhint{margin:14px 0 10px;font-size:12px;color:var(--muted)}
-.htab tbody.hsplit tr:first-child td{border-top:1px solid var(--line2)}
-.htab tbody.hsplit .unkl{color:var(--rar2)}
+.hsub{font-family:var(--f-display);font-size:17px;font-weight:600;letter-spacing:.01em;margin:26px 0 10px;line-height:1.2}
+.htab .unkl{color:var(--rar2)}
 .gitem .gspell{margin-top:3px;font-size:12px;color:var(--accent)}
 #pg-history .hchart{margin-top:6px}
 .htab{width:100%;border-collapse:collapse;font-size:13px}
@@ -1758,7 +1758,7 @@ function renderStats(){
     <div class="hstat"><span class="k">Victories</span><span class="v">${won}</span><span class="s">${winPct(won,list.length)} of runs</span></div>`;
   let best=0, run=0; for(let i=list.length-1;i>=0;i--){ run=list[i].win?run+1:0; if(run>best) best=run; }
   let now=0; for(const r of list){ if(!r.win) break; now++; }
-  h+=`<div class="hstat"><span class="k">Best win streak</span><span class="v">${best}</span><span class="s">${now?`${now} in a row now`:'last run lost'}</span></div>`;
+  h+=`<div class="hstat"><span class="k">Best win streak</span><span class="v">${best}</span><span class="s">Current streak ${now}</span></div>`;
   h+=`</div>`;
   h+=`</section>`;
   const byNl=histGroup(list,r=>[[r.nl]]).sort((a,b)=>(a.k%10)-(b.k%10)||a.k-b.k);
@@ -1774,7 +1774,8 @@ function renderStats(){
   h+=`<div class="hgrid">
     <section class="panel"><div class="ph"><h2>Nightlords</h2></div><table class="htab"><thead><tr><th>Nightlord</th><th>Runs</th><th>Won</th><th>Win rate</th></tr></thead><tbody>
       ${byNl.map(e=>`<tr><td>${esc(nlName(e.k))}<span class="s2">${esc(NLORD[e.k%10]?NLORD[e.k%10][1]:'')}</span></td><td>${e.n}</td><td>${e.w}</td><td>${wrCell(e)}</td></tr>`).join('')}</tbody>
-      ${known.some(e=>e.k)?`<tbody class="hsplit">${known.map(e=>`<tr><td>${e.k?'<span class="unkl">Unknown Nightlord</span>':'Known Nightlord'}</td><td>${e.n}</td><td>${e.w}</td><td>${wrCell(e)}</td></tr>`).join('')}</tbody>`:''}</table></section>
+      </table>
+      ${known.some(e=>e.k)?`<h3 class="hsub">Known or unknown</h3><table class="htab"><thead><tr><th>Nightlord</th><th>Runs</th><th>Won</th><th>Win rate</th></tr></thead><tbody>${known.map(e=>`<tr><td>${e.k?'<span class="unkl">Unknown</span>':'Known'}</td><td>${e.n}</td><td>${e.w}</td><td>${wrCell(e)}</td></tr>`).join('')}</tbody></table>`:''}</section>
     <section class="panel"><div class="ph"><h2>Your Nightfarers</h2></div><table class="htab"><thead><tr><th>Nightfarer</th><th>Runs</th><th>Won</th><th>Win rate</th><th>Kills</th></tr></thead><tbody>
       ${byNf.map(e=>`<tr><td>${nfName(e.k)}</td><td>${e.n}</td><td>${e.w}</td><td>${wrCell(e)}</td><td title="Average per run">${Math.round(e.kills/e.n)}</td></tr>`).join('')}</tbody></table>
       <p class="hmore">Kills: average per run.</p></section>
