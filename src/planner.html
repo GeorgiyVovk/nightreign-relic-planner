@@ -496,7 +496,9 @@ select:hover{background-image:linear-gradient(to top right,transparent 50%,var(-
 .hgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
 @media (max-width:1000px){.hgrid{grid-template-columns:minmax(0,1fr)}}
 .hhint{margin:14px 0 10px;font-size:12px;color:var(--muted)}
-.hsub{font-family:var(--f-display);font-size:17px;font-weight:600;letter-spacing:.01em;margin:26px 0 10px;line-height:1.2}
+.htab.hunk{margin-top:24px}
+.htab.hnl th:nth-child(2),.htab.hnl th:nth-child(3){width:70px}
+.htab.hnl th:nth-child(4){width:130px}
 .htab .unkl{color:var(--rar2)}
 .gitem .gspell{margin-top:3px;font-size:12px;color:var(--accent)}
 #pg-history .hchart{margin-top:6px}
@@ -1768,14 +1770,14 @@ function renderStats(){
   const more=(k,n,shown)=>n>shown?`<button class="btn sm ghost" data-act="hall" data-k="${k}">Show all ${n}</button>`:hist.all[k]&&n>(k==='m'?10:12)?`<button class="btn sm ghost" data-act="hall" data-k="${k}">Show fewer</button>`:'';
   const wmap=histGroup(list,r=>[...new Set(r.pl[0].w.filter(w=>w[0]!==110000).map(w=>wName(w[0],w[5],1)).filter(Boolean))].map(n=>[n])).sort((a,b)=>b.n-a.n||b.w-a.w||a.k.localeCompare(b.k));
   const wtop=hist.all.w?wmap:wmap.slice(0,12);
-  const known=histGroup(list,r=>[[r.u?1:0]]).sort((a,b)=>a.k-b.k);
+  const unk=histGroup(list.filter(r=>r.u),()=>[[1]])[0];
   const smap=histGroup(list,r=>[...new Set(r.pl[0].w.flatMap(w=>[w[6],w[7]]).map(spName).filter(Boolean))].map(n=>[n])).sort((a,b)=>b.n-a.n||b.w-a.w||a.k.localeCompare(b.k));
   const stop=hist.all.s?smap:smap.slice(0,12);
   h+=`<div class="hgrid">
-    <section class="panel"><div class="ph"><h2>Nightlords</h2></div><table class="htab"><thead><tr><th>Nightlord</th><th>Runs</th><th>Won</th><th>Win rate</th></tr></thead><tbody>
+    <section class="panel"><div class="ph"><h2>Nightlords</h2></div><table class="htab hnl"><thead><tr><th>Nightlord</th><th>Runs</th><th>Won</th><th>Win rate</th></tr></thead><tbody>
       ${byNl.map(e=>`<tr><td>${esc(nlName(e.k))}<span class="s2">${esc(NLORD[e.k%10]?NLORD[e.k%10][1]:'')}</span></td><td>${e.n}</td><td>${e.w}</td><td>${wrCell(e)}</td></tr>`).join('')}</tbody>
       </table>
-      ${known.some(e=>e.k)?`<h3 class="hsub">Known or unknown</h3><table class="htab"><thead><tr><th>Nightlord</th><th>Runs</th><th>Won</th><th>Win rate</th></tr></thead><tbody>${known.map(e=>`<tr><td>${e.k?'<span class="unkl">Unknown</span>':'Known'}</td><td>${e.n}</td><td>${e.w}</td><td>${wrCell(e)}</td></tr>`).join('')}</tbody></table>`:''}</section>
+      ${unk?`<table class="htab hnl hunk"><thead><tr><th>Hidden until the fight</th><th>Runs</th><th>Won</th><th>Win rate</th></tr></thead><tbody><tr><td><span class="unkl">Unknown Nightlord</span></td><td>${unk.n}</td><td>${unk.w}</td><td>${wrCell(unk)}</td></tr></tbody></table>`:''}</section>
     <section class="panel"><div class="ph"><h2>Your Nightfarers</h2></div><table class="htab"><thead><tr><th>Nightfarer</th><th>Runs</th><th>Won</th><th>Win rate</th><th>Kills</th></tr></thead><tbody>
       ${byNf.map(e=>`<tr><td>${nfName(e.k)}</td><td>${e.n}</td><td>${e.w}</td><td>${wrCell(e)}</td><td title="Average per run">${Math.round(e.kills/e.n)}</td></tr>`).join('')}</tbody></table>
       <p class="hmore">Kills: average per run.</p></section>
