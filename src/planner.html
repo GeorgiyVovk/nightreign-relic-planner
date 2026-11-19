@@ -1644,12 +1644,14 @@ function wName(id,src,bare){
   if(!src&&b>=100&&b<1000&&b%10>=5&&(n=WBASEX[Math.floor(b/10)*100+50+b%10-5])) return pre+n;
   return '';
 }
-// a weapon's rarity 0-3 (common … legendary), 'inv' for a Nightfarer's weapon dropped by a Night invader (red in the game),
-// or null when the planner doesn't have the weapon
+// a weapon's rarity 0-3 (common … legendary), or the Nightfarer 1-10 whose weapon it is as 'h' + n (the Nightfarers' own
+// weapons, also when a Night invader dropped one: shown white), or null when the planner doesn't have the weapon
 function wRar(id,src){
-  const base=x=>Math.floor(x/10000), b=base(id);
+  const base=x=>Math.floor(x/10000), b=base(id), hero=x=>HERO_BASE.indexOf(x);
+  if(hero(b)>=0) return 'h'+(hero(b)+1);
+  if(src>=1e8&&src<2e8&&hero(base(src-1e8))>=0) return 'h'+(hero(base(src-1e8))+1);
+  if(b>=721&&b<=730&&id%10000<10) return 'h'+(b-720);
   if(WBASE[b]) return WRAR[b]||0;
-  if((src>=1e8&&src<2e8)||(b>=721&&b<=730&&id%10000<10)) return 'inv';
   return null;
 }
 const RARN=['Common','Uncommon','Rare','Legendary'];
@@ -1694,8 +1696,8 @@ function histGear(p){
   const ws=p.w.filter(w=>w[0]!==110000).map(w=>{
     const n=wName(w[0],w[5]), sk=skName(w[1]);
     const ps=w.slice(2,5).filter(Boolean).map(x=>WPASS[x]?`<li${WPASS[x][1]&4?' class="curse"':''}>${esc(wpLabel(x))}</li>`:WGRIEF[x]?`<li>${esc(WGRIEF[x][0])} +${WGRIEF[x][1]}</li>`:'').join('');
-    const rar=wRar(w[0],w[5]);
-    return `<div class="gitem gw"${rar==null?'':` style="--rc:${rar==='inv'?'var(--bad)':`var(--rar${rar})`}" title="${rar==='inv'?'From a Night invader':RARN[rar]}"`}><div class="gname">${n?esc(n):`<span class="unk" title="Not in the game data the planner has (item ${w[0]})">Unknown weapon</span>`}${sk?`<span class="gsub"> · ${esc(sk)}</span>`:''}</div>${ps?`<ul class="gfx">${ps}</ul>`:''}</div>`; }).join('');
+    const rar=wRar(w[0],w[5]), hero=typeof rar==='string';
+    return `<div class="gitem gw"${rar==null?'':` style="--rc:${hero?'var(--fg)':`var(--rar${rar})`}" title="${hero?(+rar.slice(1)===p.ch?'Starting weapon':'From a Night invader'):RARN[rar]}"`}><div class="gname">${n?esc(n):`<span class="unk" title="Not in the game data the planner has (item ${w[0]})">Unknown weapon</span>`}${sk?`<span class="gsub"> · ${esc(sk)}</span>`:''}</div>${ps?`<ul class="gfx">${ps}</ul>`:''}</div>`; }).join('');
   const tal=(p.t||[]).map(x=>`<div class="gitem"><div class="gname">${esc(TALN[x]||'Talisman '+x)}</div></div>`).join('');
   const isDeep=x=>(RITEM.get(x[0])||'R0')[1]==='2', nf=nfName(p.ch);
   const std=(p.rel||[]).filter(x=>!isDeep(x)).map(x=>histRelic(x,nf)).join(''), dp=(p.rel||[]).filter(isDeep).map(x=>histRelic(x,nf)).join('');
@@ -2038,6 +2040,7 @@ function shortName(n,ch){
     [/^Improved Flask HP Restoration(.*)$/i,(_,r)=>`Flask HP${r}`],
     [/^Character Skill Cooldown Reduction(.*)$/i,(_,r)=>`Skill cooldown${r}`],
     [/^Ultimate Art Gauge(?: \w+)*?(\s\+\d)?$/i,(_,r)=>`Art gauge${r||''}`],
+    [/^Ultimate Art Charging Impaired(.*)$/i,(_,r)=>`Ult Charge Impaired${r}`],
     [/^Improved Critical Hits(.*)$/i,(_,r)=>`Crit dmg${r}`],
     [/^Improved Guard Counters(.*)$/i,(_,r)=>`Guard counter dmg${r}`],
     [/^Improved Charge Attacks(.*)$/i,(_,r)=>`Charged atk dmg${r}`],
