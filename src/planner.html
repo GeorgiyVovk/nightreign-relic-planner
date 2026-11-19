@@ -488,6 +488,10 @@ select:hover{background-image:linear-gradient(to top right,transparent 50%,var(-
 
 /* history: the save's last 100 expeditions */
 .hist{display:flex;flex-direction:column;gap:16px;padding-block:6px 40px}
+.pagewrap{padding-block:6px 40px}
+#pages{overflow-x:auto;scrollbar-width:none}
+#pages button{white-space:nowrap;flex:none}
+@media (max-width:600px){#pages button{padding-inline:9px} #pages .tlong{display:none}}
 .hstats{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);gap:10px}
 .hstat{background:var(--surface2);border-radius:var(--r-md);padding:10px 14px;display:flex;flex-direction:column;gap:4px;min-width:0}
 .hstat .k{font-size:12px;color:var(--muted)}
@@ -625,7 +629,7 @@ select:hover{background-image:linear-gradient(to top right,transparent 50%,var(-
   </div>
 </header>
 
-<nav class="wrap pages" aria-label="Pages"><div class="tabs" id="pages" role="tablist"><button role="tab" data-page="relics" aria-pressed="true">Relics</button><button role="tab" data-page="damage" aria-pressed="false">Damage calculator</button><button role="tab" data-page="history" aria-pressed="false">History</button><button role="tab" data-page="stats" aria-pressed="false">Stats</button></div></nav>
+<nav class="wrap pages" aria-label="Pages"><div class="tabs" id="pages" role="tablist"><button role="tab" data-page="relics" aria-pressed="true">Build</button><button role="tab" data-page="library" aria-pressed="false">Relics</button><button role="tab" data-page="damage" aria-pressed="false">Damage<span class="tlong"> calculator</span></button><button role="tab" data-page="history" aria-pressed="false">History</button><button role="tab" data-page="stats" aria-pressed="false">Stats</button></div></nav>
 
 <main class="wrap layout" id="pg-relics">
   <div class="col">
@@ -655,7 +659,10 @@ select:hover{background-image:linear-gradient(to top right,transparent 50%,var(-
       <div id="stats"></div>
     </section>
   </div>
-    <section class="panel full">
+</main>
+
+<main class="wrap pagewrap" id="pg-library" hidden>
+  <section class="panel">
     <div class="ph"><h2>My relics</h2><div class="phr libphr"><span class="hint" id="libcount"></span><div class="cfilter" id="libcolors" role="group" aria-label="Filter by color"></div></div></div>
     <div class="libbar">
       <div class="btns">
@@ -1614,12 +1621,12 @@ function withCalcBuild(fn){
 }
 
 /* ============ PAGES ============ */
-// Relics (the planner) and Damage (the calculator): two sheets of one page, switched by tabs.
-// The calculator lives in the address as #calculator (no element has that id, so the browser never scrolls to it).
-const curPage = () => (location.hash==='#calculator'||location.hash==='#damage'?'damage':location.hash==='#history'?'history':location.hash==='#stats'?'stats':'relics');
+// Build (Nightfarer, vessel, slots, presets, stats), Relics (#relics, the relic library), Damage (#calculator), History (#history)
+// and Stats (#stats): sheets of one page, switched by tabs. No element has those ids, so the browser never scrolls to them.
+const curPage = () => (location.hash==='#calculator'||location.hash==='#damage'?'damage':location.hash==='#history'?'history':location.hash==='#stats'?'stats':location.hash==='#relics'?'library':'relics');
 function showPage(){ if(location.hash==='#damage') history.replaceState(null,'',location.pathname+location.search+'#calculator');
   const pg=curPage();
-  ['relics','damage','history','stats'].forEach(k=>{ const m=$('#pg-'+k); if(m) m.hidden=k!==pg; });
+  ['relics','library','damage','history','stats'].forEach(k=>{ const m=$('#pg-'+k); if(m) m.hidden=k!==pg; });
   if(pg==='history') drawRatingChart();   // drawn to the page's width, so only once it shows
   document.querySelectorAll('#pages button').forEach(b=>{ b.setAttribute('aria-pressed',String(b.dataset.page===pg)); b.setAttribute('aria-selected',String(b.dataset.page===pg)); }); }
 window.addEventListener('hashchange',showPage); window.addEventListener('popstate',showPage);
@@ -2912,7 +2919,7 @@ document.addEventListener('click', async ev=>{
   if(t.dataset.stk){ const d=ENDEB[t.dataset.stk], c=build.combat.cond; c[d.k]=((+c[d.k]||0)+1)%((d.max||1)+1); saveBuildSoon(); renderEnemy(); renderResults(); return; }
   if(t.dataset.cr!=null){ const ws=weaponState(); ws.crar[ws.mode]=+t.dataset.cr; saveBuildSoon(); renderCombat(); renderResults(); return; }
   if(t.dataset.wmode){ const ws=weaponState(); if(ws.mode===t.dataset.wmode) return; ws.mode=t.dataset.wmode; saveBuildSoon(); renderCombat(); renderResults(); return; }
-  if(t.dataset.page){ if(t.dataset.page===curPage()) return; history.pushState(null,'',location.pathname+location.search+(t.dataset.page==='damage'?'#calculator':t.dataset.page==='history'?'#history':t.dataset.page==='stats'?'#stats':'')); showPage(); window.scrollTo(0,0); return; }
+  if(t.dataset.page){ if(t.dataset.page===curPage()) return; history.pushState(null,'',location.pathname+location.search+(t.dataset.page==='damage'?'#calculator':t.dataset.page==='history'?'#history':t.dataset.page==='stats'?'#stats':t.dataset.page==='library'?'#relics':'')); showPage(); window.scrollTo(0,0); return; }
   if(t.dataset.hmode){ if(hist.mode===t.dataset.hmode) return; hist.mode=t.dataset.hmode; hist.limit=20; renderHistory(); return; }
   if(t.dataset.hteam){ if(hist.team===+t.dataset.hteam) return; hist.team=+t.dataset.hteam; hist.limit=20; renderHistory(); return; }
   if(t.dataset.wr){ weaponState().rar=+t.dataset.wr; saveBuildSoon(); renderCombat(); renderResults(); return; }
@@ -2927,7 +2934,8 @@ document.addEventListener('click', async ev=>{
   if(a==='place'){ placeRelic(t.dataset.id); return; }
   if(a==='new'){ openEditor(null); return; }
   if(a==='pillflag'&&!flaggedCount()){ toast('No flagged relics: none of your relics look edited.'); return; }
-  if(a==='pillall'||a==='pillflag'){ ui.lf=a==='pillflag'?'f':'all'; ui.q=''; const q=$('#libq'); if(q) q.value=''; ui.limit=60; renderLibrary(); $('#library').scrollIntoView({block:'start',behavior:'smooth'}); return; }
+  if(a==='pillall'||a==='pillflag'){ ui.lf=a==='pillflag'?'f':'all'; ui.q=''; const q=$('#libq'); if(q) q.value=''; ui.limit=60; renderLibrary();
+    if(curPage()!=='library'){ history.pushState(null,'',location.pathname+location.search+'#relics'); showPage(); } window.scrollTo(0,0); return; }
   if(a==='pillprof'){ pendingSave=lastProfiles.length>1?lastProfiles:null; openSaveDlg({step:'menu'}); return; }
   if(a==='presetdlg'){ openPresetDlg(); return; }
   if(a==='overlay'){ openOverlayDlg(); return; }
