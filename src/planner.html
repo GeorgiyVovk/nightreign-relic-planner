@@ -2721,8 +2721,8 @@ async function importSaveSlot(slot, opt={}){
     return;
   }
   const hs=slot.hist||[]; lastRowsSig=JSON.stringify([rows,slot.presets||[]]);
+  closeOv(); toast(`Loading ${slot.name}: ${rows.length} relics…`,'busy');   // the dialog goes at once; storing takes a moment
   if(hs.length){ setRuns(hs,Date.now()); await storeRuns(); }
-  closeOv(); toast(`Loading ${slot.name}: ${rows.length} relics…`,'busy');
   const err=await storeSaveRows(rows,info);
   setSaveRows(rows,info); setGamePresets(slot.presets);
   if(!err) await clearManualRelics();
@@ -2803,9 +2803,9 @@ function setRuns(list, at){ runs=Array.isArray(list)?list:[]; runsAt=at||0; }
 async function storeRuns(){
   if(store.mode!=='db'){ lsSet(LS_H,{at:runsAt,runs}); return; }
   const db=store.db, N=20, chunks=Math.ceil(runs.length/N);
-  try{ for(let i=0;i<chunks;i++) await db.doc('save/h'+i).set({stamp:runsAt,runs:runs.slice(i*N,(i+1)*N)});
+  try{ await Promise.all(Array.from({length:chunks},(_,i)=>db.doc('save/h'+i).set({stamp:runsAt,runs:runs.slice(i*N,(i+1)*N)})));
     await db.doc('save/hmeta').set({stamp:runsAt,chunks});
-    for(let i=chunks;i<10;i++){ try{ await db.doc('save/h'+i).delete(); }catch(e){} } }catch(e){}
+    for(let i=chunks;i<10;i++) db.doc('save/h'+i).delete().catch(()=>{}); }catch(e){}
 }
 function lsGet(k){ try{ const v=localStorage.getItem(k); return v?JSON.parse(v):null; }catch(e){ return null; } }
 function lsSet(k,v){ try{ localStorage.setItem(k,JSON.stringify(v)); }catch(e){} }
