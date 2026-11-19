@@ -493,10 +493,9 @@ select:hover{background-image:linear-gradient(to top right,transparent 50%,var(-
 .hstat .k{font-size:12px;color:var(--muted)}
 .hstat .v{font-family:var(--f-mono);font-variant-numeric:tabular-nums;font-size:26px;font-weight:600;line-height:1.05}
 .hstat .s{font-size:12px;color:var(--muted)}
-.htabs{margin-top:18px;overflow-x:auto;scrollbar-width:none}
-.htabs button{white-space:nowrap}
-.htabp{padding-top:12px;max-width:760px}
-@media (max-width:560px){.htabs button{padding-inline:10px} .htabs{-webkit-mask-image:linear-gradient(to right,#000 88%,transparent);mask-image:linear-gradient(to right,#000 88%,transparent)}}
+.hgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+@media (max-width:1000px){.hgrid{grid-template-columns:minmax(0,1fr)}}
+.hhint{margin:0 0 10px;font-size:12px;color:var(--muted)}
 .htab{width:100%;border-collapse:collapse;font-size:13px}
 .htab th{font-size:11px;font-weight:500;color:var(--muted);text-align:right;padding:0 0 4px 10px;border-bottom:1px solid var(--line);white-space:nowrap}
 .htab td{padding:6px 0 6px 10px;border-bottom:1px solid var(--line);text-align:right;font-family:var(--f-mono);font-variant-numeric:tabular-nums;white-space:nowrap}
@@ -565,11 +564,14 @@ select:hover{background-image:linear-gradient(to top right,transparent 50%,var(-
 .rpl.pgear ul.gfx{list-style:none;margin:4px 0 0;padding:0;border:0;display:flex;flex-direction:column;gap:3px;font-size:12px;line-height:1.4;color:var(--fg)}
 .gfx li{position:relative;padding-left:13px}
 .gitems.gws{gap:0;margin-top:6px}
-.gitems.gws > .gw{border-left:3px solid var(--rc,transparent);padding:9px 0 9px 10px;position:relative}
-.gitems.gws > .gw + .gw::before{content:"";position:absolute;left:-3px;right:0;top:0;border-top:1px solid var(--line)}
+.gitems.gws > .gw{padding:9px 0}
+.gitems.gws > .gw + .gw{border-top:1px solid var(--line)}
+.gitems.gws > .gw:first-child{padding-top:2px}
+.gw .gname{color:var(--rc,var(--fg))}
 .rpl ul.rrels{margin:8px 0 0;padding:0;border:0;gap:6px}
 .rpl .rrelf{display:block;border:2px solid var(--c);border-radius:8px;padding:6px 10px;background:var(--surface);color:var(--fg);font-size:12px;line-height:1.4}
 .rpl .rrelf.dp{background:var(--deepbg)}
+.rpl .rrelf .rcur{display:block;margin-top:2px}
 .rpl .gsep{border:0;border-top:1px solid var(--line);margin:10px 0 0}
 .gfx li::before{content:"";position:absolute;left:3px;top:.62em;width:4px;height:4px;border-radius:50%;background:var(--faint)}
 .gfx li.curse{color:var(--bad)}
@@ -616,7 +618,7 @@ select:hover{background-image:linear-gradient(to top right,transparent 50%,var(-
   </div>
 </header>
 
-<nav class="wrap pages" aria-label="Pages"><div class="tabs" id="pages" role="tablist"><button role="tab" data-page="relics" aria-pressed="true">Relics</button><button role="tab" data-page="damage" aria-pressed="false">Damage calculator</button><button role="tab" data-page="history" aria-pressed="false">History</button></div></nav>
+<nav class="wrap pages" aria-label="Pages"><div class="tabs" id="pages" role="tablist"><button role="tab" data-page="relics" aria-pressed="true">Relics</button><button role="tab" data-page="damage" aria-pressed="false">Damage calculator</button><button role="tab" data-page="history" aria-pressed="false">History</button><button role="tab" data-page="stats" aria-pressed="false">Stats</button></div></nav>
 
 <main class="wrap layout" id="pg-relics">
   <div class="col">
@@ -707,6 +709,7 @@ select:hover{background-image:linear-gradient(to top right,transparent 50%,var(-
 </main>
 
 <main class="wrap hist" id="pg-history" hidden></main>
+<main class="wrap hist" id="pg-stats" hidden></main>
 
 <div class="ov" id="ov" hidden></div>
 <div class="toast" id="toast" role="status" hidden></div>
@@ -1605,16 +1608,16 @@ function withCalcBuild(fn){
 /* ============ PAGES ============ */
 // Relics (the planner) and Damage (the calculator): two sheets of one page, switched by tabs.
 // The calculator lives in the address as #calculator (no element has that id, so the browser never scrolls to it).
-const curPage = () => (location.hash==='#calculator'||location.hash==='#damage'?'damage':location.hash==='#history'?'history':'relics');
+const curPage = () => (location.hash==='#calculator'||location.hash==='#damage'?'damage':location.hash==='#history'?'history':location.hash==='#stats'?'stats':'relics');
 function showPage(){ if(location.hash==='#damage') history.replaceState(null,'',location.pathname+location.search+'#calculator');
   const pg=curPage();
-  ['relics','damage','history'].forEach(k=>{ const m=$('#pg-'+k); if(m) m.hidden=k!==pg; });
+  ['relics','damage','history','stats'].forEach(k=>{ const m=$('#pg-'+k); if(m) m.hidden=k!==pg; });
   document.querySelectorAll('#pages button').forEach(b=>{ b.setAttribute('aria-pressed',String(b.dataset.page===pg)); b.setAttribute('aria-selected',String(b.dataset.page===pg)); }); }
 window.addEventListener('hashchange',showPage); window.addEventListener('popstate',showPage);
 
 /* ============ HISTORY ============ */
 // The save's Result History (svHistory): totals, by Nightlord, by your Nightfarer, the people you played with, and every run.
-const hist = {mode:'all', team:0, limit:20, chart:false, all:{}, tab:'nl'};   // team: 0 any, 1 solo, 2 duo, 3 trio
+const hist = {mode:'all', team:0, limit:20, chart:false, all:{}};   // team: 0 any, 1 solo, 2 duo, 3 trio
 const NLORD=[['Gladius','Tricephalos'],['Adel','Gaping Jaw'],['Gnoster','Sentient Pest'],['Maris','Augur'],['Libra','Equilibrious Beast'],['Fulghor','Darkdrift Knight'],['Caligo','Fissure in the Fog'],['Heolstor','Night Aspect'],['Harmonia','Balancers'],['Straghess','Dreglord']];
 const nlName = n => NLORD[n%10] ? (n>=10?'Everdark ':'')+NLORD[n%10][0] : 'Nightlord '+n;
 const nfName = c => SV_CHARS[c-1] || 'Nightfarer';
@@ -1639,12 +1642,12 @@ function wName(id,src,bare){
   if(!src&&b>=100&&b<1000&&b%10>=5&&(n=WBASEX[Math.floor(b/10)*100+50+b%10-5])) return pre+n;
   return '';
 }
-// a weapon's rarity 0-3 (common … legendary), or null when the planner doesn't have the weapon
+// a weapon's rarity 0-3 (common … legendary), 'inv' for a Nightfarer's weapon dropped by a Night invader (red in the game),
+// or null when the planner doesn't have the weapon
 function wRar(id,src){
   const base=x=>Math.floor(x/10000), b=base(id);
   if(WBASE[b]) return WRAR[b]||0;
-  if(src>=1e8&&src<2e8&&WBASE[base(src-1e8)]) return WRAR[base(src-1e8)]||0;
-  if(b>=721&&b<=730&&id%10000<10) return 0;
+  if((src>=1e8&&src<2e8)||(b>=721&&b<=730&&id%10000<10)) return 'inv';
   return null;
 }
 const RARN=['Common','Uncommon','Rare','Legendary'];
@@ -1657,7 +1660,7 @@ function histRelic(x,nf){
   const r=relicFromRow([0,item,0,ef,cu,1]), nm=e=>EBY[e]?EBY[e].n:String(e);
   const label=r.name?esc(r.name):r.effects.map(e=>esc(shortName(nm(e),nf))).join(', ');
   const curses=r.curses.map(e=>`<span class="curse">${esc(shortName(nm(e),nf))}</span>`);
-  return `<li class="rrelf c-${r.color}${r.deep?' dp':''}" title="${esc([...(r.name?[r.name]:[]),...r.effects.map(nm),...r.curses.map(nm)].join('\n'))}">${label||'Relic'}${curses.length?(label?', ':'')+curses.join(', '):''}</li>`;
+  return `<li class="rrelf c-${r.color}${r.deep?' dp':''}" title="${esc([...(r.name?[r.name]:[]),...r.effects.map(nm),...r.curses.map(nm)].join('\n'))}">${label||'Relic'}${curses.length?`<span class="rcur">${curses.join(', ')}</span>`:''}</li>`;
 }
 function histGroup(list,keys){
   const m=new Map();
@@ -1690,7 +1693,7 @@ function histGear(p){
     const n=wName(w[0],w[5]), sk=skName(w[1]);
     const ps=w.slice(2,5).filter(Boolean).map(x=>WPASS[x]?`<li${WPASS[x][1]&4?' class="curse"':''}>${esc(wpLabel(x))}</li>`:WGRIEF[x]?`<li>${esc(WGRIEF[x][0])} +${WGRIEF[x][1]}</li>`:'').join('');
     const rar=wRar(w[0],w[5]);
-    return `<div class="gitem gw"${rar==null?'':` style="--rc:var(--rar${rar})" title="${RARN[rar]}"`}><div class="gname">${n?esc(n):`<span class="unk" title="Not in the game data the planner has (item ${w[0]})">Unknown weapon</span>`}${sk?`<span class="gsub"> · ${esc(sk)}</span>`:''}</div>${ps?`<ul class="gfx">${ps}</ul>`:''}</div>`; }).join('');
+    return `<div class="gitem gw"${rar==null?'':` style="--rc:${rar==='inv'?'var(--bad)':`var(--rar${rar})`}" title="${rar==='inv'?'From a Night invader':RARN[rar]}"`}><div class="gname">${n?esc(n):`<span class="unk" title="Not in the game data the planner has (item ${w[0]})">Unknown weapon</span>`}${sk?`<span class="gsub"> · ${esc(sk)}</span>`:''}</div>${ps?`<ul class="gfx">${ps}</ul>`:''}</div>`; }).join('');
   const tal=(p.t||[]).map(x=>`<div class="gitem"><div class="gname">${esc(TALN[x]||'Talisman '+x)}</div></div>`).join('');
   const isDeep=x=>(RITEM.get(x[0])||'R0')[1]==='2', nf=nfName(p.ch);
   const std=(p.rel||[]).filter(x=>!isDeep(x)).map(x=>histRelic(x,nf)).join(''), dp=(p.rel||[]).filter(isDeep).map(x=>histRelic(x,nf)).join('');
@@ -1704,23 +1707,39 @@ function openPlayerDlg(n,i){
   const tabs=r.pl.length>1?`<div class="tabs ptabs" role="tablist" aria-label="Player">${r.pl.map((q,j)=>`<button role="tab" data-act="hplayer" data-run="${r.n}" data-p="${j}" aria-pressed="${j===i}" aria-selected="${j===i}"${j===i?' data-focusnow':''}>${nfName(q.ch)}<span class="pnick">${esc(q.name)}</span></button>`).join('')}</div>`:'';
   openOv(`<div class="dlg pdlg" role="dialog" aria-modal="true" aria-label="${esc(p.name)}: gear"><div class="dh"><div class="pdh"><h3>${esc(p.name)}</h3><span class="msg">${nfName(p.ch)} · Lv ${p.lv} · ${p.kills} kills · ${esc(nlName(r.nl))}, ${runDate(r.t)}</span></div><button class="btn sm ghost" data-act="close"${tabs?'':' data-autofocus'}>Close</button></div>${tabs}<div class="rpl pgear">${histGear(p)}</div></div>`);
 }
-function renderHistory(){
-  const el=$('#pg-history'); if(!el) return;
-  if(!runs.length){
-    el.innerHTML=`<section class="panel hempty"><div class="ph"><h2>Result history</h2></div>
-      <p>${saveInfo?'Load your save again to read its Result History: the last 100 expeditions, with the Nightlord, the result, your Deep of Night rating, the team and their weapons.':'The game keeps your last 100 expeditions in its save file: the Nightlord, the result, your Deep of Night rating, the team and their weapons. Load the save to see them here.'}</p>
-      <button class="btn pri" data-act="loadsave">${saveInfo?'Load save again':'Load save'}</button></section>`; return; }
-  const list=histRuns(), won=list.filter(r=>r.win).length, dons=runs.filter(r=>r.mode===2), last=hist.mode==='exp'?null:dons[0];
-  const best=dons.reduce((m,r)=>Math.max(m,rAfter(r)),0), oldest=list.length?list[list.length-1].t:0;
+// History (the runs) and Stats (totals, the rating chart and the tables) share the two filters
+function histEmpty(title){
+  return `<section class="panel hempty"><div class="ph"><h2>${title}</h2></div>
+    <p>${saveInfo?'Load your save again to read its Result History: the last 100 expeditions, with the Nightlord, the result, your Deep of Night rating, the team and their gear.':'The game keeps your last 100 expeditions in its save file: the Nightlord, the result, your Deep of Night rating, the team and their gear. Load the save to see them here.'}</p>
+    <button class="btn pri" data-act="loadsave">${saveInfo?'Load save again':'Load save'}</button></section>`;
+}
+function histHead(title,list){
   const seg=[['all','All'],['don','Deep of Night'],['exp','Normal']].map(([k,l])=>`<button data-hmode="${k}" aria-pressed="${hist.mode===k}">${l}</button>`).join('');
   const tseg=[[0,'Any'],[1,'Solo'],[2,'Duo'],[3,'Trio']].map(([k,l])=>`<button data-hteam="${k}" aria-pressed="${hist.team===k}">${l}</button>`).join('');
-  let h=`<section class="panel"><div class="ph"><h2>Result history</h2><div class="phr"><div class="seg" role="group" aria-label="Mode">${seg}</div><div class="seg" role="group" aria-label="Team">${tseg}</div></div></div>`;
-  if(!list.length){ h+=`<p class="msg">No ${hist.team?['','solo','duo','trio'][hist.team]+' ':''}${hist.mode==='don'?'Deep of Night':hist.mode==='exp'?'normal':''} runs in the last ${runs.length}.</p></section>`; el.innerHTML=h; return; }
+  return `<div class="ph"><h2>${title}</h2><div class="phr"><div class="seg" role="group" aria-label="Mode">${seg}</div><div class="seg" role="group" aria-label="Team">${tseg}</div></div></div>`
+    +(list.length?'':`<p class="msg">No ${hist.team?['','solo','duo','trio'][hist.team]+' ':''}${hist.mode==='don'?'Deep of Night':hist.mode==='exp'?'normal':''} runs in the last ${runs.length}.</p>`);
+}
+function renderHistory(){ renderRuns(); renderStats(); }
+function renderRuns(){
+  const el=$('#pg-history'); if(!el) return;
+  if(!runs.length){ el.innerHTML=histEmpty('History'); return; }
+  const list=histRuns(), shown=list.slice(0,hist.limit);
+  el.innerHTML=`<section class="panel">${histHead('History',list)}${list.length?`<p class="hhint">Newest first. Open a run, then a player for their weapons, talismans and relics.</p><div class="runs">${shown.map(histRunHtml).join('')}</div>
+    ${list.length>shown.length?`<div class="hpager"><button class="btn" data-act="hmore">Show ${Math.min(20,list.length-shown.length)} more runs</button></div>`:''}`:''}</section>`;
+}
+function renderStats(){
+  const el=$('#pg-stats'); if(!el) return;
+  if(!runs.length){ el.innerHTML=histEmpty('Stats'); return; }
+  const list=histRuns(), won=list.filter(r=>r.win).length, dons=runs.filter(r=>r.mode===2), last=hist.mode==='exp'?null:dons[0];
+  const best=dons.reduce((m,r)=>Math.max(m,rAfter(r)),0), oldest=list.length?list[list.length-1].t:0;
+  let h=`<section class="panel">${histHead('Stats',list)}`;
+  if(!list.length){ el.innerHTML=h+'</section>'; return; }
   h+=`<div class="hstats"><div class="hstat"><span class="k">Runs</span><span class="v">${list.length}</span><span class="s">since ${runDate(oldest,1)}</span></div>
     <div class="hstat"><span class="k">Victories</span><span class="v">${won}</span><span class="s">${winPct(won,list.length)} of runs</span></div>`;
   if(last) h+=`<button class="hstat hbtn" data-act="hchart" aria-expanded="${hist.chart}" aria-controls="hchart" title="${hist.chart?'Hide':'Show'} the rating chart"><span class="k">Deep of Night rating<i class="caret" aria-hidden="true"></i></span><span class="v">${int(rAfter(last))}</span><span class="s">depth ${dAfter(last)}${best>rAfter(last)?` · best ${int(best)}`:''}</span></button>`;
   h+=`</div>`;
   if(last) h+=`<div class="hchart" id="hchart"${hist.chart?'':' hidden'}><div class="hch"><span>Rating after each Deep of Night run</span><span class="hlegend"><span><i aria-hidden="true"></i>Victory</span><span><i class="o" aria-hidden="true"></i>Defeat</span></span></div><div class="hplot"></div></div>`;
+  h+=`</section>`;
   const byNl=histGroup(list,r=>[[r.nl]]).sort((a,b)=>(a.k%10)-(b.k%10)||a.k-b.k);
   const byNf=histGroup(list,r=>[[r.pl[0].ch,{kills:r.pl[0].kills}]]).sort((a,b)=>b.n-a.n||a.k-b.k);
   const mates=histGroup(list,r=>r.pl.slice(1).map(p=>[p.name,{ch:p.ch}])).sort((a,b)=>b.n-a.n||b.w-a.w||a.k.localeCompare(b.k));
@@ -1728,23 +1747,17 @@ function renderHistory(){
   const more=(k,n,shown)=>n>shown?`<button class="btn sm ghost" data-act="hall" data-k="${k}">Show all ${n}</button>`:hist.all[k]&&n>(k==='m'?10:12)?`<button class="btn sm ghost" data-act="hall" data-k="${k}">Show fewer</button>`:'';
   const wmap=histGroup(list,r=>[...new Set(r.pl[0].w.filter(w=>w[0]!==110000).map(w=>wName(w[0],w[5],1)).filter(Boolean))].map(n=>[n])).sort((a,b)=>b.n-a.n||b.w-a.w||a.k.localeCompare(b.k));
   const wtop=hist.all.w?wmap:wmap.slice(0,12);
-  // the tables sit in the stats panel, one at a time
-  const TABS={
-    nl:['Nightlords',()=>`<table class="htab"><thead><tr><th>Nightlord</th><th>Runs</th><th>Won</th><th>Win rate</th></tr></thead><tbody>
-      ${byNl.map(e=>`<tr><td>${esc(nlName(e.k))}<span class="s2">${esc(NLORD[e.k%10]?NLORD[e.k%10][1]:'')}</span></td><td>${e.n}</td><td>${e.w}</td><td>${wrCell(e)}</td></tr>`).join('')}</tbody></table>`],
-    nf:['Nightfarers',()=>`<table class="htab"><thead><tr><th>Your Nightfarer</th><th>Runs</th><th>Won</th><th>Win rate</th><th>Kills</th></tr></thead><tbody>
+  h+=`<div class="hgrid">
+    <section class="panel"><div class="ph"><h2>Nightlords</h2></div><table class="htab"><thead><tr><th>Nightlord</th><th>Runs</th><th>Won</th><th>Win rate</th></tr></thead><tbody>
+      ${byNl.map(e=>`<tr><td>${esc(nlName(e.k))}<span class="s2">${esc(NLORD[e.k%10]?NLORD[e.k%10][1]:'')}</span></td><td>${e.n}</td><td>${e.w}</td><td>${wrCell(e)}</td></tr>`).join('')}</tbody></table></section>
+    <section class="panel"><div class="ph"><h2>Your Nightfarers</h2></div><table class="htab"><thead><tr><th>Nightfarer</th><th>Runs</th><th>Won</th><th>Win rate</th><th>Kills</th></tr></thead><tbody>
       ${byNf.map(e=>`<tr><td>${nfName(e.k)}</td><td>${e.n}</td><td>${e.w}</td><td>${wrCell(e)}</td><td title="Average per run">${Math.round(e.kills/e.n)}</td></tr>`).join('')}</tbody></table>
-      <p class="hmore">Kills: average per run.</p>`],
-    mates:['Teammates',()=>top.length?`<table class="htab"><thead><tr><th>Player</th><th>Runs</th><th>Won</th><th>Win rate</th></tr></thead><tbody>
-      ${top.map(e=>`<tr><td>${esc(e.k)}<span class="s2">${[...e.chars.entries()].sort((a,b)=>b[1]-a[1]).slice(0,3).map(([c])=>nfName(c)).join(', ')}</span></td><td>${e.n}</td><td>${e.w}</td><td>${wrCell(e)}</td></tr>`).join('')}</tbody></table><div class="hmore">${more('m',mates.length,top.length)}</div>`:`<p class="msg">Only solo runs here.</p>`],
-    w:['Weapons',()=>wtop.length?`<table class="htab"><thead><tr><th>Your weapon</th><th>Runs</th><th>Won</th><th>Win rate</th></tr></thead><tbody>
-      ${wtop.map(e=>`<tr><td>${esc(e.k)}</td><td>${e.n}</td><td>${e.w}</td><td>${wrCell(e)}</td></tr>`).join('')}</tbody></table><div class="hmore"><span>Runs you finished with it, any affinity.</span>${more('w',wmap.length,wtop.length)}</div>`:`<p class="msg">No weapons recorded.</p>`]};
-  const tab=TABS[hist.tab]?hist.tab:'nl';
-  h+=`<div class="tabs htabs" role="tablist" aria-label="Statistics">${Object.entries(TABS).map(([k,[l]])=>`<button role="tab" data-htab="${k}" aria-pressed="${k===tab}" aria-selected="${k===tab}">${l}</button>`).join('')}</div>
-    <div class="htabp" role="tabpanel">${TABS[tab][1]()}</div></section>`;
-  const shown=list.slice(0,hist.limit);
-  h+=`<section class="panel"><div class="ph"><h2>Runs</h2><span class="hint">newest first · open a run, then a player for their weapons, talismans and relics</span></div><div class="runs">${shown.map(histRunHtml).join('')}</div>
-    ${list.length>shown.length?`<div class="hpager"><button class="btn" data-act="hmore">Show ${Math.min(20,list.length-shown.length)} more runs</button></div>`:''}</section>`;
+      <p class="hmore">Kills: average per run.</p></section>
+    <section class="panel"><div class="ph"><h2>Teammates</h2></div>${top.length?`<table class="htab"><thead><tr><th>Player</th><th>Runs</th><th>Won</th><th>Win rate</th></tr></thead><tbody>
+      ${top.map(e=>`<tr><td>${esc(e.k)}<span class="s2">${[...e.chars.entries()].sort((a,b)=>b[1]-a[1]).slice(0,3).map(([c])=>nfName(c)).join(', ')}</span></td><td>${e.n}</td><td>${e.w}</td><td>${wrCell(e)}</td></tr>`).join('')}</tbody></table><div class="hmore">${more('m',mates.length,top.length)}</div>`:`<p class="msg">Only solo runs here.</p>`}</section>
+    <section class="panel"><div class="ph"><h2>Your weapons</h2></div>${wtop.length?`<table class="htab"><thead><tr><th>Weapon</th><th>Runs</th><th>Won</th><th>Win rate</th></tr></thead><tbody>
+      ${wtop.map(e=>`<tr><td>${esc(e.k)}</td><td>${e.n}</td><td>${e.w}</td><td>${wrCell(e)}</td></tr>`).join('')}</tbody></table><div class="hmore"><span>Runs you finished with it, any affinity.</span>${more('w',wmap.length,wtop.length)}</div>`:`<p class="msg">No weapons recorded.</p>`}</section>
+  </div>`;
   el.innerHTML=h;
   if(hist.chart) drawRatingChart();
 }
@@ -1788,7 +1801,7 @@ function drawRatingChart(){
     if(m){ ev.preventDefault(); show(Math.max(0,Math.min(n-1,(cur<0?n-1:cur)+m))); } else if(ev.key==='Home'){ ev.preventDefault(); show(0); } else if(ev.key==='End'){ ev.preventDefault(); show(n-1); } else if(ev.key==='Escape') hide(); });
 }
 let chartTimer=null;
-window.addEventListener('resize',()=>{ if(!hist.chart) return; clearTimeout(chartTimer); chartTimer=setTimeout(()=>{ if(curPage()==='history') drawRatingChart(); },120); });
+window.addEventListener('resize',()=>{ if(!hist.chart) return; clearTimeout(chartTimer); chartTimer=setTimeout(()=>{ if(curPage()==='stats') drawRatingChart(); },120); });
 
 /* ============ RENDER ============ */
 function renderAll(){ showPage(); renderStore(); renderPickers(); renderSlots(); renderLibrary(); renderEnemy(); renderCombat(); renderResults(); renderHistory(); }
@@ -2868,9 +2881,8 @@ document.addEventListener('click', async ev=>{
   if(t.dataset.stk){ const d=ENDEB[t.dataset.stk], c=build.combat.cond; c[d.k]=((+c[d.k]||0)+1)%((d.max||1)+1); saveBuildSoon(); renderEnemy(); renderResults(); return; }
   if(t.dataset.cr!=null){ const ws=weaponState(); ws.crar[ws.mode]=+t.dataset.cr; saveBuildSoon(); renderCombat(); renderResults(); return; }
   if(t.dataset.wmode){ const ws=weaponState(); if(ws.mode===t.dataset.wmode) return; ws.mode=t.dataset.wmode; saveBuildSoon(); renderCombat(); renderResults(); return; }
-  if(t.dataset.page){ if(t.dataset.page===curPage()) return; history.pushState(null,'',location.pathname+location.search+(t.dataset.page==='damage'?'#calculator':t.dataset.page==='history'?'#history':'')); showPage(); window.scrollTo(0,0); return; }
+  if(t.dataset.page){ if(t.dataset.page===curPage()) return; history.pushState(null,'',location.pathname+location.search+(t.dataset.page==='damage'?'#calculator':t.dataset.page==='history'?'#history':t.dataset.page==='stats'?'#stats':'')); showPage(); if(t.dataset.page==='stats'&&hist.chart) drawRatingChart(); window.scrollTo(0,0); return; }
   if(t.dataset.hmode){ if(hist.mode===t.dataset.hmode) return; hist.mode=t.dataset.hmode; hist.limit=20; renderHistory(); return; }
-  if(t.dataset.htab){ if(hist.tab===t.dataset.htab) return; hist.tab=t.dataset.htab; renderHistory(); return; }
   if(t.dataset.hteam){ if(hist.team===+t.dataset.hteam) return; hist.team=+t.dataset.hteam; hist.limit=20; renderHistory(); return; }
   if(t.dataset.wr){ weaponState().rar=+t.dataset.wr; saveBuildSoon(); renderCombat(); renderResults(); return; }
   if(t.dataset.atk){ if(t.disabled) return; weaponState().atk=t.dataset.atk; saveBuildSoon(); renderResults(); return; }
@@ -2896,9 +2908,9 @@ document.addEventListener('click', async ev=>{
     build.activePreset[ch]=p.id; saveBuildSoon(); closeOv(); renderPresets(); toast(a==='prupd'?`Preset "${p.name}" updated.`:`Preset "${p.name}" saved.`); return; }
   if(a==='prdel'){ normBuild(); const ch=build.char, id=build.activePreset[ch]; build.presets=build.presets.filter(p=>p.id!==id); build.activePreset[ch]=null; saveBuildSoon(); closeOv(); renderPresets(); toast('Preset deleted.'); return; }
   if(a==='loadsave'){ openSaveDlg({step:'intro'}); return; }
-  if(a==='hmore'){ hist.limit+=20; renderHistory(); return; }
+  if(a==='hmore'){ hist.limit+=20; renderRuns(); return; }
   if(a==='hplayer'){ openPlayerDlg(+t.dataset.run,+t.dataset.p); return; }
-  if(a==='hall'){ const k=t.dataset.k; hist.all[k]=!hist.all[k]; renderHistory(); return; }
+  if(a==='hall'){ const k=t.dataset.k; hist.all[k]=!hist.all[k]; renderStats(); return; }
   if(a==='hchart'){ hist.chart=!hist.chart; t.setAttribute('aria-expanded',String(hist.chart)); t.title=(hist.chart?'Hide':'Show')+' the rating chart'; const c=$('#hchart'); if(c){ c.hidden=!hist.chart; if(hist.chart) drawRatingChart(); } return; }
   if(a==='appsave'){ const x=appSaves[+t.dataset.i]; if(x) await loadAppSave(x.path); return; }
   if(a==='apppick'){ try{ const x=await APP.pickSave(); if(x&&x.path) await loadAppSave(x.path); }catch(e){} return; }
