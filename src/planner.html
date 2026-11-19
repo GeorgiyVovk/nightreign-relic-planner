@@ -541,7 +541,18 @@ select:hover{background-image:linear-gradient(to top right,transparent 50%,var(-
 .rpl .wx{color:var(--muted)}
 .rpl .curse{color:var(--bad)}
 .rpl h4{margin:10px 0 0;padding-top:8px;border-top:1px solid var(--line);font-size:11px;font-weight:600;color:var(--muted)}
-.rpl h4 + ul{margin-top:4px;padding-top:0;border-top:0}
+.rpl h4 + ul,.rpl h4 + .msg{margin-top:4px;padding-top:0;border-top:0}
+.rplb{display:flex;flex-direction:column;gap:2px;border:0;text-align:left;color:inherit;font:inherit;cursor:pointer}
+.rplb:hover{background-image:linear-gradient(var(--hov),var(--hov))}
+.rplb .gearln{display:flex;align-items:center;gap:6px;margin-top:6px;font-size:12px;color:var(--accent);font-weight:500}
+.rplb .gearln .caret{width:0;height:0;border-top:4px solid transparent;border-bottom:4px solid transparent;border-left:5px solid currentColor}
+.dlg.pdlg{width:min(860px,100%)}
+.pdh{display:flex;flex-direction:column;gap:2px;min-width:0}
+.dlg.pdlg .dh{flex-wrap:nowrap;align-items:flex-start}
+.dlg.pdlg .dh .btn{flex:none}
+.rpl.pgear{background:none;padding:0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 28px}
+.rpl.pgear .gcol > h4:first-child{margin-top:0}
+@media (max-width:640px){.rpl.pgear{grid-template-columns:minmax(0,1fr)} .rpl.pgear .gcol + .gcol > h4:first-child{margin-top:10px}}
 .rpl .rtal li{color:var(--fg)}
 .rpl .rrel{flex-direction:row;align-items:flex-start;gap:7px;color:var(--fg)}
 .rpl .rrel .gem{width:11px;height:11px;border-radius:3px;margin-top:2px}
@@ -1633,19 +1644,28 @@ function histRunHtml(r){
   const rt=don?`<span>Depth ${r.db}</span><span>${int(r.rb)} → ${int(rAfter(r))} <span class="${d>0?'up':d<0?'down':''}">${d>0?'+':''}${d?int(d):'±0'}</span></span>`:'<span>Normal</span>';
   const counts=[['enemies felled',r.c[0]],['great enemies felled',r.c[1]],['treasure found',r.c[2]],['allies rescued',r.c[4]]];
   const mr=mateRating(r), mates=mr==null?'':`<span title="The game keeps the team's average rating; this is it without yours"><b>${int(mr)}</b> ${r.pl.length>2?'teammates\' average rating':'teammate\'s rating'}</span>`;
-  const players=r.pl.map((p,i)=>{
+  const players=r.pl.map((p,i)=>`<button class="rpl rplb" data-act="hplayer" data-run="${r.n}" data-p="${i}"><span class="who"><b>${esc(p.name)}</b><span class="st">${nfName(p.ch)} · Lv <span class="num">${p.lv}</span></span></span>
+      <span class="st"><span class="num">${p.kills}</span> kills · <span class="num">${int(p.runes)}</span> runes</span><span class="gearln">Weapons, talismans and relics<i class="caret" aria-hidden="true"></i></span></button>`).join('');
+  return `<details class="run${r.win?' win':''}"><summary>
+    <span class="nl">${esc(nlName(r.nl))}<small>${esc(NLORD[r.nl%10]?NLORD[r.nl%10][1]:'')}</small>${r.u?'<span class="nlunk" title="The Nightlord was hidden until the fight">Unknown Nightlord</span>':''}</span>
+    <span class="meta"><span class="res">${res}</span> · ${runDate(r.t)} · ${esc(team)}</span><span class="rt">${rt}</span></summary>
+    <div class="rbody"><div class="rcount">${counts.map(([k,v])=>`<span><b>${int(v)}</b> ${k}</span>`).join('')}${mates}</div><div class="rplayers">${players}</div></div></details>`;
+}
+// a player's weapons (left), talismans and relics (right), for the gear window
+function histGear(p){
     const ws=p.w.filter(w=>w[0]!==110000).map(w=>{
       const n=wName(w[0],w[5]), sk=skName(w[1]);
       const ps=w.slice(2,5).filter(Boolean).map(x=>WPASS[x]?`<span${WPASS[x][1]&4?' class="curse"':''}>${esc(wpLabel(x))}</span>`:WGRIEF[x]?esc(WGRIEF[x][0]):'').filter(Boolean);
       return `<li><span>${n?`<span class="wn">${esc(n)}</span>`:`<span class="wn unk" title="Not in the game data the planner has (item ${w[0]})">Unknown weapon</span>`}${sk?`<span class="wx"> · ${esc(sk)}</span>`:''}</span>${ps.length?`<span class="wx">${ps.join(', ')}</span>`:''}</li>`; }).join('');
     const tal=(p.t||[]).map(x=>TALN[x]||'Talisman '+x), rel=(p.rel||[]).map(x=>histRelic(x,nfName(p.ch))).join('');
-    return `<div class="rpl"><div class="who"><b>${esc(p.name)}</b><span class="st">${nfName(p.ch)} · Lv <span class="num">${p.lv}</span></span></div>
-      <div class="st"><span class="num">${p.kills}</span> kills · <span class="num">${int(p.runes)}</span> runes</div>
-      ${ws?`<h4>Weapons</h4><ul>${ws}</ul>`:''}${tal.length?`<h4>Talismans</h4><ul class="rtal">${tal.map(n=>`<li>${esc(n)}</li>`).join('')}</ul>`:''}${rel?`<h4>Relics</h4><ul class="rrels">${rel}</ul>`:''}</div>`; }).join('');
-  return `<details class="run${r.win?' win':''}"><summary>
-    <span class="nl">${esc(nlName(r.nl))}<small>${esc(NLORD[r.nl%10]?NLORD[r.nl%10][1]:'')}</small>${r.u?'<span class="nlunk" title="The Nightlord was hidden until the fight">Unknown Nightlord</span>':''}</span>
-    <span class="meta"><span class="res">${res}</span> · ${runDate(r.t)} · ${esc(team)}</span><span class="rt">${rt}</span></summary>
-    <div class="rbody"><div class="rcount">${counts.map(([k,v])=>`<span><b>${int(v)}</b> ${k}</span>`).join('')}${mates}</div><div class="rplayers">${players}</div></div></details>`;
+    return `<div class="gcol"><h4>Weapons</h4>${ws?`<ul>${ws}</ul>`:'<p class="msg">None recorded.</p>'}</div>
+      <div class="gcol"><h4>Talismans</h4>${tal.length?`<ul class="rtal">${tal.map(n=>`<li>${esc(n)}</li>`).join('')}</ul>`:'<p class="msg">None.</p>'}
+      <h4>Relics</h4>${rel?`<ul class="rrels">${rel}</ul>`:'<p class="msg">Not in this save for this run.</p>'}</div>`;
+}
+function openPlayerDlg(n,i){
+  const r=runs.find(x=>x.n===n), p=r&&r.pl[i]; if(!p) return;
+  const tabs=r.pl.length>1?`<div class="seg" role="group" aria-label="Player">${r.pl.map((q,j)=>`<button data-act="hplayer" data-run="${r.n}" data-p="${j}" aria-pressed="${j===i}"${j===i?' data-focusnow':''}>${esc(q.name)}</button>`).join('')}</div>`:'';
+  openOv(`<div class="dlg pdlg" role="dialog" aria-modal="true" aria-label="${esc(p.name)}: gear"><div class="dh"><div class="pdh"><h3>${esc(p.name)}</h3><span class="msg">${nfName(p.ch)} · Lv ${p.lv} · ${p.kills} kills · ${esc(nlName(r.nl))}, ${runDate(r.t)}</span></div><button class="btn sm ghost" data-act="close"${tabs?'':' data-autofocus'}>Close</button></div>${tabs}<div class="rpl pgear">${histGear(p)}</div></div>`);
 }
 function renderHistory(){
   const el=$('#pg-history'); if(!el) return;
@@ -1684,7 +1704,7 @@ function renderHistory(){
       ${wtop.map(e=>`<tr><td>${esc(e.k)}</td><td>${e.n}</td><td>${e.w}</td><td>${wrCell(e)}</td></tr>`).join('')}</tbody></table><div class="hmore"><span>Runs you finished with it, any affinity.</span>${more('w',wmap.length,wtop.length)}</div>`:`<p class="msg">No weapons recorded.</p>`}</section>
   </div>`;
   const shown=list.slice(0,hist.limit);
-  h+=`<section class="panel"><div class="ph"><h2>Runs</h2><span class="hint">newest first · open a run for the team, their weapons, talismans and relics</span></div><div class="runs">${shown.map(histRunHtml).join('')}</div>
+  h+=`<section class="panel"><div class="ph"><h2>Runs</h2><span class="hint">newest first · open a run, then a player for their weapons, talismans and relics</span></div><div class="runs">${shown.map(histRunHtml).join('')}</div>
     ${list.length>shown.length?`<div class="hpager"><button class="btn" data-act="hmore">Show ${Math.min(20,list.length-shown.length)} more runs</button></div>`:''}</section>`;
   el.innerHTML=h;
   if(hist.chart) drawRatingChart();
@@ -2837,6 +2857,7 @@ document.addEventListener('click', async ev=>{
   if(a==='prdel'){ normBuild(); const ch=build.char, id=build.activePreset[ch]; build.presets=build.presets.filter(p=>p.id!==id); build.activePreset[ch]=null; saveBuildSoon(); closeOv(); renderPresets(); toast('Preset deleted.'); return; }
   if(a==='loadsave'){ openSaveDlg({step:'intro'}); return; }
   if(a==='hmore'){ hist.limit+=20; renderHistory(); return; }
+  if(a==='hplayer'){ openPlayerDlg(+t.dataset.run,+t.dataset.p); return; }
   if(a==='hall'){ const k=t.dataset.k; hist.all[k]=!hist.all[k]; renderHistory(); return; }
   if(a==='hchart'){ hist.chart=!hist.chart; t.setAttribute('aria-expanded',String(hist.chart)); t.title=(hist.chart?'Hide':'Show')+' the rating chart'; const c=$('#hchart'); if(c){ c.hidden=!hist.chart; if(hist.chart) drawRatingChart(); } return; }
   if(a==='appsave'){ const x=appSaves[+t.dataset.i]; if(x) await loadAppSave(x.path); return; }
