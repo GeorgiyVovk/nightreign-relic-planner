@@ -1,8 +1,8 @@
 // Nightreign Relic Planner: desktop shell.
 // Shows the planner page and gives it read-only access to Nightreign save files:
 // list them, read one, let the user pick one, and say when the game rewrites it.
-// Also runs the overlay: a small click-through timer window on top of the game,
-// started by a global hotkey. It never touches the game itself.
+// Also runs the overlay: a small click-through window on top of the game that shows this run's Nightlord
+// (read from the save by the planner page) and a timer started by a global hotkey. It never touches the game itself.
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 use serde::Serialize;
@@ -192,6 +192,8 @@ fn watch_save(path: String, app: AppHandle, state: State<AppState>) -> bool {
     true
 }
 
+const OVERLAY_W: f64 = 240.0;
+
 #[derive(Serialize)]
 struct OverlayPos {
     x: f64,
@@ -207,7 +209,7 @@ async fn overlay_show(app: AppHandle, x: Option<f64>, y: Option<f64>) -> Result<
     }
     let mut b = WebviewWindowBuilder::new(&app, "overlay", WebviewUrl::App("overlay.html".into()))
         .title("Nightreign overlay")
-        .inner_size(240.0, 112.0)
+        .inner_size(OVERLAY_W, 112.0)
         .decorations(false)
         .transparent(true)
         .always_on_top(true)
@@ -241,6 +243,13 @@ async fn overlay_lock(app: AppHandle, locked: bool) -> Result<Option<OverlayPos>
     let p = w.outer_position().map_err(|e| e.to_string())?;
     let s = w.scale_factor().map_err(|e| e.to_string())?;
     Ok(Some(OverlayPos { x: p.x as f64 / s, y: p.y as f64 / s }))
+}
+
+/// The overlay page asks for the height its card needs; the width stays.
+#[tauri::command]
+async fn overlay_fit(app: AppHandle, h: f64) -> Result<(), String> {
+    let Some(w) = app.get_webview_window("overlay") else { return Ok(()) };
+    w.set_size(tauri::LogicalSize::new(OVERLAY_W, h.clamp(8.0, 400.0))).map_err(|e| e.to_string())
 }
 
 /// One global hotkey (e.g. "F8"); an empty string turns it off.
@@ -288,7 +297,7 @@ fn main() {
             }
             Ok(())
         })
-        .invoke_handler(tauri::generate_handler![list_saves, read_save, pick_save, watch_save, overlay_show, overlay_hide, overlay_lock, overlay_hotkey])
+        .invoke_handler(tauri::generate_handler![list_saves, read_save, pick_save, watch_save, overlay_show, overlay_hide, overlay_lock, overlay_fit, overlay_hotkey])
         .run(tauri::generate_context!())
         .expect("error while running Nightreign Relic Planner");
 }
