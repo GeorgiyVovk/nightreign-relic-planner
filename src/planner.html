@@ -523,7 +523,8 @@ select:hover{background-image:linear-gradient(to top right,transparent 50%,var(-
 .hgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
 @media (max-width:1000px){.hgrid{grid-template-columns:minmax(0,1fr)}}
 .hhint{margin:14px 0 10px;font-size:12px;color:var(--muted)}
-.htab.hunk{margin-top:24px}
+.htab tr.hasev td{border-bottom:0;padding-bottom:2px}
+.htab tr.evrow td{padding-top:0} .htab tr.evrow td:first-child{font-size:12px}
 .htab.hnl th:nth-child(2),.htab.hnl th:nth-child(3){width:70px}
 .htab.hnl th:nth-child(4){width:130px}
 .htab .unkl{color:var(--rar2)}
@@ -1798,8 +1799,12 @@ function renderStats(){
   h+=`<div class="hstat"><span class="k">Best win streak</span><span class="v">${best}</span><span class="s">Current streak ${now}</span></div>`;
   h+=`</div>`;
   h+=`</section>`;
-  const nlRow=e=>`<tr><td>${esc(nlName(e.k))}<span class="s2">${esc(NLORD[e.k%10]?NLORD[e.k%10][1]:'')}</span></td><td>${e.n}</td><td>${e.w}</td><td>${wrCell(e)}</td></tr>`;
-  const nlSort=(a,b)=>(a.k%10)-(b.k%10)||a.k-b.k, byNl=histGroup(list.filter(r=>!r.u),r=>[[r.nl]]).sort(nlSort), byEv=histGroup(list.filter(r=>r.u),r=>[[r.nl]]).sort(nlSort);
+  // each Nightlord's Everdark Sovereign (key nl+10) sits in a compact row right under it
+  const byNl=histGroup(list,r=>[[r.nl+(r.u?10:0)]]).sort((a,b)=>(a.k%10)-(b.k%10)||a.k-b.k);
+  const nlRow=(e,i)=>{ const nums=`<td>${e.n}</td><td>${e.w}</td><td>${wrCell(e)}</td>`, N=NLORD[e.k%10]||['Nightlord '+e.k,''];
+    if(e.k>=10&&i>0&&byNl[i-1].k===e.k-10) return `<tr class="evrow"><td><span class="unkl">Everdark</span></td>${nums}</tr>`;
+    const ev=byNl[i+1]&&byNl[i+1].k===e.k+10;
+    return `<tr${ev?' class="hasev"':''}><td>${e.k>=10?'<span class="unkl">Everdark</span> ':''}${esc(N[0])}<span class="s2">${esc(N[1])}</span></td>${nums}</tr>`; };
   const byNf=histGroup(list,r=>[[r.pl[0].ch,{kills:r.pl[0].kills}]]).sort((a,b)=>b.n-a.n||a.k-b.k);
   const mates=histGroup(list,r=>r.pl.slice(1).map(p=>[p.name,{ch:p.ch}])).sort((a,b)=>b.n-a.n||b.w-a.w||a.k.localeCompare(b.k));
   const top=hist.all.m?mates:mates.slice(0,10);
@@ -1811,8 +1816,7 @@ function renderStats(){
   h+=`<div class="hgrid">
     <section class="panel"><div class="ph"><h2>Nightlords</h2></div><table class="htab hnl"><thead><tr><th>Nightlord</th><th>Runs</th><th>Won</th><th>Win rate</th></tr></thead><tbody>
       ${byNl.map(nlRow).join('')}</tbody>
-      </table>
-      ${byEv.length?`<table class="htab hnl hunk"><thead><tr><th class="unkl">Everdark Sovereign</th><th>Runs</th><th>Won</th><th>Win rate</th></tr></thead><tbody>${byEv.map(nlRow).join('')}</tbody></table>`:''}</section>
+      </table></section>
     <section class="panel"><div class="ph"><h2>Your Nightfarers</h2></div><table class="htab"><thead><tr><th>Nightfarer</th><th>Runs</th><th>Won</th><th>Win rate</th><th>Kills</th></tr></thead><tbody>
       ${byNf.map(e=>`<tr><td>${nfName(e.k)}</td><td>${e.n}</td><td>${e.w}</td><td>${wrCell(e)}</td><td title="Average per run">${Math.round(e.kills/e.n)}</td></tr>`).join('')}</tbody></table>
       <p class="hmore">Kills: average per run.</p></section>
