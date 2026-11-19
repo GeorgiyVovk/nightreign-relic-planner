@@ -496,7 +496,7 @@ select:hover{background-image:linear-gradient(to top right,transparent 50%,var(-
 .hgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
 @media (max-width:1000px){.hgrid{grid-template-columns:minmax(0,1fr)}}
 .hhint{margin:14px 0 10px;font-size:12px;color:var(--muted)}
-.hstats.hs1{grid-auto-flow:row;grid-template-columns:minmax(0,320px)}
+#pg-history .hchart{margin-top:6px}
 .htab{width:100%;border-collapse:collapse;font-size:13px}
 .htab th{font-size:11px;font-weight:500;color:var(--muted);text-align:right;padding:0 0 4px 10px;border-bottom:1px solid var(--line);white-space:nowrap}
 .htab td{padding:6px 0 6px 10px;border-bottom:1px solid var(--line);text-align:right;font-family:var(--f-mono);font-variant-numeric:tabular-nums;white-space:nowrap}
@@ -1613,7 +1613,7 @@ const curPage = () => (location.hash==='#calculator'||location.hash==='#damage'?
 function showPage(){ if(location.hash==='#damage') history.replaceState(null,'',location.pathname+location.search+'#calculator');
   const pg=curPage();
   ['relics','damage','history','stats'].forEach(k=>{ const m=$('#pg-'+k); if(m) m.hidden=k!==pg; });
-  if((pg==='stats'||pg==='history')&&hist.chart) drawRatingChart();   // drawn to the page's width, so only once it shows
+  if(pg==='history'||(pg==='stats'&&hist.chart)) drawRatingChart();   // drawn to the page's width, so only once it shows
   document.querySelectorAll('#pages button').forEach(b=>{ b.setAttribute('aria-pressed',String(b.dataset.page===pg)); b.setAttribute('aria-selected',String(b.dataset.page===pg)); }); }
 window.addEventListener('hashchange',showPage); window.addEventListener('popstate',showPage);
 
@@ -1723,22 +1723,22 @@ function histHead(title,list){
   return `<div class="ph"><h2>${title}</h2><div class="phr"><div class="seg" role="group" aria-label="Mode">${seg}</div><div class="seg" role="group" aria-label="Team">${tseg}</div></div></div>`
     +(list.length?'':`<p class="msg">No ${hist.team?['','solo','duo','trio'][hist.team]+' ':''}${hist.mode==='don'?'Deep of Night':hist.mode==='exp'?'normal':''} runs in the last ${runs.length}.</p>`);
 }
-// the Deep of Night rating tile and its chart, on both pages (cid: the chart's id on that page)
-function ratingBlock(cid){
+// the Deep of Night rating tile and its chart (cid: the chart's id; open: always shown, as on History, which has no tile)
+function ratingBlock(cid,open){
   const dons=runs.filter(r=>r.mode===2), last=hist.mode==='exp'?null:dons[0]; if(!last) return ['',''];
   const best=dons.reduce((m,r)=>Math.max(m,rAfter(r)),0);
   return [`<button class="hstat hbtn" data-act="hchart" data-c="${cid}" aria-expanded="${hist.chart}" aria-controls="${cid}" title="${hist.chart?'Hide':'Show'} the rating chart"><span class="k">Deep of Night rating<i class="caret" aria-hidden="true"></i></span><span class="v">${int(rAfter(last))}</span><span class="s">depth ${dAfter(last)}${best>rAfter(last)?` · best ${int(best)}`:''}</span></button>`,
-    `<div class="hchart" id="${cid}"${hist.chart?'':' hidden'}><div class="hch"><span>Rating after each Deep of Night run</span><span class="hlegend"><span><i aria-hidden="true"></i>Victory</span><span><i class="o" aria-hidden="true"></i>Defeat</span></span></div><div class="hplot"></div></div>`];
+    `<div class="hchart" id="${cid}"${open||hist.chart?'':' hidden'}><div class="hch"><span>Rating after each Deep of Night run</span><span class="hlegend"><span><i aria-hidden="true"></i>Victory</span><span><i class="o" aria-hidden="true"></i>Defeat</span></span></div><div class="hplot"></div></div>`];
 }
 const chartId = () => curPage()==='stats'?'hchart-s':curPage()==='history'?'hchart-h':null;
 function renderHistory(){ renderRuns(); renderStats(); }
 function renderRuns(){
   const el=$('#pg-history'); if(!el) return;
   if(!runs.length){ el.innerHTML=histEmpty('History'); return; }
-  const list=histRuns(), shown=list.slice(0,hist.limit), [tile,chart]=ratingBlock('hchart-h');
-  el.innerHTML=`<section class="panel">${histHead('History',list)}${tile?`<div class="hstats hs1">${tile}</div>${chart}`:''}${list.length?`<p class="hhint">Newest first. Open a run, then a player for their weapons, talismans and relics.</p><div class="runs">${shown.map(histRunHtml).join('')}</div>
+  const list=histRuns(), shown=list.slice(0,hist.limit), chart=ratingBlock('hchart-h',true)[1];
+  el.innerHTML=`<section class="panel">${histHead('History',list)}${chart}${list.length?`<p class="hhint">Newest first. Open a run, then a player for their weapons, talismans and relics.</p><div class="runs">${shown.map(histRunHtml).join('')}</div>
     ${list.length>shown.length?`<div class="hpager"><button class="btn" data-act="hmore">Show ${Math.min(20,list.length-shown.length)} more runs</button></div>`:''}`:''}</section>`;
-  if(hist.chart&&curPage()==='history') drawRatingChart();
+  if(curPage()==='history') drawRatingChart();
 }
 function renderStats(){
   const el=$('#pg-stats'); if(!el) return;
@@ -1811,7 +1811,7 @@ function drawRatingChart(){
     if(m){ ev.preventDefault(); show(Math.max(0,Math.min(n-1,(cur<0?n-1:cur)+m))); } else if(ev.key==='Home'){ ev.preventDefault(); show(0); } else if(ev.key==='End'){ ev.preventDefault(); show(n-1); } else if(ev.key==='Escape') hide(); });
 }
 let chartTimer=null;
-window.addEventListener('resize',()=>{ if(!hist.chart) return; clearTimeout(chartTimer); chartTimer=setTimeout(()=>{ drawRatingChart(); },120); });
+window.addEventListener('resize',()=>{ if(!hist.chart&&curPage()!=='history') return; clearTimeout(chartTimer); chartTimer=setTimeout(()=>{ drawRatingChart(); },120); });
 
 /* ============ RENDER ============ */
 function renderAll(){ showPage(); renderStore(); renderPickers(); renderSlots(); renderLibrary(); renderEnemy(); renderCombat(); renderResults(); renderHistory(); }
@@ -2923,7 +2923,7 @@ document.addEventListener('click', async ev=>{
   if(a==='hplayer'){ openPlayerDlg(+t.dataset.run,+t.dataset.p); return; }
   if(a==='hall'){ const k=t.dataset.k; hist.all[k]=!hist.all[k]; renderStats(); return; }
   if(a==='hchart'){ hist.chart=!hist.chart; document.querySelectorAll('[data-act="hchart"]').forEach(b=>{ b.setAttribute('aria-expanded',String(hist.chart)); b.title=(hist.chart?'Hide':'Show')+' the rating chart'; });
-    document.querySelectorAll('.hchart').forEach(c=>{ c.hidden=!hist.chart; }); if(hist.chart) drawRatingChart(); return; }
+    const c=$('#hchart-s'); if(c){ c.hidden=!hist.chart; if(hist.chart) drawRatingChart(); } return; }
   if(a==='appsave'){ const x=appSaves[+t.dataset.i]; if(x) await loadAppSave(x.path); return; }
   if(a==='apppick'){ try{ const x=await APP.pickSave(); if(x&&x.path) await loadAppSave(x.path); }catch(e){} return; }
   if(a==='choosesave'){ $('#savefile').click(); return; }
