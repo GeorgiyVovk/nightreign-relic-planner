@@ -18,7 +18,7 @@
     version: () => T.app.getVersion(),
     // the latest release page on GitHub, in the default browser (the address is fixed in the app)
     openReleases: () => invoke('open_releases'),
-    // the overlay: a click-through window on top of the game with this run's Nightlord and the Dreglord timer
+    // the overlay: a click-through window on top of the game with this run's Nightlord and the Dreglord cycle timer
     overlay: {
       show: (x, y) => invoke('overlay_show', { x: x ?? null, y: y ?? null }),
       hide: () => invoke('overlay_hide'),
@@ -27,6 +27,7 @@
       config: (cfg) => T.event.emit('overlay:config', cfg),
       run: (run) => T.event.emit('overlay:run', run),
       test: () => T.event.emit('overlay:hotkey'),
+      stop: () => T.event.emit('overlay:stop'),
     },
   };
 })();

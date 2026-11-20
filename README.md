@@ -62,7 +62,7 @@ The gear button in the header opens Settings, with its pages down the left:
 The app can show a small card on top of the game (the gear button in the header opens Settings, page Overlay). Each part can be turned on or off:
 
 - **Nightlord**: this run's Nightlord, read from your save as soon as a run starts, so you know a hidden Nightlord from day one. It needs your save loaded in the planner.
-- **Dreglord timer**: press your hotkey (F8 by default) when the Dreglord relic's stacks icon disappears: it counts down 25 seconds and tells you when to sit.
+- **Dreglord timer**: keeps your Dreglord stacks when you level up. Press your hotkey (F8 by default) as soon as the status shows: the timer starts at your start point (1 s by default), counts up to the cycle length (20 s) and starts over until you stop it. Zones you set colour the cycle: green is safe to touch grace, red is danger, white is no zone (by default safe 2 to 15 s, danger 15 to 2 s). Press the hotkey again to resync, twice quickly to stop.
 
 The overlay is a separate click-through window. It reads your save file and listens to your hotkey; it never touches the game. It shows over the game in borderless or windowed mode.
 
