@@ -96,7 +96,18 @@ select{-webkit-appearance:none;appearance:none;cursor:pointer;border:1px solid v
 .ovshowrow .tgl{height:var(--h)}
 .ovbarh{width:170px;max-width:100%}
 .ovmk{width:170px;max-width:100%}
-.zrow{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr) auto minmax(0,1fr) auto;gap:8px;align-items:center}
+.zrow{display:grid;grid-template-columns:auto minmax(0,1.5fr) minmax(0,1fr) auto minmax(0,1fr) auto;gap:8px;align-items:center}
+.zsw{width:14px;height:14px;border-radius:3px;flex:none} .zsw.zg{background:var(--good)} .zsw.zr{background:var(--bad)}
+.fhelp{font-size:11px;color:var(--muted)}
+.btn.lnk{height:auto;padding:0 4px;vertical-align:baseline}
+/* the live preview of the overlay card: sticks to the top of the timer page while you scroll its settings */
+.ocprev{position:sticky;top:0;z-index:2;background:var(--surface);display:flex;flex-direction:column;gap:6px;padding-bottom:8px;border-bottom:1px solid var(--line)}
+.ovsec > .seg{align-self:flex-start}
+.ovsec .sh3{text-transform:none}
+.ocstage{display:flex;align-items:flex-start;min-height:70px;padding:14px;border-radius:var(--r-md);background:linear-gradient(135deg,#2a3029,#1b2120 55%,#2d2b24);border:1px solid var(--line)}
+.ocstage .oc{width:232px;flex:none}
+.ocstage .ocnone{margin:auto;color:#C9D1DC}
+.occap{font-size:11px;color:var(--muted)}
 .zrow select{width:100%;min-width:0}
 .zrow input{border:1px solid var(--line2);background-color:var(--surface2);border-radius:var(--r-md);height:var(--h);padding:0 10px;min-width:0;width:100%;font-family:var(--f-mono);font-variant-numeric:tabular-nums}
 .zrow .zto{font-size:12px;color:var(--muted)}
@@ -106,20 +117,20 @@ select{-webkit-appearance:none;appearance:none;cursor:pointer;border:1px solid v
 .ztrack b{position:absolute;top:0;bottom:0;width:3px;margin-left:-1.5px;background:var(--fg);box-shadow:0 0 0 1px rgba(0,0,0,.6)}
 .zticks{display:flex;justify-content:space-between;align-items:center;font-size:11px;color:var(--muted);font-family:var(--f-mono);font-variant-numeric:tabular-nums}
 .zticks .zleg{display:inline-flex;align-items:center;gap:5px} .zticks .zleg i{width:2px;height:10px;background:var(--fg)}
-@media (max-width:560px){ .zrow{grid-template-columns:minmax(0,1fr) auto minmax(0,1fr)} .zrow select{grid-column:1 / -1} .zrow .btn{grid-column:1 / -1;justify-self:start} }
+@media (max-width:560px){ .zrow{grid-template-columns:auto minmax(0,1fr) auto minmax(0,1fr)} .zrow select{grid-column:2 / -1} .zrow input[data-zk="a"]{grid-column:1 / 3} .zrow .btn{grid-column:1 / -1;justify-self:start} }
 .btn.sm.ibtn{width:var(--h-sm);padding:0;flex:none}
 .gear{display:block;width:15px;height:15px;background:currentColor;-webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath fill-rule='evenodd' d='M13.24 6.03 L15.15 6.55 L15.15 9.45 L13.24 9.97 L13.10 10.31 L14.08 12.03 L12.03 14.08 L10.31 13.10 L9.97 13.24 L9.45 15.15 L6.55 15.15 L6.03 13.24 L5.69 13.10 L3.97 14.08 L1.92 12.03 L2.90 10.31 L2.76 9.97 L0.85 9.45 L0.85 6.55 L2.76 6.03 L2.90 5.69 L1.92 3.97 L3.97 1.92 L5.69 2.90 L6.03 2.76 L6.55 0.85 L9.45 0.85 L9.97 2.76 L10.31 2.90 L12.03 1.92 L14.08 3.97 L13.10 5.69ZM10.3 8a2.3 2.3 0 1 0 -4.6 0a2.3 2.3 0 1 0 4.6 0Z'/%3E%3C/svg%3E") center/contain no-repeat;mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath fill-rule='evenodd' d='M13.24 6.03 L15.15 6.55 L15.15 9.45 L13.24 9.97 L13.10 10.31 L14.08 12.03 L12.03 14.08 L10.31 13.10 L9.97 13.24 L9.45 15.15 L6.55 15.15 L6.03 13.24 L5.69 13.10 L3.97 14.08 L1.92 12.03 L2.90 10.31 L2.76 9.97 L0.85 9.45 L0.85 6.55 L2.76 6.03 L2.90 5.69 L1.92 3.97 L3.97 1.92 L5.69 2.90 L6.03 2.76 L6.55 0.85 L9.45 0.85 L9.97 2.76 L10.31 2.90 L12.03 1.92 L14.08 3.97 L13.10 5.69ZM10.3 8a2.3 2.3 0 1 0 -4.6 0a2.3 2.3 0 1 0 4.6 0Z'/%3E%3C/svg%3E") center/contain no-repeat}
 .ovsec{display:flex;flex-direction:column;gap:8px}
 #ovbtn{position:relative} #ovbtn.has-upd::after{content:"";position:absolute;top:3px;right:3px;width:7px;height:7px;border-radius:50%;background:var(--accent)}
-.dlg.setdlg{width:min(720px,100%)}
-.setwrap{display:grid;grid-template-columns:150px minmax(0,1fr);min-height:460px}
+.dlg.setdlg{width:min(760px,100%);height:min(780px,calc(100dvh - 48px))}
+.setwrap{display:grid;grid-template-columns:160px minmax(0,1fr);grid-template-rows:minmax(0,1fr);flex:1;min-height:0}
 .stabs{display:flex;flex-direction:column;gap:4px;border-right:1px solid var(--line)}
 .stabs button{display:flex;align-items:center;justify-content:space-between;gap:8px;border:0;background:transparent;text-align:left;padding:9px 12px;font-size:14px;font-weight:600;color:var(--muted);border-right:2px solid transparent;margin-right:-1px;border-radius:var(--r-sm) 0 0 var(--r-sm)}
 .stabs button:hover{color:var(--fg);background-image:linear-gradient(var(--hov),var(--hov))}
-.stabs button[aria-current="page"]{color:var(--fg);border-right-color:var(--accent)}
+.stabs button[aria-current="page"]{color:var(--fg);border-right-color:var(--accent);background-color:var(--surface2)}
 .stabs button:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
 .stabs .sdot{width:7px;height:7px;border-radius:50%;background:var(--accent);flex:none}
-.setpanel{padding-left:22px;display:flex;flex-direction:column;gap:18px;min-width:0}
+.setpanel{padding:0 6px 4px 22px;display:flex;flex-direction:column;gap:18px;min-width:0;min-height:0;overflow-y:auto;scrollbar-gutter:stable}
 .setpanel .spt{font-family:var(--f-display);font-size:18px;font-weight:600;margin:0;line-height:1.2}
 .updnew{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:12px 14px;border:1px solid var(--line2);border-radius:var(--r-md);background:var(--surface2)}
 .updnew div{display:flex;flex-direction:column;gap:2px}
@@ -130,7 +141,7 @@ select{-webkit-appearance:none;appearance:none;cursor:pointer;border:1px solid v
   .stabs{flex-direction:row;border-right:0;border-bottom:1px solid var(--line);overflow-x:auto;scrollbar-width:none}
   .stabs button{padding:10px 16px 9px;border-right:0;border-bottom:2px solid transparent;margin:0 0 -1px;border-radius:var(--r-sm) var(--r-sm) 0 0}
   .stabs button[aria-current="page"]{border-bottom-color:var(--accent)}
-  .setpanel{padding:16px 0 0} }
+  .setwrap{grid-template-rows:auto minmax(0,1fr)} .setpanel{padding:16px 0 0} .ocprev{position:static} }
 .ovsec .sh3{margin:0}
 .ovsec .msg{margin:0}
 .ovnow b{color:var(--fg)} .ovnow .ev{color:var(--rar2);font-weight:600}
@@ -796,6 +807,7 @@ select:hover{background-image:linear-gradient(to top right,transparent 50%,var(-
 <div class="ov" id="ov" hidden></div>
 <div class="toast" id="toast" role="status" hidden></div>
 
+<script>/*@overlay-card*/</script>
 <script>
 /* desktop app bridge (Electron preload); null in a browser or inside Claude */
 const APP = window.nrApp || null;
@@ -2930,29 +2942,54 @@ function overlayPage(){ const o=ovlGet();
   return `<h4 class="spt">Overlay</h4>
     <div class="ovsec">${ovTgl('ov-on',o.on,'Show the overlay')}
       <p class="msg">A small card on top of the game. Works with the game in borderless or windowed mode.</p>
-      <div class="btns"><button class="btn" data-act="ovmove" ${o.on?'':'disabled'}>${ovlMoving?'Done moving':'Move'}</button></div></div>
+      <div class="btns"><button class="btn" data-act="ovmove" ${o.on?'':'disabled'}>${ovlMoving?'Done moving':'Move'}</button></div>
+      ${o.on?'':'<p class="msg">Turn on Show the overlay to move it.</p>'}</div>
     <div class="ovsec"><h5 class="sh3">Nightlord</h5>${ovTgl('ov-nl',o.nl,"Show this run's Nightlord")}
       <p class="msg">Read from your save as soon as a run starts, so a hidden Nightlord isn't hidden from you.</p>
       <p class="msg ovnow" id="ov-runst">${ovlRunStatus()}</p></div>
-    <div class="ovsec"><h5 class="sh3">Dreglord timer</h5>${ovTgl('ov-tm',o.timer,'Show the timer')}
-      <p class="msg">Keeps your Dreglord stacks when you level up. Press the hotkey as soon as the status shows: the timer starts at your start point, counts up to the cycle length and starts over, again and again. The zones show when touching grace is safe. Press the hotkey again to resync, twice quickly to stop.</p>
-      <div class="ovrow3"><div class="field"><label for="ov-key">Hotkey</label><select id="ov-key">${OVL_KEYS.map(k=>`<option ${k===o.key?'selected':''}>${k}</option>`).join('')}</select></div>
-        <div class="field"><label for="ov-cycle">Cycle, seconds</label><input id="ov-cycle" type="number" min="1" max="600" step="0.1" value="${o.cycle}"></div>
-        <div class="field"><label for="ov-start">Start at, seconds</label><input id="ov-start" type="number" min="0" max="${o.cycle}" step="0.1" value="${o.start}"></div></div>
-      <div class="ovshow"><span class="zlabel">On the overlay</span>
-        <div class="ovshowrow">${ovTgl('ov-simple',o.simple,'Simple mode')}${ovTgl('ov-zone',o.showZone,'Zone name')}</div>
-        <p class="msg">Simple mode fills the timer with the zone's colour: green safe, red danger, white outside the zones. Zone name shows Safe or Danger in words.</p>
-        <div class="ovshowrow"${o.simple?' hidden':''}>${ovTgl('ov-time',o.showTime,'Seconds')}${ovTgl('ov-bar',o.showBar,'Bar')}
-          <div class="field ovbarh"><label for="ov-barh">Bar height</label><select id="ov-barh" ${o.showBar?'':'disabled'}>${OVL_BARS.map(([h,n])=>`<option value="${h}" ${h===o.barH?'selected':''}>${n} · ${h} px</option>`).join('')}</select></div>
-          <div class="field ovmk"><label for="ov-mk">Playhead</label><select id="ov-mk" ${o.showBar?'':'disabled'}>${OVL_MK.map(([v,n])=>`<option value="${v}" ${v===o.mk?'selected':''}>${n}</option>`).join('')}</select></div></div></div>
-      <div class="zones"><span class="zlabel" id="zl">Zones</span>
-        ${o.zones.map((z,i)=>`<div class="zrow" role="group" aria-label="Zone ${i+1}"><select data-zi="${i}" data-zk="c" aria-label="Zone ${i+1} colour"><option value="g" ${z.c==='g'?'selected':''}>Safe (green)</option><option value="r" ${z.c==='r'?'selected':''}>Danger (red)</option></select>
-          <input type="number" data-zi="${i}" data-zk="a" min="0" max="${o.cycle}" step="0.1" value="${z.a}" aria-label="Zone ${i+1} from, seconds"><span class="zto">to</span><input type="number" data-zi="${i}" data-zk="b" min="0" max="${o.cycle}" step="0.1" value="${z.b}" aria-label="Zone ${i+1} to, seconds">
-          <button class="btn sm ghost" data-act="zdel" data-zi="${i}" aria-label="Remove zone ${i+1}">Remove</button></div>`).join('')}
-        ${o.zones.length<6?'<div class="btns"><button class="btn sm" data-act="zadd">Add zone</button></div>':''}
-        <div id="ov-zprev">${zoneTrack(o)}</div></div>
-      <div class="btns"><button class="btn" data-act="ovtest" ${o.on&&o.timer?'':'disabled'}>Test</button><button class="btn" data-act="ovstop" ${o.on&&o.timer?'':'disabled'}>Stop</button></div></div>
     <p class="msg">The overlay reads your save file and listens to your hotkey. It never touches the game.</p>`; }
+// what's wrong with the zones, in words: empty ones, and ones that overlap (where they do, the first one counts)
+function zoneWarn(o){ const w=[], Z=o.zones, n=Math.round(o.cycle*10);
+  Z.forEach((z,i)=>{ if(z.a===z.b) w.push(`Zone ${i+1} is empty: it starts and ends at the same second.`); });
+  const inZ=(z,x)=>z.a===z.b?false:z.a<z.b?(x>=z.a&&x<z.b):(x>=z.a||x<z.b), pairs=new Set();
+  for(let k=0;k<n;k++){ const x=k/10, hit=Z.map((z,i)=>inZ(z,x)?i:-1).filter(i=>i>=0); for(let i=0;i<hit.length;i++) for(let j=i+1;j<hit.length;j++) pairs.add(hit[i]+','+hit[j]); }
+  pairs.forEach(p=>{ const [i,j]=p.split(',').map(Number); w.push(`Zones ${i+1} and ${j+1} overlap: where they do, zone ${i+1} counts.`); });
+  return w.map(x=>`<p class="msg bad">${x}</p>`).join(''); }
+function timerPage(){ const o=ovlGet(), full=!o.simple;
+  const testWhy=!o.on?'<p class="msg">Test shows the timer on the overlay, so the overlay has to be on. <button class="btn sm ghost lnk" data-act="setpage" data-p="overlay">Go to Overlay</button></p>':!o.timer?'<p class="msg">Turn on Show the timer to test it.</p>':'';
+  return `<h4 class="spt">Dreglord timer</h4>
+    <div class="ocprev"><div class="ocstage"><div class="oc" id="ov-prev"></div><p class="msg ocnone" id="ov-prevnone" hidden>The timer is off, so there's nothing to show.</p></div><span class="occap">Preview, running the cycle on a loop</span></div>
+    <div class="ovsec">${ovTgl('ov-tm',o.timer,'Show the timer')}
+      <p class="msg">Press the hotkey when the Dreglord status shows. The card tells you when touching grace is safe.</p>
+      <div class="ovrow3"><div class="field"><label for="ov-key">Hotkey</label><select id="ov-key" aria-describedby="ov-keyhelp">${OVL_KEYS.map(k=>`<option ${k===o.key?'selected':''}>${k}</option>`).join('')}</select><span class="fhelp" id="ov-keyhelp">Press: start or resync · twice fast: stop</span></div>
+        <div class="field"><label for="ov-cycle">Cycle, seconds</label><input id="ov-cycle" type="number" min="1" max="600" step="0.1" value="${o.cycle}"></div>
+        <div class="field"><label for="ov-start">Start at, seconds</label><input id="ov-start" type="number" min="0" max="${o.cycle}" step="0.1" value="${o.start}" aria-describedby="ov-starthelp"><span class="fhelp" id="ov-starthelp">Where the timer begins when you press</span></div></div></div>
+    <div class="ovsec"><h5 class="sh3">Zones</h5>
+      ${o.zones.map((z,i)=>`<div class="zrow" role="group" aria-label="Zone ${i+1}"><i class="zsw z${z.c}" aria-hidden="true"></i><select data-zi="${i}" data-zk="c" aria-label="Zone ${i+1} colour"><option value="g" ${z.c==='g'?'selected':''}>Safe (green)</option><option value="r" ${z.c==='r'?'selected':''}>Danger (red)</option></select>
+        <input type="number" data-zi="${i}" data-zk="a" min="0" max="${o.cycle}" step="0.1" value="${z.a}" aria-label="Zone ${i+1} from, seconds"><span class="zto">to</span><input type="number" data-zi="${i}" data-zk="b" min="0" max="${o.cycle}" step="0.1" value="${z.b}" aria-label="Zone ${i+1} to, seconds">
+        <button class="btn sm" data-act="zdel" data-zi="${i}" aria-label="Remove zone ${i+1}">Remove</button></div>`).join('')}
+      ${o.zones.length?'':'<p class="msg">No zones: the timer stays white all the way round.</p>'}
+      ${o.zones.length<6?'<div class="btns"><button class="btn sm" data-act="zadd">Add zone</button></div>':''}
+      <div id="ov-zprev">${zoneTrack(o)}</div>
+      <div id="ov-zwarn">${zoneWarn(o)}</div></div>
+    <div class="ovsec"><h5 class="sh3">Look</h5>
+      <div class="seg" role="group" aria-label="Look"><button data-act="ovlook" data-v="full" aria-pressed="${full}">Full</button><button data-act="ovlook" data-v="simple" aria-pressed="${!full}">Simple</button></div>
+      <p class="msg">${full?'The time, the zone and the bar, each as you set it here.':"The timer fills with the zone's colour: green safe, red danger, white outside the zones."}</p>
+      <div class="ovshowrow">${full?ovTgl('ov-time',o.showTime,'Seconds'):''}${ovTgl('ov-zone',o.showZone,'Zone name')}${full?ovTgl('ov-bar',o.showBar,'Bar'):''}</div>
+      ${full?`<div class="ovrow"><div class="field"><label for="ov-barh">Bar height</label><select id="ov-barh" ${o.showBar?'':'disabled'}>${OVL_BARS.map(([h,n])=>`<option value="${h}" ${h===o.barH?'selected':''}>${n} · ${h} px</option>`).join('')}</select></div>
+        <div class="field"><label for="ov-mk">Playhead</label><select id="ov-mk" ${o.showBar?'':'disabled'}>${OVL_MK.map(([v,n])=>`<option value="${v}" ${v===o.mk?'selected':''}>${n}</option>`).join('')}</select></div></div>`:''}</div>
+    <div class="ovsec"><h5 class="sh3">Try it</h5>
+      <div class="btns"><button class="btn" data-act="ovtest" ${o.on&&o.timer?'':'disabled'}>Test</button><button class="btn" data-act="ovstop" ${o.on&&o.timer?'':'disabled'}>Stop</button></div>
+      ${testWhy}</div>`; }
+// the live preview on the timer page: the overlay's own card, with these settings, running the cycle on a loop
+let prevTimer=null, prevT0=0;
+function ovPreview(){ const el=$('#ov-prev'), OC=window.NROverlayCard; if(!el||!OC){ clearInterval(prevTimer); prevTimer=null; return; }
+  const o=ovlGet(), cfg=ovlCfg(o), t=(o.start+(performance.now()-prevT0)/1000)%o.cycle;
+  const r=OC.render(cfg, cfg.nl?runCard(curRun):null, cfg.timer?t:null, false);
+  el.className=r.cls; el.innerHTML=r.html; el.hidden=r.empty; const none=$('#ov-prevnone'); if(none) none.hidden=!r.empty; }
+function startPreview(){ const OC=window.NROverlayCard; if(!OC) return;
+  if(!$('#oc-css')){ const st=document.createElement('style'); st.id='oc-css'; st.textContent=OC.css; document.head.appendChild(st); }
+  if(!prevTimer){ prevT0=performance.now(); prevTimer=setInterval(ovPreview,100); } ovPreview(); }
 // updates: the app asks GitHub for the latest release and compares it with its own version
 const SET_KEY='nrp.settings', APP_VER='__APP_VERSION__', REL_API='https://api.github.com/repos/GeorgiyVovk/nightreign-relic-planner/releases/latest';
 let setPage='overlay', upd={st:'idle'};
@@ -2982,11 +3019,13 @@ function updatesPage(){ const s=setGet();
       ${ovTgl('set-updstart',s.updStart,'Check for updates when the app starts')}
       <div class="btns"><button class="btn" data-act="updcheck" ${upd.st==='checking'?'disabled':''}>Check for updates</button></div>
       <div role="status">${st}</div></div>`; }
-const SET_PAGES=[['overlay','Overlay'],['updates','Updates']];
-function openSettings(pg){ if(pg) setPage=pg;
+const SET_PAGES=[['overlay','Overlay'],['timer','Dreglord timer'],['updates','Updates']];
+function openSettings(pg){ const old=document.querySelector('#setdlg .setpanel'), same=!pg||pg===setPage, keep=old&&same?old.scrollTop:0; if(pg) setPage=pg;
   openOv(`<div class="dlg setdlg" id="setdlg" role="dialog" aria-modal="true" aria-label="Settings"><div class="dh"><h3>Settings</h3><button class="btn sm ghost" data-act="close">Close</button></div>
     <div class="setwrap"><nav class="stabs" aria-label="Settings pages">${SET_PAGES.map(([k,n])=>`<button data-act="setpage" data-p="${k}"${k===setPage?' aria-current="page"':''}>${n}${k==='updates'&&upd.st==='new'?'<i class="sdot" title="Update available" aria-label="update available"></i>':''}</button>`).join('')}</nav>
-    <div class="setpanel">${setPage==='updates'?updatesPage():overlayPage()}</div></div></div>`); }
+    <div class="setpanel" data-p="${setPage}">${setPage==='updates'?updatesPage():setPage==='timer'?timerPage():overlayPage()}</div></div></div>`);
+  const np=document.querySelector('#setdlg .setpanel'); if(np) np.scrollTop=keep;
+  if(setPage==='timer') startPreview(); }
 function openOverlayDlg(){ openSettings('overlay'); }
 async function startApp(){
   if(!APP) return;
@@ -3141,10 +3180,11 @@ document.addEventListener('click', async ev=>{
   if(a==='ovmove'){ await ovlLock(ovlMoving); openOverlayDlg(); return; }
   if(a==='ovtest'){ try{ APP.overlay.test(); }catch(e){} return; }
   if(a==='ovstop'){ try{ APP.overlay.stop(); }catch(e){} return; }
+  if(a==='ovlook'){ const o=ovlGet(); o.simple=t.dataset.v==='simple'; ovlSet(o); if(o.on&&APP&&APP.overlay) APP.overlay.config(ovlCfg(ovlGet())); openSettings(); return; }
   if(a==='zadd'||a==='zdel'){ const o=ovlGet();
     if(a==='zadd') o.zones.push({c:'g',a:0,b:Math.min(o.cycle,5)}); else o.zones.splice(+t.dataset.zi,1);
     ovlSet(o); if(o.on&&APP&&APP.overlay) APP.overlay.config(ovlCfg(ovlGet()));
-    ovFocusSel=a==='zadd'?`[data-zi="${o.zones.length-1}"][data-zk="c"]`:'[data-act="zadd"]'; openSettings('overlay'); return; }
+    ovFocusSel=a==='zadd'?`[data-zi="${o.zones.length-1}"][data-zk="c"]`:'[data-act="zadd"]'; openSettings(); return; }
   if(a==='prnew'||a==='prupd'){ normBuild(); const ch=build.char; const name=(($('#pr-name')||{}).value||'').trim().slice(0,40)||`${ch} ${build.presets.filter(p=>p.char===ch).length+1}`;
     const data={name,char:ch,vessel:curVessel(),slots:curSlots().slice()}; let p=a==='prupd'?build.presets.find(x=>x.id===build.activePreset[ch]):null;
     if(p) Object.assign(p,data); else { p=Object.assign({id:'p'+Date.now().toString(36)},data); build.presets.push(p); }
@@ -3238,7 +3278,8 @@ document.addEventListener('change', ev=>{
   if(t.dataset.zi!=null&&t.dataset.zk){ const o=ovlGet(), z=o.zones[+t.dataset.zi]; if(!z) return;
     if(t.dataset.zk==='c') z.c=t.value==='r'?'r':'g'; else z[t.dataset.zk]=+t.value;
     ovlSet(o); const n=ovlGet(); if(t.dataset.zk!=='c') t.value=n.zones[+t.dataset.zi][t.dataset.zk];
-    const pv=$('#ov-zprev'); if(pv) pv.innerHTML=zoneTrack(n);
+    const pv=$('#ov-zprev'); if(pv) pv.innerHTML=zoneTrack(n); const zw=$('#ov-zwarn'); if(zw) zw.innerHTML=zoneWarn(n);
+    if(t.dataset.zk==='c'){ const sw=t.parentElement&&t.parentElement.querySelector('.zsw'); if(sw) sw.className='zsw z'+n.zones[+t.dataset.zi].c; }
     if(n.on&&APP&&APP.overlay) APP.overlay.config(ovlCfg(n)); return; }
   if(t.id==='ov-simple'){ const o=ovlGet(); o.simple=t.checked; ovlSet(o);
     if(o.on&&APP&&APP.overlay) APP.overlay.config(ovlCfg(ovlGet())); openSettings('overlay'); return; }
@@ -3251,9 +3292,9 @@ document.addEventListener('change', ev=>{
   if(t.id==='ov-on'||t.id==='ov-key'||t.id==='ov-cycle'||t.id==='ov-start'||t.id==='ov-nl'||t.id==='ov-tm'){ const o=ovlGet();
     if(t.id==='ov-on') o.on=t.checked; else if(t.id==='ov-nl') o.nl=t.checked; else if(t.id==='ov-tm') o.timer=t.checked; else if(t.id==='ov-key') o.key=t.value; else if(t.id==='ov-cycle') o.cycle=+t.value; else o.start=+t.value;
     ovlSet(o);
-    if(t.id==='ov-cycle'||t.id==='ov-start'){ const n=ovlGet(); ovlSet(n); openSettings('overlay'); if(n.on&&APP&&APP.overlay) APP.overlay.config(ovlCfg(n)); return; }
+    if(t.id==='ov-cycle'||t.id==='ov-start'){ const n=ovlGet(); ovlSet(n); openSettings(); if(n.on&&APP&&APP.overlay) APP.overlay.config(ovlCfg(n)); return; }
     if(t.id==='ov-on'){ ovlApply(o).then(()=>openOverlayDlg()); return; }
-    if(t.id==='ov-tm') document.querySelectorAll('[data-act="ovtest"],[data-act="ovstop"]').forEach(b=>{ b.disabled=!(o.on&&o.timer); });
+    if(t.id==='ov-tm') openSettings();
     if(o.on&&APP&&APP.overlay){ if(t.id==='ov-key'||t.id==='ov-tm') APP.overlay.hotkey(o.timer?o.key:'').catch(e=>toast(`Overlay: ${e}`,'bad')); APP.overlay.config(ovlCfg(o)); }
     return; }
   if(t.id==='en-pick'||t.id==='en-mode'||t.id==='en-day2'||t.id==='en-aura'){ const st=enemyState();
