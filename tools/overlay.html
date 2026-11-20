@@ -11,7 +11,7 @@
 :root{--fg:#DDE3EC;--muted:#8E9AB0;--accent:#AFC3E3;--good:#6CC48C;--bad:#E2685A;--ev:#B48AE8;--card:rgba(9,14,24,.78);--line:rgba(175,195,227,.22);color-scheme:dark}
 html,body{margin:0;background:transparent;overflow:hidden;user-select:none;-webkit-user-select:none;cursor:default}
 body{font-family:"Inter",system-ui,"Segoe UI",sans-serif;color:var(--fg)}
-.card{margin:4px;border-radius:12px;background:var(--card);border:1px solid var(--line);padding:10px 14px;display:flex;flex-direction:column;gap:10px;box-sizing:border-box}
+.card{margin:4px;border-radius:8px;background:var(--card);border:1px solid var(--line);padding:10px 14px;display:flex;flex-direction:column;gap:10px;box-sizing:border-box}
 .card[hidden]{display:none}
 .sec{display:flex;flex-direction:column;gap:8px}
 .sec + .sec{border-top:1px solid var(--line);padding-top:10px}
@@ -26,17 +26,22 @@ body{font-family:"Inter",system-ui,"Segoe UI",sans-serif;color:var(--fg)}
 .big{font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:38px;font-weight:600;line-height:1;font-variant-numeric:tabular-nums}
 .big small{font-size:16px;color:var(--muted);margin-left:2px}
 .zl{margin-left:auto;font-size:13px;font-weight:700;letter-spacing:.04em;text-transform:uppercase}
-.track{position:relative;height:8px;border-radius:4px;background:rgba(255,255,255,.08);overflow:hidden}
-.track i{position:absolute;top:0;bottom:0;opacity:.55}
-.track i.zg{background:var(--good)} .track i.zr{background:var(--bad)}
-.track b{position:absolute;top:0;bottom:0;width:var(--mk,3px);margin-left:calc(var(--mk,3px) / -2);background:var(--fg);border-radius:1px;box-shadow:0 0 0 1px rgba(0,0,0,.35)}
+/* the cycle bar: flat, square-cornered blocks with a dark seam at each zone edge, the part of the cycle already
+   passed dimmed, and a playhead that stands out above and below the bar */
+.trackw{position:relative;padding:4px 0}
+.track{position:relative;height:8px;border-radius:2px;background:rgba(255,255,255,.12);overflow:hidden}
+.track i{position:absolute;top:0;bottom:0;box-shadow:inset 1px 0 0 rgba(0,0,0,.55),inset -1px 0 0 rgba(0,0,0,.55)}
+.track i.zg{background:#4FAF72} .track i.zr{background:#D2483A}
+.track s{position:absolute;top:0;bottom:0;left:0;background:rgba(6,9,16,.5);text-decoration:none}
+.trackw b{position:absolute;top:0;bottom:0;width:var(--mk,3px);margin-left:calc(var(--mk,3px) / -2);background:var(--mkc,#fff);border-radius:1px;box-shadow:0 0 0 1px rgba(0,0,0,.7)}
 .zbig{font-size:26px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;line-height:38px}
 .tm.safe .zbig{color:var(--good)} .tm.danger .zbig{color:var(--bad)}
 .idle .big{font-size:22px;color:var(--muted);font-weight:500}
 .idle .main{min-height:38px;align-items:center}   /* same height as a running timer, so the card doesn't jump */
 .tm.safe .big,.tm.safe .zl{color:var(--good)}
 .tm.danger .big,.tm.danger .zl{color:var(--bad)}
-.card.alert{border-color:var(--bad)} .card.calm{border-color:color-mix(in srgb,var(--good) 60%,transparent)}
+/* the frame takes the zone's colour, thick enough to read without the bar; drawn inside, so nothing moves */
+.card.alert{border-color:var(--bad);box-shadow:inset 0 0 0 2px var(--bad)} .card.calm{border-color:var(--good);box-shadow:inset 0 0 0 2px var(--good)}
 .move{border:1px dashed var(--accent);cursor:move}
 .hint{font-size:13px;color:var(--muted)}
 </style>
@@ -50,7 +55,7 @@ body{font-family:"Inter",system-ui,"Segoe UI",sans-serif;color:var(--fg)}
   const T = window.__TAURI__;
   const card = document.getElementById('card');
   const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'})[c]);
-  let cfg = {key:'F8', cycle:20, start:1, zones:[{c:'g',a:2,b:15},{c:'r',a:15,b:2}], nl:true, timer:true, showTime:true, showBar:true, barH:8}, run = null;
+  let cfg = {key:'F8', cycle:20, start:1, zones:[{c:'g',a:2,b:15},{c:'r',a:15,b:2}], nl:true, timer:true, showTime:true, showBar:true, barH:8, mk:'#ffffff'}, run = null;
   try { Object.assign(cfg, JSON.parse(localStorage.getItem('nr-overlay')||'{}')); } catch(e) {}
   try { run = JSON.parse(localStorage.getItem('nr-overlay-run')||'null'); } catch(e) {}
   let start = 0, moving = false, timer = null, lastH = 0, lastPress = 0;
@@ -81,8 +86,9 @@ body{font-family:"Inter",system-ui,"Segoe UI",sans-serif;color:var(--fg)}
       for (const [x, w] of parts) segs.push(`<i class="z${z.c === 'r' ? 'r' : 'g'}" style="left:${(x / C * 100).toFixed(2)}%;width:${(w / C * 100).toFixed(2)}%"></i>`);
     }
     // the bar can be made much taller in Settings, so it reads at a glance; the marker grows with it
-    const h = Math.max(4, Math.min(80, +cfg.barH || 8)), mk = h >= 28 ? 5 : h >= 16 ? 4 : 3;
-    return `<div class="track" style="height:${h}px;border-radius:${Math.min(h / 2, 8)}px;--mk:${mk}px">${segs.join('')}${t == null ? '' : `<b style="left:${(t / C * 100).toFixed(2)}%"></b>`}</div>`;
+    const h = Math.max(4, Math.min(80, +cfg.barH || 8)), mk = h >= 28 ? 5 : h >= 16 ? 4 : 3, at = t == null ? null : (t / C * 100).toFixed(2);
+    const mkc = /^#[0-9a-f]{6}$/i.test(cfg.mk || '') ? cfg.mk : '#ffffff';   // the playhead colour picked in Settings
+    return `<div class="trackw" style="--mk:${mk}px;--mkc:${mkc}"><div class="track" style="height:${h}px">${segs.join('')}${at == null ? '' : `<s style="width:${at}%"></s>`}</div>${at == null ? '' : `<b style="left:${at}%"></b>`}</div>`;
   }
   function timerHtml(){
     const top = `<div class="top"><span>Dreglord stacks</span><span class="key">${esc(cfg.key||'—')}</span></div>`;
