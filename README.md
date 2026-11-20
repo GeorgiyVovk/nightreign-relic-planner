@@ -50,9 +50,16 @@ The numbers come from the game's regulation; the formulas that join them are mea
 
 Other buffs, boss HP and negation, and status buildup come from the data and aren't checked in game yet. Every number measured in game is a case in `tools/measured.js`, and each build checks the calculator still gives it.
 
+## Settings (desktop app)
+
+The gear button in the header opens Settings, with its pages down the left:
+
+- **Overlay**: the card on top of the game (below).
+- **Updates**: the installed version, "Check for updates when the app starts" (on by default) and a Check for updates button. The app asks GitHub for the latest release; when a newer one is out, the gear gets a dot and Download opens the release page.
+
 ## Overlay (desktop app)
 
-The app can show a small card on top of the game (the gear button in the header opens its settings). Each part can be turned on or off:
+The app can show a small card on top of the game (the gear button in the header opens Settings, page Overlay). Each part can be turned on or off:
 
 - **Nightlord**: this run's Nightlord, read from your save as soon as a run starts, so you know a hidden Nightlord from day one. It needs your save loaded in the planner.
 - **Dreglord timer**: press your hotkey (F8 by default) when the Dreglord relic's stacks icon disappears: it counts down 25 seconds and tells you when to sit.

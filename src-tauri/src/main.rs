@@ -1,6 +1,7 @@
 // Nightreign Relic Planner: desktop shell.
 // Shows the planner page and gives it read-only access to Nightreign save files:
 // list them, read one, let the user pick one, and say when the game rewrites it.
+// Settings > Updates checks GitHub for a newer release and can open its page.
 // Also runs the overlay: a small click-through window on top of the game that shows this run's Nightlord
 // (read from the save by the planner page) and a timer started by a global hotkey. It never touches the game itself.
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
@@ -245,6 +246,21 @@ async fn overlay_lock(app: AppHandle, locked: bool) -> Result<Option<OverlayPos>
     Ok(Some(OverlayPos { x: p.x as f64 / s, y: p.y as f64 / s }))
 }
 
+const RELEASES: &str = "https://github.com/GeorgiyVovk/nightreign-relic-planner/releases/latest";
+
+/// Opens the app's latest release page in the default browser, for Settings > Updates.
+/// The address is fixed here; the page passes nothing.
+#[tauri::command]
+fn open_releases() -> Result<(), String> {
+    #[cfg(windows)]
+    let r = std::process::Command::new("explorer").arg(RELEASES).spawn();
+    #[cfg(target_os = "macos")]
+    let r = std::process::Command::new("open").arg(RELEASES).spawn();
+    #[cfg(all(unix, not(target_os = "macos")))]
+    let r = std::process::Command::new("xdg-open").arg(RELEASES).spawn();
+    r.map(|_| ()).map_err(|e| e.to_string())
+}
+
 /// The overlay page asks for the height its card needs; the width stays.
 #[tauri::command]
 async fn overlay_fit(app: AppHandle, h: f64) -> Result<(), String> {
@@ -297,7 +313,7 @@ fn main() {
             }
             Ok(())
         })
-        .invoke_handler(tauri::generate_handler![list_saves, read_save, pick_save, watch_save, overlay_show, overlay_hide, overlay_lock, overlay_fit, overlay_hotkey])
+        .invoke_handler(tauri::generate_handler![list_saves, read_save, pick_save, watch_save, overlay_show, overlay_hide, overlay_lock, overlay_fit, overlay_hotkey, open_releases])
         .run(tauri::generate_context!())
         .expect("error while running Nightreign Relic Planner");
 }

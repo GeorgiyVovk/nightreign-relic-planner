@@ -16,6 +16,8 @@
       return () => { if (stop) stop(); };
     },
     version: () => T.app.getVersion(),
+    // the latest release page on GitHub, in the default browser (the address is fixed in the app)
+    openReleases: () => invoke('open_releases'),
     // the overlay: a click-through window on top of the game with this run's Nightlord and the Dreglord timer
     overlay: {
       show: (x, y) => invoke('overlay_show', { x: x ?? null, y: y ?? null }),

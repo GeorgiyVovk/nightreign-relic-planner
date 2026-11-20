@@ -4,7 +4,8 @@
 const fs = require('fs');
 const path = require('path');
 const root = path.join(__dirname, '..');
-const src = fs.readFileSync(path.join(root, 'src', 'planner.html'), 'utf8');
+const pkg = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8'));
+const src = fs.readFileSync(path.join(root, 'src', 'planner.html'), 'utf8').replace(/__APP_VERSION__/g, pkg.version);
 
 const FONTS = [
   ['Inter', '@fontsource/inter', 'inter', [400, 500, 600, 700]],
