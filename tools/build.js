@@ -5,7 +5,11 @@ const fs = require('fs');
 const path = require('path');
 const root = path.join(__dirname, '..');
 const pkg = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8'));
-const src = fs.readFileSync(path.join(root, 'src', 'planner.html'), 'utf8').replace(/__APP_VERSION__/g, pkg.version);
+// the overlay card's look and logic, shared by the overlay window and the preview in Settings (inlined into the page)
+const overlayCard = fs.readFileSync(path.join(root, 'tools', 'overlay-card.js'), 'utf8');
+const src = fs.readFileSync(path.join(root, 'src', 'planner.html'), 'utf8').replace(/__APP_VERSION__/g, pkg.version)
+  .replace('/*@overlay-card*/', () => overlayCard);
+if (!src.includes('g.NROverlayCard')) throw new Error('overlay-card.js was not inlined into the page');
 
 const FONTS = [
   ['Inter', '@fontsource/inter', 'inter', [400, 500, 600, 700]],
@@ -63,4 +67,5 @@ build('web', page({ csp: CSP + "; connect-src 'self'" }), { '.nojekyll': path.jo
 build('app', page({ extraHead: '<script src="app-bridge.js"></script>\n', htmlAttrs: ' data-theme="dark"' }), {
   'app-bridge.js': path.join(root, 'tools', 'app-bridge.js'),
   'overlay.html': path.join(root, 'tools', 'overlay.html'),   // the timer window over the game
+  'overlay-card.js': path.join(root, 'tools', 'overlay-card.js'),
 });
