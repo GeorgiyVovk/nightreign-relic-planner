@@ -43,6 +43,12 @@ body{font-family:"Inter",system-ui,"Segoe UI",sans-serif;color:var(--fg)}
 /* the frame takes the zone's colour, thick enough to read without the bar; drawn inside, so nothing moves */
 .card.alert{border-color:var(--bad);box-shadow:inset 0 0 0 2px var(--bad)} .card.calm{border-color:var(--good);box-shadow:inset 0 0 0 2px var(--good)}
 .move{border:1px dashed var(--accent);cursor:move}
+/* simple mode: the timer is only a square, green in a safe zone, red in danger, white outside the zones */
+.card.bare{padding:0;border:0;background:transparent;gap:0}
+.sq{box-sizing:border-box;border-radius:4px;background:var(--card);border:1px solid var(--line);display:flex;align-items:center;justify-content:center}
+.sq.safe{background:#4FAF72;border-color:#4FAF72} .sq.danger{background:#D2483A;border-color:#D2483A} .sq.run{background:#F2F4F8;border-color:#F2F4F8}
+.sq .key{font-size:11px;color:var(--muted)}
+.card.bare.move .sq{border:1px dashed var(--accent)}
 .hint{font-size:13px;color:var(--muted)}
 </style>
 </head>
@@ -55,10 +61,10 @@ body{font-family:"Inter",system-ui,"Segoe UI",sans-serif;color:var(--fg)}
   const T = window.__TAURI__;
   const card = document.getElementById('card');
   const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'})[c]);
-  let cfg = {key:'F8', cycle:20, start:1, zones:[{c:'g',a:2,b:15},{c:'r',a:15,b:2}], nl:true, timer:true, showTime:true, showBar:true, barH:8, mk:'#ffffff'}, run = null;
+  let cfg = {key:'F8', cycle:20, start:1, zones:[{c:'g',a:2,b:15},{c:'r',a:15,b:2}], nl:true, timer:true, showTime:true, showBar:true, barH:8, mk:'#ffffff', simple:false, sq:64}, run = null;
   try { Object.assign(cfg, JSON.parse(localStorage.getItem('nr-overlay')||'{}')); } catch(e) {}
   try { run = JSON.parse(localStorage.getItem('nr-overlay-run')||'null'); } catch(e) {}
-  let start = 0, moving = false, timer = null, lastH = 0, lastPress = 0;
+  let start = 0, moving = false, timer = null, lastH = 0, lastW = 0, lastPress = 0;
   const STOP_MS = 400;   // two presses this close together stop the timer
   function nlHtml(){
     return `<div class="sec nl"><div class="top"><span>Nightlord</span>${run.don?'<span>Deep of Night</span>':''}</div>`
@@ -103,24 +109,36 @@ body{font-family:"Inter",system-ui,"Segoe UI",sans-serif;color:var(--fg)}
       : z ? `<div class="main"><span class="zbig">${zname(z)}</span></div>` : '';
     return {state, html:`<div class="sec tm ${state}">${top}${main}${bar ? trackHtml(t) : ''}</div>`};
   }
+  // the window follows the card: its height always, its width only for the bare square of simple mode
+  let wantW = 240;
   function fit(){
-    const h = card.hidden ? 8 : Math.ceil(card.getBoundingClientRect().height + 8);
-    if (h === lastH || !T) return; lastH = h;
-    T.core.invoke('overlay_fit', {h}).catch(() => {});
+    const h = card.hidden ? 8 : Math.ceil(card.getBoundingClientRect().height + 8), w = wantW;
+    if ((h === lastH && w === lastW) || !T) return; lastH = h; lastW = w;
+    T.core.invoke('overlay_fit', {h, w}).catch(() => {});
   }
+  function simpleState(){
+    if (!start) return 'idle';
+    const t = ((+cfg.start || 0) + (performance.now() - start) / 1000) % cyc(), z = zoneAt(t);
+    return z ? (z.c === 'r' ? 'danger' : 'safe') : 'run';
+  }
+  const sqSize = () => Math.max(24, Math.min(200, +cfg.sq || 64));
+  const sqHtml = st => `<div class="sq ${st}" style="width:${sqSize()}px;height:${sqSize()}px">${st === 'idle' ? `<span class="key">${esc(cfg.key||'')}</span>` : ''}</div>`;
   function draw(){
-    let html = '', alert = false;
-    if (cfg.nl !== false && run) html += nlHtml();
+    let html = '', alert = false, bare = false;
+    const nl = cfg.nl !== false && run, simple = cfg.simple === true && cfg.timer !== false;
+    if (nl) html += nlHtml();
     let calm = false;
-    if (cfg.timer !== false){ const t = timerHtml(); html += t.html; alert = t.state === 'danger'; calm = t.state === 'safe'; }
-    else start = 0;
+    if (cfg.timer === false) start = 0;
+    else if (simple){ const st = simpleState(); if (nl) html += `<div class="sec">${sqHtml(st)}</div>`; else { html = sqHtml(st); bare = true; } }
+    else { const t = timerHtml(); html += t.html; alert = t.state === 'danger'; calm = t.state === 'safe'; }
     if (!html && moving) html = '<div class="sec"><span class="hint">Drag me</span></div>';
     card.hidden = !html;
-    card.className = 'card' + (alert ? ' alert' : calm ? ' calm' : '') + (moving ? ' move' : '');
+    card.className = 'card' + (bare ? ' bare' : '') + (alert ? ' alert' : calm ? ' calm' : '') + (moving ? ' move' : '');
     card.innerHTML = html;
     if (moving) card.setAttribute('data-tauri-drag-region', ''); else card.removeAttribute('data-tauri-drag-region');
     card.querySelectorAll('*').forEach(el => moving ? el.setAttribute('data-tauri-drag-region','') : el.removeAttribute('data-tauri-drag-region'));
-    fit();
+    card.style.width = bare ? sqSize() + 'px' : '';
+    wantW = bare ? sqSize() + 8 : 240; fit();
   }
   function tick(){ draw(); if (!start && timer){ clearInterval(timer); timer = null; } }
   function stop(){ start = 0; lastPress = 0; tick(); }
@@ -138,7 +156,7 @@ body{font-family:"Inter",system-ui,"Segoe UI",sans-serif;color:var(--fg)}
     T.event.listen('overlay:run', e => { run = e.payload || null; draw(); });
     T.event.listen('overlay:locked', e => { moving = !e.payload; draw(); });
   }
-  if (document.fonts && document.fonts.ready) document.fonts.ready.then(fit);
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => fit());
   draw();
 })();
 </script>

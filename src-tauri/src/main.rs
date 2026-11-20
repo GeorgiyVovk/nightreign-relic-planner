@@ -261,11 +261,13 @@ fn open_releases() -> Result<(), String> {
     r.map(|_| ()).map_err(|e| e.to_string())
 }
 
-/// The overlay page asks for the height its card needs; the width stays.
+/// The overlay page asks for the size its card needs: always the height, and the width only for
+/// simple mode's bare square (otherwise the usual width).
 #[tauri::command]
-async fn overlay_fit(app: AppHandle, h: f64) -> Result<(), String> {
-    let Some(w) = app.get_webview_window("overlay") else { return Ok(()) };
-    w.set_size(tauri::LogicalSize::new(OVERLAY_W, h.clamp(8.0, 400.0))).map_err(|e| e.to_string())
+async fn overlay_fit(app: AppHandle, h: f64, w: Option<f64>) -> Result<(), String> {
+    let Some(win) = app.get_webview_window("overlay") else { return Ok(()) };
+    let w = w.unwrap_or(OVERLAY_W).clamp(24.0, 400.0);
+    win.set_size(tauri::LogicalSize::new(w, h.clamp(8.0, 400.0))).map_err(|e| e.to_string())
 }
 
 /// One global hotkey (e.g. "F8"); an empty string turns it off.
