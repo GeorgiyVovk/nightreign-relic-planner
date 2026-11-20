@@ -43,12 +43,17 @@ body{font-family:"Inter",system-ui,"Segoe UI",sans-serif;color:var(--fg)}
 /* the frame takes the zone's colour, thick enough to read without the bar; drawn inside, so nothing moves */
 .card.alert{border-color:var(--bad);box-shadow:inset 0 0 0 2px var(--bad)} .card.calm{border-color:var(--good);box-shadow:inset 0 0 0 2px var(--good)}
 .move{border:1px dashed var(--accent);cursor:move}
-/* simple mode: the timer is only a square, green in a safe zone, red in danger, white outside the zones */
-.card.bare{padding:0;border:0;background:transparent;gap:0}
-.sq{box-sizing:border-box;border-radius:4px;background:var(--card);border:1px solid var(--line);display:flex;align-items:center;justify-content:center}
-.sq.safe{background:#4FAF72;border-color:#4FAF72} .sq.danger{background:#D2483A;border-color:#D2483A} .sq.run{background:#F2F4F8;border-color:#F2F4F8}
-.sq .key{font-size:11px;color:var(--muted)}
-.card.bare.move .sq{border:1px dashed var(--accent)}
+/* simple mode: the timer part is filled with the zone's colour (green safe, red danger, white outside the zones)
+   and shows only the zone's name; it fills out to the card's edges */
+.tm.simple{margin:0 -14px -10px;padding:10px 14px;border-radius:0 0 7px 7px}
+.card > .tm.simple:first-child{margin-top:-10px;border-radius:7px}
+.sec + .tm.simple{border-top:0}
+.tm.simple.safe{background:#3E9B60} .tm.simple.danger{background:#D2483A} .tm.simple.run{background:#F2F4F8}
+.tm.simple.safe .top,.tm.simple.danger .top{color:rgba(255,255,255,.85)} .tm.simple.safe .key,.tm.simple.danger .key{border-color:rgba(255,255,255,.5)}
+.tm.simple.safe .zbig,.tm.simple.danger .zbig{color:#fff}
+.tm.simple.run .top{color:#4A5568} .tm.simple.run .key{border-color:rgba(0,0,0,.25)}
+.tm.simple .main{min-height:38px;align-items:center}
+.tm.simple.idle .zbig{color:var(--muted);font-weight:500;letter-spacing:0;text-transform:none;font-size:22px}
 .hint{font-size:13px;color:var(--muted)}
 </style>
 </head>
@@ -61,7 +66,7 @@ body{font-family:"Inter",system-ui,"Segoe UI",sans-serif;color:var(--fg)}
   const T = window.__TAURI__;
   const card = document.getElementById('card');
   const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'})[c]);
-  let cfg = {key:'F8', cycle:20, start:1, zones:[{c:'g',a:2,b:15},{c:'r',a:15,b:2}], nl:true, timer:true, showTime:true, showBar:true, barH:8, mk:'#ffffff', simple:false, sq:64}, run = null;
+  let cfg = {key:'F8', cycle:20, start:1, zones:[{c:'g',a:2,b:15},{c:'r',a:15,b:2}], nl:true, timer:true, showTime:true, showBar:true, barH:8, mk:'#ffffff', simple:false}, run = null;
   try { Object.assign(cfg, JSON.parse(localStorage.getItem('nr-overlay')||'{}')); } catch(e) {}
   try { run = JSON.parse(localStorage.getItem('nr-overlay-run')||'null'); } catch(e) {}
   let start = 0, moving = false, timer = null, lastH = 0, lastW = 0, lastPress = 0;
@@ -109,36 +114,34 @@ body{font-family:"Inter",system-ui,"Segoe UI",sans-serif;color:var(--fg)}
       : z ? `<div class="main"><span class="zbig">${zname(z)}</span></div>` : '';
     return {state, html:`<div class="sec tm ${state}">${top}${main}${bar ? trackHtml(t) : ''}</div>`};
   }
-  // the window follows the card: its height always, its width only for the bare square of simple mode
+  // the window follows the card's height
   let wantW = 240;
   function fit(){
     const h = card.hidden ? 8 : Math.ceil(card.getBoundingClientRect().height + 8), w = wantW;
     if ((h === lastH && w === lastW) || !T) return; lastH = h; lastW = w;
     T.core.invoke('overlay_fit', {h, w}).catch(() => {});
   }
-  function simpleState(){
-    if (!start) return 'idle';
+  function simpleHtml(){
+    const top = `<div class="top"><span>Dreglord stacks</span><span class="key">${esc(cfg.key||'—')}</span></div>`;
+    if (!start) return {state:'idle', html:`<div class="sec tm simple idle">${top}<div class="main"><span class="zbig">Ready</span></div></div>`};
     const t = ((+cfg.start || 0) + (performance.now() - start) / 1000) % cyc(), z = zoneAt(t);
-    return z ? (z.c === 'r' ? 'danger' : 'safe') : 'run';
+    const state = z ? (z.c === 'r' ? 'danger' : 'safe') : 'run';
+    return {state, html:`<div class="sec tm simple ${state}">${top}<div class="main"><span class="zbig">${zname(z)}</span></div></div>`};
   }
-  const sqSize = () => Math.max(24, Math.min(200, +cfg.sq || 64));
-  const sqHtml = st => `<div class="sq ${st}" style="width:${sqSize()}px;height:${sqSize()}px">${st === 'idle' ? `<span class="key">${esc(cfg.key||'')}</span>` : ''}</div>`;
   function draw(){
-    let html = '', alert = false, bare = false;
+    let html = '', alert = false;
     const nl = cfg.nl !== false && run, simple = cfg.simple === true && cfg.timer !== false;
     if (nl) html += nlHtml();
     let calm = false;
     if (cfg.timer === false) start = 0;
-    else if (simple){ const st = simpleState(); if (nl) html += `<div class="sec">${sqHtml(st)}</div>`; else { html = sqHtml(st); bare = true; } }
-    else { const t = timerHtml(); html += t.html; alert = t.state === 'danger'; calm = t.state === 'safe'; }
+    else { const t = simple ? simpleHtml() : timerHtml(); html += t.html; alert = t.state === 'danger'; calm = t.state === 'safe'; }
     if (!html && moving) html = '<div class="sec"><span class="hint">Drag me</span></div>';
     card.hidden = !html;
-    card.className = 'card' + (bare ? ' bare' : '') + (alert ? ' alert' : calm ? ' calm' : '') + (moving ? ' move' : '');
+    card.className = 'card' + (alert ? ' alert' : calm ? ' calm' : '') + (moving ? ' move' : '');
     card.innerHTML = html;
     if (moving) card.setAttribute('data-tauri-drag-region', ''); else card.removeAttribute('data-tauri-drag-region');
     card.querySelectorAll('*').forEach(el => moving ? el.setAttribute('data-tauri-drag-region','') : el.removeAttribute('data-tauri-drag-region'));
-    card.style.width = bare ? sqSize() + 'px' : '';
-    wantW = bare ? sqSize() + 8 : 240; fit();
+    fit();
   }
   function tick(){ draw(); if (!start && timer){ clearInterval(timer); timer = null; } }
   function stop(){ start = 0; lastPress = 0; tick(); }
