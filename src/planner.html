@@ -2940,6 +2940,7 @@ async function ovlLock(lock){ const O=APP&&APP.overlay; if(!O) return; ovlMoving
 const ovTgl=(id,on,label,dis)=>`<label class="tgl"><input type="checkbox" id="${id}" role="switch" ${on?'checked':''} ${dis?'disabled':''}><span class="knob" aria-hidden="true"></span><span class="tt">${label}</span></label>`;
 function overlayPage(){ const o=ovlGet();
   return `<h4 class="spt">Overlay</h4>
+    <div class="ocprev"><div class="ocstage"><div class="oc" id="ov-prev"></div><p class="msg ocnone" id="ov-prevnone" hidden>Nothing to show: the timer is off and there's no run going on.</p></div><span class="occap">Preview of the card, the timer running on a loop</span></div>
     <div class="ovsec">${ovTgl('ov-on',o.on,'Show the overlay')}
       <p class="msg">A small card on top of the game. Works with the game in borderless or windowed mode.</p>
       <div class="btns"><button class="btn" data-act="ovmove" ${o.on?'':'disabled'}>${ovlMoving?'Done moving':'Move'}</button></div>
@@ -2947,6 +2948,7 @@ function overlayPage(){ const o=ovlGet();
     <div class="ovsec"><h5 class="sh3">Nightlord</h5>${ovTgl('ov-nl',o.nl,"Show this run's Nightlord")}
       <p class="msg">Read from your save as soon as a run starts, so a hidden Nightlord isn't hidden from you.</p>
       <p class="msg ovnow" id="ov-runst">${ovlRunStatus()}</p></div>
+    ${timerPage(o)}
     <p class="msg">The overlay reads your save file and listens to your hotkey. It never touches the game.</p>`; }
 // what's wrong with the zones, in words: empty ones, and ones that overlap (where they do, the first one counts)
 function zoneWarn(o){ const w=[], Z=o.zones, n=Math.round(o.cycle*10);
@@ -2955,16 +2957,15 @@ function zoneWarn(o){ const w=[], Z=o.zones, n=Math.round(o.cycle*10);
   for(let k=0;k<n;k++){ const x=k/10, hit=Z.map((z,i)=>inZ(z,x)?i:-1).filter(i=>i>=0); for(let i=0;i<hit.length;i++) for(let j=i+1;j<hit.length;j++) pairs.add(hit[i]+','+hit[j]); }
   pairs.forEach(p=>{ const [i,j]=p.split(',').map(Number); w.push(`Zones ${i+1} and ${j+1} overlap: where they do, zone ${i+1} counts.`); });
   return w.map(x=>`<p class="msg bad">${x}</p>`).join(''); }
-function timerPage(){ const o=ovlGet(), full=!o.simple;
-  const testWhy=!o.on?'<p class="msg">Test shows the timer on the overlay, so the overlay has to be on. <button class="btn sm ghost lnk" data-act="setpage" data-p="overlay">Go to Overlay</button></p>':!o.timer?'<p class="msg">Turn on Show the timer to test it.</p>':'';
-  return `<h4 class="spt">Dreglord timer</h4>
-    <div class="ocprev"><div class="ocstage"><div class="oc" id="ov-prev"></div><p class="msg ocnone" id="ov-prevnone" hidden>The timer is off, so there's nothing to show.</p></div><span class="occap">Preview, running the cycle on a loop</span></div>
-    <div class="ovsec">${ovTgl('ov-tm',o.timer,'Show the timer')}
+// the Dreglord timer's part of the Overlay page
+function timerPage(o){ const full=!o.simple;
+  const testWhy=!o.on?'<p class="msg">Test shows the timer on the overlay: turn on Show the overlay above first.</p>':!o.timer?'<p class="msg">Turn on Show the timer to test it.</p>':'';
+  return `<div class="ovsec"><h5 class="sh3">Dreglord timer</h5>${ovTgl('ov-tm',o.timer,'Show the timer')}
       <p class="msg">Press the hotkey when the Dreglord status shows. The card tells you when touching grace is safe.</p>
       <div class="ovrow3"><div class="field"><label for="ov-key">Hotkey</label><select id="ov-key" aria-describedby="ov-keyhelp">${OVL_KEYS.map(k=>`<option ${k===o.key?'selected':''}>${k}</option>`).join('')}</select><span class="fhelp" id="ov-keyhelp">Press: start or resync · twice fast: stop</span></div>
         <div class="field"><label for="ov-cycle">Cycle, seconds</label><input id="ov-cycle" type="number" min="1" max="600" step="0.1" value="${o.cycle}"></div>
         <div class="field"><label for="ov-start">Start at, seconds</label><input id="ov-start" type="number" min="0" max="${o.cycle}" step="0.1" value="${o.start}" aria-describedby="ov-starthelp"><span class="fhelp" id="ov-starthelp">Where the timer begins when you press</span></div></div></div>
-    <div class="ovsec"><h5 class="sh3">Zones</h5>
+    <div class="ovsec"><h5 class="sh3">Timer zones</h5>
       ${o.zones.map((z,i)=>`<div class="zrow" role="group" aria-label="Zone ${i+1}"><i class="zsw z${z.c}" aria-hidden="true"></i><select data-zi="${i}" data-zk="c" aria-label="Zone ${i+1} colour"><option value="g" ${z.c==='g'?'selected':''}>Safe (green)</option><option value="r" ${z.c==='r'?'selected':''}>Danger (red)</option></select>
         <input type="number" data-zi="${i}" data-zk="a" min="0" max="${o.cycle}" step="0.1" value="${z.a}" aria-label="Zone ${i+1} from, seconds"><span class="zto">to</span><input type="number" data-zi="${i}" data-zk="b" min="0" max="${o.cycle}" step="0.1" value="${z.b}" aria-label="Zone ${i+1} to, seconds">
         <button class="btn sm" data-act="zdel" data-zi="${i}" aria-label="Remove zone ${i+1}">Remove</button></div>`).join('')}
@@ -2972,13 +2973,13 @@ function timerPage(){ const o=ovlGet(), full=!o.simple;
       ${o.zones.length<6?'<div class="btns"><button class="btn sm" data-act="zadd">Add zone</button></div>':''}
       <div id="ov-zprev">${zoneTrack(o)}</div>
       <div id="ov-zwarn">${zoneWarn(o)}</div></div>
-    <div class="ovsec"><h5 class="sh3">Look</h5>
+    <div class="ovsec"><h5 class="sh3">Timer look</h5>
       <div class="seg" role="group" aria-label="Look"><button data-act="ovlook" data-v="full" aria-pressed="${full}">Full</button><button data-act="ovlook" data-v="simple" aria-pressed="${!full}">Simple</button></div>
       <p class="msg">${full?'The time, the zone and the bar, each as you set it here.':"The timer fills with the zone's colour: green safe, red danger, white outside the zones."}</p>
       <div class="ovshowrow">${full?ovTgl('ov-time',o.showTime,'Seconds'):''}${ovTgl('ov-zone',o.showZone,'Zone name')}${full?ovTgl('ov-bar',o.showBar,'Bar'):''}</div>
       ${full?`<div class="ovrow"><div class="field"><label for="ov-barh">Bar height</label><select id="ov-barh" ${o.showBar?'':'disabled'}>${OVL_BARS.map(([h,n])=>`<option value="${h}" ${h===o.barH?'selected':''}>${n} · ${h} px</option>`).join('')}</select></div>
         <div class="field"><label for="ov-mk">Playhead</label><select id="ov-mk" ${o.showBar?'':'disabled'}>${OVL_MK.map(([v,n])=>`<option value="${v}" ${v===o.mk?'selected':''}>${n}</option>`).join('')}</select></div></div>`:''}</div>
-    <div class="ovsec"><h5 class="sh3">Try it</h5>
+    <div class="ovsec"><h5 class="sh3">Test the timer</h5>
       <div class="btns"><button class="btn" data-act="ovtest" ${o.on&&o.timer?'':'disabled'}>Test</button><button class="btn" data-act="ovstop" ${o.on&&o.timer?'':'disabled'}>Stop</button></div>
       ${testWhy}</div>`; }
 // the live preview on the timer page: the overlay's own card, with these settings, running the cycle on a loop
@@ -3019,13 +3020,13 @@ function updatesPage(){ const s=setGet();
       ${ovTgl('set-updstart',s.updStart,'Check for updates when the app starts')}
       <div class="btns"><button class="btn" data-act="updcheck" ${upd.st==='checking'?'disabled':''}>Check for updates</button></div>
       <div role="status">${st}</div></div>`; }
-const SET_PAGES=[['overlay','Overlay'],['timer','Dreglord timer'],['updates','Updates']];
+const SET_PAGES=[['overlay','Overlay'],['updates','Updates']];
 function openSettings(pg){ const old=document.querySelector('#setdlg .setpanel'), same=!pg||pg===setPage, keep=old&&same?old.scrollTop:0; if(pg) setPage=pg;
   openOv(`<div class="dlg setdlg" id="setdlg" role="dialog" aria-modal="true" aria-label="Settings"><div class="dh"><h3>Settings</h3><button class="btn sm ghost" data-act="close">Close</button></div>
     <div class="setwrap"><nav class="stabs" aria-label="Settings pages">${SET_PAGES.map(([k,n])=>`<button data-act="setpage" data-p="${k}"${k===setPage?' aria-current="page"':''}>${n}${k==='updates'&&upd.st==='new'?'<i class="sdot" title="Update available" aria-label="update available"></i>':''}</button>`).join('')}</nav>
-    <div class="setpanel" data-p="${setPage}">${setPage==='updates'?updatesPage():setPage==='timer'?timerPage():overlayPage()}</div></div></div>`);
+    <div class="setpanel" data-p="${setPage}">${setPage==='updates'?updatesPage():overlayPage()}</div></div></div>`);
   const np=document.querySelector('#setdlg .setpanel'); if(np) np.scrollTop=keep;
-  if(setPage==='timer') startPreview(); }
+  if(setPage==='overlay') startPreview(); }
 function openOverlayDlg(){ openSettings('overlay'); }
 async function startApp(){
   if(!APP) return;
