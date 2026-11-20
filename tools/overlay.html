@@ -29,7 +29,9 @@ body{font-family:"Inter",system-ui,"Segoe UI",sans-serif;color:var(--fg)}
 .track{position:relative;height:8px;border-radius:4px;background:rgba(255,255,255,.08);overflow:hidden}
 .track i{position:absolute;top:0;bottom:0;opacity:.55}
 .track i.zg{background:var(--good)} .track i.zr{background:var(--bad)}
-.track b{position:absolute;top:0;bottom:0;width:3px;margin-left:-1.5px;background:var(--fg);border-radius:1px}
+.track b{position:absolute;top:0;bottom:0;width:var(--mk,3px);margin-left:calc(var(--mk,3px) / -2);background:var(--fg);border-radius:1px;box-shadow:0 0 0 1px rgba(0,0,0,.35)}
+.zbig{font-size:26px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;line-height:38px}
+.tm.safe .zbig{color:var(--good)} .tm.danger .zbig{color:var(--bad)}
 .idle .big{font-size:22px;color:var(--muted);font-weight:500}
 .idle .main{min-height:38px;align-items:center}   /* same height as a running timer, so the card doesn't jump */
 .tm.safe .big,.tm.safe .zl{color:var(--good)}
@@ -48,7 +50,7 @@ body{font-family:"Inter",system-ui,"Segoe UI",sans-serif;color:var(--fg)}
   const T = window.__TAURI__;
   const card = document.getElementById('card');
   const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'})[c]);
-  let cfg = {key:'F8', cycle:20, start:1, zones:[{c:'g',a:2,b:15},{c:'r',a:15,b:2}], nl:true, timer:true}, run = null;
+  let cfg = {key:'F8', cycle:20, start:1, zones:[{c:'g',a:2,b:15},{c:'r',a:15,b:2}], nl:true, timer:true, showTime:true, showBar:true, barH:8}, run = null;
   try { Object.assign(cfg, JSON.parse(localStorage.getItem('nr-overlay')||'{}')); } catch(e) {}
   try { run = JSON.parse(localStorage.getItem('nr-overlay-run')||'null'); } catch(e) {}
   let start = 0, moving = false, timer = null, lastH = 0, lastPress = 0;
@@ -78,15 +80,20 @@ body{font-family:"Inter",system-ui,"Segoe UI",sans-serif;color:var(--fg)}
       const parts = z.a === z.b ? [] : z.a < z.b ? [[z.a, z.b - z.a]] : [[z.a, C - z.a], [0, z.b]];
       for (const [x, w] of parts) segs.push(`<i class="z${z.c === 'r' ? 'r' : 'g'}" style="left:${(x / C * 100).toFixed(2)}%;width:${(w / C * 100).toFixed(2)}%"></i>`);
     }
-    return `<div class="track">${segs.join('')}${t == null ? '' : `<b style="left:${(t / C * 100).toFixed(2)}%"></b>`}</div>`;
+    // the bar can be made much taller in Settings, so it reads at a glance; the marker grows with it
+    const h = Math.max(4, Math.min(80, +cfg.barH || 8)), mk = h >= 28 ? 5 : h >= 16 ? 4 : 3;
+    return `<div class="track" style="height:${h}px;border-radius:${Math.min(h / 2, 8)}px;--mk:${mk}px">${segs.join('')}${t == null ? '' : `<b style="left:${(t / C * 100).toFixed(2)}%"></b>`}</div>`;
   }
   function timerHtml(){
     const top = `<div class="top"><span>Dreglord stacks</span><span class="key">${esc(cfg.key||'—')}</span></div>`;
-    if (!start) return {state:'idle', html:`<div class="sec tm idle">${top}<div class="main"><span class="big">Ready</span></div><span class="hint">Press ${esc(cfg.key||'the hotkey')} when the status shows</span>${trackHtml(null)}</div>`};
+    const bar = cfg.showBar !== false, nums = cfg.showTime !== false;
+    if (!start) return {state:'idle', html:`<div class="sec tm idle">${top}<div class="main"><span class="big">Ready</span></div><span class="hint">Press ${esc(cfg.key||'the hotkey')} when the status shows</span>${bar ? trackHtml(null) : ''}</div>`};
     const C = cyc(), t = ((+cfg.start || 0) + (performance.now() - start) / 1000) % C, z = zoneAt(t), nx = nextChange(t);
     const state = z ? (z.c === 'r' ? 'danger' : 'safe') : 'run';
-    return {state, html:`<div class="sec tm ${state}">${top}<div class="main"><span class="big">${t.toFixed(1)}<small>s</small></span>${z ? `<span class="zl">${zname(z)}</span>` : ''}</div>`
-      + `<span class="hint">${nx || '&nbsp;'}</span>${trackHtml(t)}</div>`};
+    // without the seconds, the zone name takes the big line (nothing there outside a zone)
+    const main = nums ? `<div class="main"><span class="big">${t.toFixed(1)}<small>s</small></span>${z ? `<span class="zl">${zname(z)}</span>` : ''}</div><span class="hint">${nx || '&nbsp;'}</span>`
+      : z ? `<div class="main"><span class="zbig">${zname(z)}</span></div>` : '';
+    return {state, html:`<div class="sec tm ${state}">${top}${main}${bar ? trackHtml(t) : ''}</div>`};
   }
   function fit(){
     const h = card.hidden ? 8 : Math.ceil(card.getBoundingClientRect().height + 8);
