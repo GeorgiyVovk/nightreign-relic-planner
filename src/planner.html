@@ -95,7 +95,7 @@ select{-webkit-appearance:none;appearance:none;cursor:pointer;border:1px solid v
 .ovshowrow{display:flex;flex-wrap:wrap;align-items:flex-end;gap:10px 22px}
 .ovshowrow .tgl{height:var(--h)}
 .ovbarh{width:170px;max-width:100%}
-.ovmk{width:120px}
+.ovmk{width:170px;max-width:100%}
 .zrow{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr) auto minmax(0,1fr) auto;gap:8px;align-items:center}
 .zrow select{width:100%;min-width:0}
 .zrow input{border:1px solid var(--line2);background-color:var(--surface2);border-radius:var(--r-md);height:var(--h);padding:0 10px;min-width:0;width:100%;font-family:var(--f-mono);font-variant-numeric:tabular-nums}
@@ -2896,7 +2896,8 @@ let ovlMoving=false, curRun=null;
 // until stopped; zones colour parts of the cycle safe (green) or danger (red). A zone may wrap past the end (15 to 2).
 const OVL_ZONES=[{c:'g',a:2,b:15},{c:'r',a:15,b:2}], r1=x=>Math.round(x*10)/10;
 const OVL_BARS=[[8,'Thin'],[16,'Medium'],[28,'Thick'],[44,'Large'],[64,'Huge']];   // bar heights on the overlay, px
-const OVL_MK=[['#ffffff','White'],['#ffd43b','Yellow']];   // playhead colours
+const OVL_MK=[['#ffffff','White'],['danger','Yellow in danger'],['#ffd43b','Yellow']];   // playhead colours; 'danger': yellow only inside a danger zone
+const mkAt=(o,t)=>o.mk!=='danger'?o.mk:o.zones.some(z=>z.c==='r'&&(z.a<z.b?t>=z.a&&t<z.b:z.a>z.b&&(t>=z.a||t<z.b)))?'#ffd43b':'#ffffff';
 function ovlGet(){ let o={}; try{ o=JSON.parse(localStorage.getItem(OVL_KEY)||'{}')||{}; }catch(e){} o=Object.assign({on:false,key:'F8',cycle:20,start:1,zones:OVL_ZONES,x:null,y:null,nl:true,timer:true,showTime:true,showBar:true,barH:8,mk:'#ffffff'},o); delete o.secs;
   o.mk=String(o.mk).toLowerCase(); if(!OVL_MK.some(m=>m[0]===o.mk)) o.mk='#ffffff';
   o.showTime=o.showTime!==false; o.showBar=o.showBar!==false; if(!OVL_BARS.some(b=>b[0]===+o.barH)) o.barH=8; o.barH=+o.barH;
@@ -2908,7 +2909,7 @@ function ovlSet(o){ try{ localStorage.setItem(OVL_KEY,JSON.stringify(o)); }catch
 const ovlCfg = o => ({key:o.key,cycle:o.cycle,start:o.start,zones:o.zones,nl:o.nl,timer:o.timer,showTime:o.showTime,showBar:o.showBar,barH:o.barH,mk:o.mk});
 // the cycle drawn as a bar: each zone's share of it, split in two when it wraps past the end
 const zoneSegs=(z,c)=>z.a===z.b?[]:z.a<z.b?[[z.a,z.b-z.a]]:[[z.a,c-z.a],[0,z.b]];
-const zoneTrack=o=>`<div class="ztrack">${o.zones.flatMap(z=>zoneSegs(z,o.cycle).map(([x,w])=>`<i class="z${z.c}" style="left:${(x/o.cycle*100).toFixed(2)}%;width:${(w/o.cycle*100).toFixed(2)}%"></i>`)).join('')}<b style="left:${(o.start/o.cycle*100).toFixed(2)}%;background:${o.mk}" title="Start point"></b></div><div class="zticks"><span>0 s</span><span class="zleg"><i aria-hidden="true" style="background:${o.mk}"></i>start ${o.start} s</span><span>${o.cycle} s</span></div>`;
+const zoneTrack=o=>`<div class="ztrack">${o.zones.flatMap(z=>zoneSegs(z,o.cycle).map(([x,w])=>`<i class="z${z.c}" style="left:${(x/o.cycle*100).toFixed(2)}%;width:${(w/o.cycle*100).toFixed(2)}%"></i>`)).join('')}<b style="left:${(o.start/o.cycle*100).toFixed(2)}%;background:${mkAt(o,o.start)}" title="Start point"></b></div><div class="zticks"><span>0 s</span><span class="zleg"><i aria-hidden="true" style="background:${mkAt(o,o.start)}"></i>start ${o.start} s</span><span>${o.cycle} s</span></div>`;
 // what the overlay shows for the run going on now: names only, the overlay has no tables of its own
 const runCard = r => r?{name:NLORD[r.nl][0],title:NLORD[r.nl][1],don:r.mode===2,ev:r.ev,stamp:r.stamp}:null;
 function setCurRun(r){ const same=JSON.stringify(curRun)===JSON.stringify(r||null); curRun=r||null; if(same) return;
