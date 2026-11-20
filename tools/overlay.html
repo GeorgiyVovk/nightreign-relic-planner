@@ -6,9 +6,9 @@
 <title>Nightreign overlay</title>
 <link rel="stylesheet" href="fonts/fonts.css">
 <style>
-/* The overlay: a small card over the game with this run's Nightlord and the Dreglord timer.
+/* The overlay: a small card over the game with this run's Nightlord and the Dreglord cycle timer.
    Window and page are transparent; only the card shows, and the window is sized to it. */
-:root{--fg:#DDE3EC;--muted:#8E9AB0;--accent:#AFC3E3;--warn:#E3B45C;--bad:#E2685A;--ev:#B48AE8;--card:rgba(9,14,24,.78);--line:rgba(175,195,227,.22);color-scheme:dark}
+:root{--fg:#DDE3EC;--muted:#8E9AB0;--accent:#AFC3E3;--good:#6CC48C;--bad:#E2685A;--ev:#B48AE8;--card:rgba(9,14,24,.78);--line:rgba(175,195,227,.22);color-scheme:dark}
 html,body{margin:0;background:transparent;overflow:hidden;user-select:none;-webkit-user-select:none;cursor:default}
 body{font-family:"Inter",system-ui,"Segoe UI",sans-serif;color:var(--fg)}
 .card{margin:4px;border-radius:12px;background:var(--card);border:1px solid var(--line);padding:10px 14px;display:flex;flex-direction:column;gap:10px;box-sizing:border-box}
@@ -25,12 +25,16 @@ body{font-family:"Inter",system-ui,"Segoe UI",sans-serif;color:var(--fg)}
 .cap{font-size:13px;color:var(--muted)}
 .big{font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:38px;font-weight:600;line-height:1;font-variant-numeric:tabular-nums}
 .big small{font-size:16px;color:var(--muted);margin-left:2px}
-.bar{height:4px;border-radius:2px;background:rgba(255,255,255,.08);overflow:hidden}
-.bar i{display:block;height:100%;background:var(--accent);border-radius:2px}
+.zl{margin-left:auto;font-size:13px;font-weight:700;letter-spacing:.04em;text-transform:uppercase}
+.track{position:relative;height:8px;border-radius:4px;background:rgba(255,255,255,.08);overflow:hidden}
+.track i{position:absolute;top:0;bottom:0;opacity:.55}
+.track i.zg{background:var(--good)} .track i.zr{background:var(--bad)}
+.track b{position:absolute;top:0;bottom:0;width:3px;margin-left:-1.5px;background:var(--fg);border-radius:1px}
 .idle .big{font-size:22px;color:var(--muted);font-weight:500}
-.soon .big,.soon .cap{color:var(--warn)} .soon .bar i{background:var(--warn)}
-.now .big{color:var(--bad);font-family:"Inter",system-ui,sans-serif;font-size:30px;font-weight:700} .now .bar i{background:var(--bad)}
-.card.alert{border-color:var(--bad)}
+.idle .main{min-height:38px;align-items:center}   /* same height as a running timer, so the card doesn't jump */
+.tm.safe .big,.tm.safe .zl{color:var(--good)}
+.tm.danger .big,.tm.danger .zl{color:var(--bad)}
+.card.alert{border-color:var(--bad)} .card.calm{border-color:color-mix(in srgb,var(--good) 60%,transparent)}
 .move{border:1px dashed var(--accent);cursor:move}
 .hint{font-size:13px;color:var(--muted)}
 </style>
@@ -39,30 +43,50 @@ body{font-family:"Inter",system-ui,"Segoe UI",sans-serif;color:var(--fg)}
 <div class="card" id="card"></div>
 <script>
 // Settings and the run come from the planner window (events, and localStorage for when this window opens).
-// The timer counts down from the moment you press the hotkey.
+// The timer runs the Dreglord cycle from the moment you press the hotkey.
 (function(){
   const T = window.__TAURI__;
   const card = document.getElementById('card');
   const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'})[c]);
-  let cfg = {key:'F8', secs:25, nl:true, timer:true}, run = null;
+  let cfg = {key:'F8', cycle:20, start:1, zones:[{c:'g',a:2,b:15},{c:'r',a:15,b:2}], nl:true, timer:true}, run = null;
   try { Object.assign(cfg, JSON.parse(localStorage.getItem('nr-overlay')||'{}')); } catch(e) {}
   try { run = JSON.parse(localStorage.getItem('nr-overlay-run')||'null'); } catch(e) {}
-  let start = 0, moving = false, timer = null, lastH = 0;
-  const SOON = 5, HOLD = 12;   // last 5 s turn amber; "Sit now" stays 12 s
+  let start = 0, moving = false, timer = null, lastH = 0, lastPress = 0;
+  const STOP_MS = 400;   // two presses this close together stop the timer
   function nlHtml(){
     return `<div class="sec nl"><div class="top"><span>Nightlord</span>${run.don?'<span>Deep of Night</span>':''}</div>`
       + `<div class="nlname">${run.ev?'<span class="ev">Everdark</span> ':''}${esc(run.name)}</div><div class="nlsub">${esc(run.title)}</div></div>`;
   }
+  // The cycle: from the press it counts from the start point up to the cycle length, then from 0 again, until stopped.
+  // Zones colour parts of it: green safe, red danger, white where no zone is set. A zone may wrap (15 to 2).
+  const cyc = () => Math.max(1, +cfg.cycle || 20);
+  const zones = () => Array.isArray(cfg.zones) ? cfg.zones : [];
+  const inZone = (z, t) => z.a === z.b ? false : z.a < z.b ? (t >= z.a && t < z.b) : (t >= z.a || t < z.b);
+  const zoneAt = t => zones().find(z => inZone(z, t)) || null;
+  const zname = z => z ? (z.c === 'r' ? 'Danger' : 'Safe') : '';
+  function nextChange(t){
+    const C = cyc(), cur = zoneAt(t); let best = null;
+    for (const z of zones()) for (const e of [z.a, z.b]){ let d = (e - t + C) % C; if (d < 0.05) d += C; if (best === null || d < best) best = d; }
+    if (best === null || best >= C) return null;
+    const nx = zoneAt((t + best + 0.01) % C);
+    if (nx === cur) return null;
+    return nx ? `${zname(nx)} in ${best.toFixed(1)} s` : `${zname(cur)} ends in ${best.toFixed(1)} s`;
+  }
+  function trackHtml(t){
+    const C = cyc(), segs = [];
+    for (const z of zones()){
+      const parts = z.a === z.b ? [] : z.a < z.b ? [[z.a, z.b - z.a]] : [[z.a, C - z.a], [0, z.b]];
+      for (const [x, w] of parts) segs.push(`<i class="z${z.c === 'r' ? 'r' : 'g'}" style="left:${(x / C * 100).toFixed(2)}%;width:${(w / C * 100).toFixed(2)}%"></i>`);
+    }
+    return `<div class="track">${segs.join('')}${t == null ? '' : `<b style="left:${(t / C * 100).toFixed(2)}%"></b>`}</div>`;
+  }
   function timerHtml(){
-    const secs = Math.max(1, +cfg.secs || 25);
-    const left = start ? secs - (performance.now() - start) / 1000 : null;
-    let state = 'idle', cap = '', big = '', pct = 0;
-    if (left !== null && left > 0){ state = left <= SOON ? 'soon' : 'run'; cap = 'Sit in'; big = `${Math.ceil(left)}<small>s</small>`; pct = left / secs * 100; }
-    else if (left !== null && left > -HOLD){ state = 'now'; big = 'Sit now'; }
-    else { start = 0; big = 'Ready'; }
-    return {state, html: `<div class="sec tm ${state}"><div class="top"><span>Dreglord stacks</span><span class="key">${esc(cfg.key||'—')}</span></div>`
-      + `<div class="main">${cap?`<span class="cap">${cap}</span>`:''}<span class="big">${big}</span></div>`
-      + `<div class="bar"><i style="width:${pct.toFixed(1)}%"></i></div></div>`};
+    const top = `<div class="top"><span>Dreglord stacks</span><span class="key">${esc(cfg.key||'—')}</span></div>`;
+    if (!start) return {state:'idle', html:`<div class="sec tm idle">${top}<div class="main"><span class="big">Ready</span></div><span class="hint">Press ${esc(cfg.key||'the hotkey')} when the status shows</span>${trackHtml(null)}</div>`};
+    const C = cyc(), t = ((+cfg.start || 0) + (performance.now() - start) / 1000) % C, z = zoneAt(t), nx = nextChange(t);
+    const state = z ? (z.c === 'r' ? 'danger' : 'safe') : 'run';
+    return {state, html:`<div class="sec tm ${state}">${top}<div class="main"><span class="big">${t.toFixed(1)}<small>s</small></span>${z ? `<span class="zl">${zname(z)}</span>` : ''}</div>`
+      + `<span class="hint">${nx || '&nbsp;'}</span>${trackHtml(t)}</div>`};
   }
   function fit(){
     const h = card.hidden ? 8 : Math.ceil(card.getBoundingClientRect().height + 8);
@@ -72,20 +96,29 @@ body{font-family:"Inter",system-ui,"Segoe UI",sans-serif;color:var(--fg)}
   function draw(){
     let html = '', alert = false;
     if (cfg.nl !== false && run) html += nlHtml();
-    if (cfg.timer !== false){ const t = timerHtml(); html += t.html; alert = t.state === 'now'; }
+    let calm = false;
+    if (cfg.timer !== false){ const t = timerHtml(); html += t.html; alert = t.state === 'danger'; calm = t.state === 'safe'; }
     else start = 0;
     if (!html && moving) html = '<div class="sec"><span class="hint">Drag me</span></div>';
     card.hidden = !html;
-    card.className = 'card' + (alert ? ' alert' : '') + (moving ? ' move' : '');
+    card.className = 'card' + (alert ? ' alert' : calm ? ' calm' : '') + (moving ? ' move' : '');
     card.innerHTML = html;
     if (moving) card.setAttribute('data-tauri-drag-region', ''); else card.removeAttribute('data-tauri-drag-region');
     card.querySelectorAll('*').forEach(el => moving ? el.setAttribute('data-tauri-drag-region','') : el.removeAttribute('data-tauri-drag-region'));
     fit();
   }
   function tick(){ draw(); if (!start && timer){ clearInterval(timer); timer = null; } }
-  function go(){ if (cfg.timer === false) return; start = performance.now(); if (!timer) timer = setInterval(tick, 100); draw(); }
+  function stop(){ start = 0; lastPress = 0; tick(); }
+  // a press (re)starts the cycle from the start point; a second press right after it stops the timer
+  function go(){
+    if (cfg.timer === false) return;
+    const now = performance.now();
+    if (start && now - lastPress < STOP_MS){ stop(); return; }
+    lastPress = now; start = now; if (!timer) timer = setInterval(tick, 100); draw();
+  }
   if (T){
     T.event.listen('overlay:hotkey', go);
+    T.event.listen('overlay:stop', stop);
     T.event.listen('overlay:config', e => { Object.assign(cfg, e.payload||{}); draw(); });
     T.event.listen('overlay:run', e => { run = e.payload || null; draw(); });
     T.event.listen('overlay:locked', e => { moving = !e.payload; draw(); });

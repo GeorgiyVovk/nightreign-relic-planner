@@ -88,6 +88,20 @@ select{-webkit-appearance:none;appearance:none;cursor:pointer;border:1px solid v
 .form.tals{margin-top:14px;grid-template-columns:repeat(auto-fit,minmax(220px,1fr))}.dsum b{color:var(--fg);font-weight:600}
 .tright{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 .ovrow{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.ovrow3{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px}
+.zones{display:flex;flex-direction:column;gap:8px}
+.zlabel{font-size:12px;color:var(--muted)}
+.zrow{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr) auto minmax(0,1fr) auto;gap:8px;align-items:center}
+.zrow select{width:100%;min-width:0}
+.zrow input{border:1px solid var(--line2);background-color:var(--surface2);border-radius:var(--r-md);height:var(--h);padding:0 10px;min-width:0;width:100%;font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+.zrow .zto{font-size:12px;color:var(--muted)}
+.ztrack{position:relative;height:10px;border-radius:5px;background:var(--surface2);box-shadow:inset 0 0 0 1px var(--line);overflow:hidden;margin-top:4px}
+.ztrack i{position:absolute;top:0;bottom:0}
+.ztrack i.zg{background:color-mix(in srgb,var(--good) 70%,transparent)} .ztrack i.zr{background:color-mix(in srgb,var(--bad) 70%,transparent)}
+.ztrack b{position:absolute;top:-1px;bottom:-1px;width:2px;margin-left:-1px;background:var(--fg)}
+.zticks{display:flex;justify-content:space-between;align-items:center;font-size:11px;color:var(--muted);font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+.zticks .zleg{display:inline-flex;align-items:center;gap:5px} .zticks .zleg i{width:2px;height:10px;background:var(--fg)}
+@media (max-width:560px){ .zrow{grid-template-columns:minmax(0,1fr) auto minmax(0,1fr)} .zrow select{grid-column:1 / -1} .zrow .btn{grid-column:1 / -1;justify-self:start} }
 .btn.sm.ibtn{width:var(--h-sm);padding:0;flex:none}
 .gear{display:block;width:15px;height:15px;background:currentColor;-webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath fill-rule='evenodd' d='M13.24 6.03 L15.15 6.55 L15.15 9.45 L13.24 9.97 L13.10 10.31 L14.08 12.03 L12.03 14.08 L10.31 13.10 L9.97 13.24 L9.45 15.15 L6.55 15.15 L6.03 13.24 L5.69 13.10 L3.97 14.08 L1.92 12.03 L2.90 10.31 L2.76 9.97 L0.85 9.45 L0.85 6.55 L2.76 6.03 L2.90 5.69 L1.92 3.97 L3.97 1.92 L5.69 2.90 L6.03 2.76 L6.55 0.85 L9.45 0.85 L9.97 2.76 L10.31 2.90 L12.03 1.92 L14.08 3.97 L13.10 5.69ZM10.3 8a2.3 2.3 0 1 0 -4.6 0a2.3 2.3 0 1 0 4.6 0Z'/%3E%3C/svg%3E") center/contain no-repeat;mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath fill-rule='evenodd' d='M13.24 6.03 L15.15 6.55 L15.15 9.45 L13.24 9.97 L13.10 10.31 L14.08 12.03 L12.03 14.08 L10.31 13.10 L9.97 13.24 L9.45 15.15 L6.55 15.15 L6.03 13.24 L5.69 13.10 L3.97 14.08 L1.92 12.03 L2.90 10.31 L2.76 9.97 L0.85 9.45 L0.85 6.55 L2.76 6.03 L2.90 5.69 L1.92 3.97 L3.97 1.92 L5.69 2.90 L6.03 2.76 L6.55 0.85 L9.45 0.85 L9.97 2.76 L10.31 2.90 L12.03 1.92 L14.08 3.97 L13.10 5.69ZM10.3 8a2.3 2.3 0 1 0 -4.6 0a2.3 2.3 0 1 0 4.6 0Z'/%3E%3C/svg%3E") center/contain no-repeat}
 .ovsec{display:flex;flex-direction:column;gap:8px}
@@ -2873,9 +2887,19 @@ async function loadAppSave(p, opt={}){
 // overlay (desktop app only): settings live in localStorage, which the overlay window shares
 const OVL_KEY='nr-overlay', OVL_RUN='nr-overlay-run', OVL_KEYS=['F1','F2','F3','F4','F5','F6','F7','F8','F9','F10','F11','F12'];
 let ovlMoving=false, curRun=null;
-function ovlGet(){ let o={}; try{ o=JSON.parse(localStorage.getItem(OVL_KEY)||'{}')||{}; }catch(e){} o=Object.assign({on:false,key:'F8',secs:25,x:null,y:null,nl:true,timer:true},o); if(!OVL_KEYS.includes(o.key)) o.key='F8'; o.secs=Math.min(600,Math.max(1,Math.round(+o.secs)||25)); o.nl=o.nl!==false; o.timer=o.timer!==false; return o; }
+// Dreglord timer: a cycle (about 20 s) that starts at the user's start point when the hotkey is pressed and repeats
+// until stopped; zones colour parts of the cycle safe (green) or danger (red). A zone may wrap past the end (15 to 2).
+const OVL_ZONES=[{c:'g',a:2,b:15},{c:'r',a:15,b:2}], r1=x=>Math.round(x*10)/10;
+function ovlGet(){ let o={}; try{ o=JSON.parse(localStorage.getItem(OVL_KEY)||'{}')||{}; }catch(e){} o=Object.assign({on:false,key:'F8',cycle:20,start:1,zones:OVL_ZONES,x:null,y:null,nl:true,timer:true},o); delete o.secs;
+  if(!OVL_KEYS.includes(o.key)) o.key='F8'; o.nl=o.nl!==false; o.timer=o.timer!==false;
+  o.cycle=Math.min(600,Math.max(1,r1(+o.cycle)||20)); o.start=Math.min(o.cycle,Math.max(0,r1(+o.start)||0));
+  o.zones=(Array.isArray(o.zones)?o.zones:OVL_ZONES).filter(z=>z&&(z.c==='g'||z.c==='r')).slice(0,6).map(z=>({c:z.c,a:Math.min(o.cycle,Math.max(0,r1(+z.a)||0)),b:Math.min(o.cycle,Math.max(0,r1(+z.b)||0))}));
+  return o; }
 function ovlSet(o){ try{ localStorage.setItem(OVL_KEY,JSON.stringify(o)); }catch(e){} }
-const ovlCfg = o => ({key:o.key,secs:o.secs,nl:o.nl,timer:o.timer});
+const ovlCfg = o => ({key:o.key,cycle:o.cycle,start:o.start,zones:o.zones,nl:o.nl,timer:o.timer});
+// the cycle drawn as a bar: each zone's share of it, split in two when it wraps past the end
+const zoneSegs=(z,c)=>z.a===z.b?[]:z.a<z.b?[[z.a,z.b-z.a]]:[[z.a,c-z.a],[0,z.b]];
+const zoneTrack=o=>`<div class="ztrack">${o.zones.flatMap(z=>zoneSegs(z,o.cycle).map(([x,w])=>`<i class="z${z.c}" style="left:${(x/o.cycle*100).toFixed(2)}%;width:${(w/o.cycle*100).toFixed(2)}%"></i>`)).join('')}<b style="left:${(o.start/o.cycle*100).toFixed(2)}%" title="Start point"></b></div><div class="zticks"><span>0 s</span><span class="zleg"><i aria-hidden="true"></i>start ${o.start} s</span><span>${o.cycle} s</span></div>`;
 // what the overlay shows for the run going on now: names only, the overlay has no tables of its own
 const runCard = r => r?{name:NLORD[r.nl][0],title:NLORD[r.nl][1],don:r.mode===2,ev:r.ev,stamp:r.stamp}:null;
 function setCurRun(r){ const same=JSON.stringify(curRun)===JSON.stringify(r||null); curRun=r||null; if(same) return;
@@ -2900,9 +2924,17 @@ function overlayPage(){ const o=ovlGet();
       <p class="msg">Read from your save as soon as a run starts, so a hidden Nightlord isn't hidden from you.</p>
       <p class="msg ovnow" id="ov-runst">${ovlRunStatus()}</p></div>
     <div class="ovsec"><h5 class="sh3">Dreglord timer</h5>${ovTgl('ov-tm',o.timer,'Show the timer')}
-      <p class="msg">For the Dreglord relic. Press the hotkey when the stacks icon disappears: it counts down and tells you when to sit.</p>
-      <div class="ovrow"><div class="field"><label for="ov-key">Hotkey</label><select id="ov-key">${OVL_KEYS.map(k=>`<option ${k===o.key?'selected':''}>${k}</option>`).join('')}</select></div><div class="field"><label for="ov-secs">Countdown, seconds</label><input id="ov-secs" type="number" min="1" max="600" value="${o.secs}"></div></div>
-      <div class="btns"><button class="btn" data-act="ovtest" ${o.on&&o.timer?'':'disabled'}>Test</button></div></div>
+      <p class="msg">Keeps your Dreglord stacks when you level up. Press the hotkey as soon as the status shows: the timer starts at your start point, counts up to the cycle length and starts over, again and again. The zones show when touching grace is safe. Press the hotkey again to resync, twice quickly to stop.</p>
+      <div class="ovrow3"><div class="field"><label for="ov-key">Hotkey</label><select id="ov-key">${OVL_KEYS.map(k=>`<option ${k===o.key?'selected':''}>${k}</option>`).join('')}</select></div>
+        <div class="field"><label for="ov-cycle">Cycle, seconds</label><input id="ov-cycle" type="number" min="1" max="600" step="0.1" value="${o.cycle}"></div>
+        <div class="field"><label for="ov-start">Start at, seconds</label><input id="ov-start" type="number" min="0" max="${o.cycle}" step="0.1" value="${o.start}"></div></div>
+      <div class="zones"><span class="zlabel" id="zl">Zones</span>
+        ${o.zones.map((z,i)=>`<div class="zrow" role="group" aria-label="Zone ${i+1}"><select data-zi="${i}" data-zk="c" aria-label="Zone ${i+1} colour"><option value="g" ${z.c==='g'?'selected':''}>Safe (green)</option><option value="r" ${z.c==='r'?'selected':''}>Danger (red)</option></select>
+          <input type="number" data-zi="${i}" data-zk="a" min="0" max="${o.cycle}" step="0.1" value="${z.a}" aria-label="Zone ${i+1} from, seconds"><span class="zto">to</span><input type="number" data-zi="${i}" data-zk="b" min="0" max="${o.cycle}" step="0.1" value="${z.b}" aria-label="Zone ${i+1} to, seconds">
+          <button class="btn sm ghost" data-act="zdel" data-zi="${i}" aria-label="Remove zone ${i+1}">Remove</button></div>`).join('')}
+        ${o.zones.length<6?'<div class="btns"><button class="btn sm" data-act="zadd">Add zone</button></div>':''}
+        <div id="ov-zprev">${zoneTrack(o)}</div></div>
+      <div class="btns"><button class="btn" data-act="ovtest" ${o.on&&o.timer?'':'disabled'}>Test</button><button class="btn" data-act="ovstop" ${o.on&&o.timer?'':'disabled'}>Stop</button></div></div>
     <p class="msg">The overlay reads your save file and listens to your hotkey. It never touches the game.</p>`; }
 // updates: the app asks GitHub for the latest release and compares it with its own version
 const SET_KEY='nrp.settings', APP_VER='__APP_VERSION__', REL_API='https://api.github.com/repos/GeorgiyVovk/nightreign-relic-planner/releases/latest';
@@ -3091,6 +3123,11 @@ document.addEventListener('click', async ev=>{
   if(a==='updget'){ try{ await APP.openReleases(); }catch(e){ toast(`Couldn't open the browser: ${e}`,'bad'); } return; }
   if(a==='ovmove'){ await ovlLock(ovlMoving); openOverlayDlg(); return; }
   if(a==='ovtest'){ try{ APP.overlay.test(); }catch(e){} return; }
+  if(a==='ovstop'){ try{ APP.overlay.stop(); }catch(e){} return; }
+  if(a==='zadd'||a==='zdel'){ const o=ovlGet();
+    if(a==='zadd') o.zones.push({c:'g',a:0,b:Math.min(o.cycle,5)}); else o.zones.splice(+t.dataset.zi,1);
+    ovlSet(o); if(o.on&&APP&&APP.overlay) APP.overlay.config(ovlCfg(ovlGet()));
+    ovFocusSel=a==='zadd'?`[data-zi="${o.zones.length-1}"][data-zk="c"]`:'[data-act="zadd"]'; openSettings('overlay'); return; }
   if(a==='prnew'||a==='prupd'){ normBuild(); const ch=build.char; const name=(($('#pr-name')||{}).value||'').trim().slice(0,40)||`${ch} ${build.presets.filter(p=>p.char===ch).length+1}`;
     const data={name,char:ch,vessel:curVessel(),slots:curSlots().slice()}; let p=a==='prupd'?build.presets.find(x=>x.id===build.activePreset[ch]):null;
     if(p) Object.assign(p,data); else { p=Object.assign({id:'p'+Date.now().toString(36)},data); build.presets.push(p); }
@@ -3181,11 +3218,17 @@ document.addEventListener('change', ev=>{
     saveBuildSoon(); renderCombat(); renderResults(); return; }
   if(t.id==='w-skill'){ weaponState().skill=+t.value; saveBuildSoon(); renderCombat(); return; }
   if(t.id==='set-updstart'){ const o=setGet(); o.updStart=t.checked; setSave(o); return; }
-  if(t.id==='ov-on'||t.id==='ov-key'||t.id==='ov-secs'||t.id==='ov-nl'||t.id==='ov-tm'){ const o=ovlGet();
-    if(t.id==='ov-on') o.on=t.checked; else if(t.id==='ov-nl') o.nl=t.checked; else if(t.id==='ov-tm') o.timer=t.checked; else if(t.id==='ov-key') o.key=t.value; else o.secs=Math.min(600,Math.max(1,Math.round(+t.value)||25));
+  if(t.dataset.zi!=null&&t.dataset.zk){ const o=ovlGet(), z=o.zones[+t.dataset.zi]; if(!z) return;
+    if(t.dataset.zk==='c') z.c=t.value==='r'?'r':'g'; else z[t.dataset.zk]=+t.value;
+    ovlSet(o); const n=ovlGet(); if(t.dataset.zk!=='c') t.value=n.zones[+t.dataset.zi][t.dataset.zk];
+    const pv=$('#ov-zprev'); if(pv) pv.innerHTML=zoneTrack(n);
+    if(n.on&&APP&&APP.overlay) APP.overlay.config(ovlCfg(n)); return; }
+  if(t.id==='ov-on'||t.id==='ov-key'||t.id==='ov-cycle'||t.id==='ov-start'||t.id==='ov-nl'||t.id==='ov-tm'){ const o=ovlGet();
+    if(t.id==='ov-on') o.on=t.checked; else if(t.id==='ov-nl') o.nl=t.checked; else if(t.id==='ov-tm') o.timer=t.checked; else if(t.id==='ov-key') o.key=t.value; else if(t.id==='ov-cycle') o.cycle=+t.value; else o.start=+t.value;
     ovlSet(o);
+    if(t.id==='ov-cycle'||t.id==='ov-start'){ const n=ovlGet(); ovlSet(n); openSettings('overlay'); if(n.on&&APP&&APP.overlay) APP.overlay.config(ovlCfg(n)); return; }
     if(t.id==='ov-on'){ ovlApply(o).then(()=>openOverlayDlg()); return; }
-    if(t.id==='ov-tm'){ const b=document.querySelector('[data-act="ovtest"]'); if(b) b.disabled=!(o.on&&o.timer); }
+    if(t.id==='ov-tm') document.querySelectorAll('[data-act="ovtest"],[data-act="ovstop"]').forEach(b=>{ b.disabled=!(o.on&&o.timer); });
     if(o.on&&APP&&APP.overlay){ if(t.id==='ov-key'||t.id==='ov-tm') APP.overlay.hotkey(o.timer?o.key:'').catch(e=>toast(`Overlay: ${e}`,'bad')); APP.overlay.config(ovlCfg(o)); }
     return; }
   if(t.id==='en-pick'||t.id==='en-mode'||t.id==='en-day2'||t.id==='en-aura'){ const st=enemyState();
