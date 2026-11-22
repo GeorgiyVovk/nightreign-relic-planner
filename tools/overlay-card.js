@@ -17,6 +17,8 @@
 .oc-nl{gap:7px}
 .oc-name{font-family:"EB Garamond",Georgia,serif;font-size:23px;font-weight:600;line-height:1.05}
 .oc-name .oc-ev{color:var(--oc-ev)}
+.oc-id{display:flex;flex-direction:column;gap:1px}
+.oc-sub{font-size:12px;color:var(--oc-muted)}
 /* what the Nightlord is weak to, one row under the name: damage types | statuses, as the game's icons */
 .oc-weak{display:flex;flex-wrap:wrap;align-items:flex-start;gap:4px}
 .oc-sep{flex:none;width:1px;height:20px;margin:3px 5px 0;background:var(--oc-line)}
@@ -152,8 +154,10 @@
       return { state, html: `<div class="oc-sec oc-tm oc-simple oc-${state}"><div class="oc-main"><span class="oc-zbig">${cfg.showZone !== false ? zname(z) : ''}</span></div></div>` };
     }
     let html = '', state = null;
-    // the Nightlord's name (or its expedition's, cfg.nlName 'exp'), what it's weak to in a row under it
-    if (cfg.nl !== false && run) html += `<div class="oc-sec oc-nl"><div class="oc-name">${run.ev ? '<span class="oc-ev">Everdark</span> ' : ''}${esc(cfg.nlName === 'exp' ? run.title : run.name)}</div>`
+    // the Nightlord's name, its expedition's (cfg.nlName 'exp') or both, the expedition small under the name ('both');
+    // what it's weak to in a row under that
+    const ev = run && run.ev ? '<span class="oc-ev">Everdark</span> ' : '';
+    if (cfg.nl !== false && run) html += `<div class="oc-sec oc-nl"><div class="oc-id"><div class="oc-name">${ev}${esc(cfg.nlName === 'exp' ? run.title : run.name)}</div>${cfg.nlName === 'both' ? `<div class="oc-sub">${esc(run.title)}</div>` : ''}</div>`
       + weakHtml(run.weak) + '</div>';
     if (cfg.timer !== false) { const r = cfg.simple === true ? simple(t) : full(t); html += r.html; state = r.state; }
     if (!html && moving) html = '<div class="oc-sec"><span class="oc-hint">Drag me</span></div>';

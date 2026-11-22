@@ -2941,7 +2941,7 @@ const OVL_CYAN='#2ce0ff', OVL_MK=[['#ffffff','White'],[OVL_CYAN,'Cyan']];   // p
 const mkAt=o=>o.mk;
 function ovlGet(){ let o={}; try{ o=JSON.parse(localStorage.getItem(OVL_KEY)||'{}')||{}; }catch(e){} if(o.tr==null&&o.bg!=null&&+o.bg!==80) o.tr=100-o.bg; delete o.bg;   // the old 'how solid' setting; its old default gives way to the new one
   o=Object.assign({on:false,key:'F8',cycle:20,start:0.5,x:null,y:null,nl:true,timer:true,showTime:false,showBar:true,barH:12,mk:'#ffffff',simple:false,showZone:false,nlName:'boss',tr:30},o); delete o.secs; delete o.sq;
-  o.simple=o.simple===true; o.showZone=o.showZone!==false;
+  o.simple=o.simple===true; o.showZone=o.showZone!==false; if(!['boss','exp','both'].includes(o.nlName)) o.nlName='boss';
   o.mk=String(o.mk).toLowerCase(); if(o.mk==='#ffd43b') o.mk=OVL_CYAN;   // the old yellow playhead is cyan now
   if(!OVL_MK.some(m=>m[0]===o.mk)) o.mk='#ffffff';   // 'Cyan in danger' is gone: white
   o.tr=Math.min(100,Math.max(0,Math.round((isNaN(+o.tr)?30:+o.tr)/5)*5));   // how see-through the card's background is, %
@@ -2999,7 +2999,7 @@ function overlayPage(){ const o=ovlGet();
       ${o.on?'':'<p class="msg">Turn on Show the overlay to move it.</p>'}
       <div class="field ovbg"><label for="ov-tr">Background transparency <output id="ov-trv" for="ov-tr">${o.tr}%</output></label><input type="range" id="ov-tr" min="0" max="100" step="5" value="${o.tr}" aria-describedby="ov-trh"><span class="fhelp" id="ov-trh">How much of the game shows through the card's dark background.</span></div></div>
     <div class="ovsec"><h5 class="sh3">Nightlord</h5><div class="ovnlrow">${ovTgl('ov-nl',o.nl,"Show this run's Nightlord")}
-      <div class="seg" role="group" aria-label="Name on the card"><button data-act="ovname" data-v="boss" aria-pressed="${o.nlName!=='exp'}">Nightlord name</button><button data-act="ovname" data-v="exp" aria-pressed="${o.nlName==='exp'}">Expedition name</button></div></div>
+      <div class="seg" role="group" aria-label="Name on the card"><button data-act="ovname" data-v="boss" aria-pressed="${o.nlName==='boss'}">Nightlord</button><button data-act="ovname" data-v="exp" aria-pressed="${o.nlName==='exp'}">Expedition</button><button data-act="ovname" data-v="both" aria-pressed="${o.nlName==='both'}">Both</button></div></div>
       <p class="msg">Read from your save as soon as a run starts, so a hidden Nightlord isn't hidden from you. Under its name: the damage types it takes more of, then the statuses it isn't immune to, with a green bar if they build up easily, yellow if slower and red if very slowly.</p>
       <p class="msg ovnow" id="ov-runst">${ovlRunStatus()}</p></div>
     ${timerPage(o)}
@@ -3250,7 +3250,7 @@ document.addEventListener('click', async ev=>{
   if(a==='ovmove'){ await ovlLock(ovlMoving); openOverlayDlg(); return; }
   if(a==='ovtest'){ try{ APP.overlay.test(); }catch(e){} return; }
   if(a==='ovstop'){ try{ APP.overlay.stop(); }catch(e){} return; }
-  if(a==='ovname'){ const o=ovlGet(); o.nlName=t.dataset.v==='exp'?'exp':'boss'; ovlSet(o); if(o.on&&APP&&APP.overlay) APP.overlay.config(ovlCfg(ovlGet())); openSettings(); return; }
+  if(a==='ovname'){ const o=ovlGet(); o.nlName=['exp','both'].includes(t.dataset.v)?t.dataset.v:'boss'; ovlSet(o); if(o.on&&APP&&APP.overlay) APP.overlay.config(ovlCfg(ovlGet())); openSettings(); return; }
   if(a==='ovlook'){ const o=ovlGet(); o.simple=t.dataset.v==='simple'; ovlSet(o); if(o.on&&APP&&APP.overlay) APP.overlay.config(ovlCfg(ovlGet())); openSettings(); return; }
   if(a==='prnew'||a==='prupd'){ normBuild(); const ch=build.char; const name=(($('#pr-name')||{}).value||'').trim().slice(0,40)||`${ch} ${build.presets.filter(p=>p.char===ch).length+1}`;
     const data={name,char:ch,vessel:curVessel(),slots:curSlots().slice()}; let p=a==='prupd'?build.presets.find(x=>x.id===build.activePreset[ch]):null;
