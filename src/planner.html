@@ -107,7 +107,7 @@ select{-webkit-appearance:none;appearance:none;cursor:pointer;border:1px solid v
 .ovsec > .seg{align-self:flex-start}
 .ovsec .sh3{text-transform:none}
 .ocstage{display:flex;align-items:flex-start;min-height:70px;padding:14px;border-radius:var(--r-md);background:linear-gradient(135deg,#2a3029,#1b2120 55%,#2d2b24);border:1px solid var(--line)}
-.ocstage .oc{width:232px;flex:none}
+.ocstage .oc{width:max-content;min-width:232px;max-width:100%;flex:none}
 .ocstage .ocnone{margin:auto;color:#C9D1DC}
 .occap{font-size:11px;color:var(--muted)}
 .zrow select{width:100%;min-width:0}
@@ -2961,14 +2961,15 @@ const runCard = r => r?{name:NLORD[r.nl][0],title:NLORD[r.nl][1],don:r.mode===2,
 const NL_PARTS=[['Gladius'],['Adel'],['Gnoster','Faurtis'],['Maris'],['Libra'],['Fulghor'],['Caligo'],['Shape of Night','Heolstor'],['Harmonia'],['Straghess']];
 const WEAK_COL=['#C9D1DC','#C9D1DC','#C9D1DC','#C9D1DC','#6FA3EA','#F0874A','#F2D357','#F3E3A0'];   // physical types, magic, fire, lightning, holy
 const WEAK_ST=[['Poison','#6CC05A'],['Rot','#E2643F'],['Bleed','#E0485F'],['Frost','#6FC2EA'],['Sleep','#A391F0'],['Madness','#EDA63A'],['Blight','#B4BAC6']];   // short names and colours for the card
-// Statuses: the ones that build up fastest on it, i.e. its lowest resistance (0 means immune, so it doesn't count).
+// Statuses: every one that builds up at a usable rate (resistance up to about 250; 0 means immune), the easiest first,
+// marked lv 1 (about 150, builds up easily) or lv 2 (about 250, slower). About 540 and up counts as resistant.
 function nlWeak(nl,ev){ const parts=NL_PARTS[nl]||[], is=z=>parts.some(p=>z.n===p||z.n.startsWith(p+' '));
   let es=EN.filter(z=>z.cat===(ev?1:0)&&is(z)); if(!es.length) es=EN.filter(z=>z.cat===0&&is(z));
   const dmg=ENEG.map(([n],i)=>({n,c:WEAK_COL[i],v:Math.min(0,...es.map(z=>z.neg[i]||0))})).filter(w=>w.v<0)
     .sort((a,b)=>a.v-b.v).slice(0,3).map(({n,c})=>({n:n==='Standard'?'Physical':n,c}));
   // per status, the part of the fight it builds up fastest on; immune everywhere stays out
   const res=WEAK_ST.map((_,i)=>{ const v=es.map(z=>z.res[i]||0).filter(x=>x>0); return v.length?Math.min(...v):0; });
-  const low=Math.min(...res.filter(v=>v>0)), st=isFinite(low)&&low<=252?WEAK_ST.map(([n,c],i)=>({n,c,v:res[i]})).filter(w=>w.v===low).map(({n,c})=>({n,c})):[];
+  const st=WEAK_ST.map(([n,c],i)=>({n,c,v:res[i]})).filter(w=>w.v>0&&w.v<=400).sort((a,b)=>a.v-b.v).map(({n,c,v})=>({n,c,lv:v<=200?1:2}));
   return {dmg,st}; }
 function setCurRun(r){ const same=JSON.stringify(curRun)===JSON.stringify(r||null); curRun=r||null; if(same) return;
   try{ localStorage.setItem(OVL_RUN,JSON.stringify(runCard(curRun))); }catch(e){}
@@ -2991,7 +2992,7 @@ function overlayPage(){ const o=ovlGet();
       <div class="btns"><button class="btn" data-act="ovmove" ${o.on?'':'disabled'}>${ovlMoving?'Done moving':'Move'}</button></div>
       ${o.on?'':'<p class="msg">Turn on Show the overlay to move it.</p>'}</div>
     <div class="ovsec"><h5 class="sh3">Nightlord</h5>${ovTgl('ov-nl',o.nl,"Show this run's Nightlord")}
-      <p class="msg">Read from your save as soon as a run starts, so a hidden Nightlord isn't hidden from you.</p>
+      <p class="msg">Read from your save as soon as a run starts, so a hidden Nightlord isn't hidden from you. Beside its name: the damage types it takes more of, then the statuses that build up on it, framed green if easily and yellow if slower.</p>
       <p class="msg ovnow" id="ov-runst">${ovlRunStatus()}</p></div>
     ${timerPage(o)}
     <p class="msg">The overlay reads your save file and listens to your hotkey. It never touches the game.</p>`; }

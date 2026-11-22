@@ -10,7 +10,7 @@
    Window and page are transparent; only the card shows, and the window is sized to it.
    The card itself (what it shows and its look) lives in overlay-card.js, shared with the preview in Settings. */
 html,body{margin:0;background:transparent;overflow:hidden;user-select:none;-webkit-user-select:none;cursor:default;color-scheme:dark}
-#card{margin:4px}
+#card{margin:4px;width:max-content;min-width:232px;max-width:392px}   /* widens for a long name with many icons */
 </style>
 <script src="overlay-card.js"></script>
 </head>
@@ -26,15 +26,15 @@ html,body{margin:0;background:transparent;overflow:hidden;user-select:none;-webk
   let cfg = {key:'F8', cycle:20, start:1, zones:[{c:'g',a:2,b:15},{c:'r',a:15,b:2}], nl:true, timer:true, showTime:true, showBar:true, barH:8, mk:'#ffffff', simple:false, showZone:true}, run = null;
   try { Object.assign(cfg, JSON.parse(localStorage.getItem('nr-overlay')||'{}')); } catch(e) {}
   try { run = JSON.parse(localStorage.getItem('nr-overlay-run')||'null'); } catch(e) {}
-  let start = 0, moving = false, timer = null, lastH = 0, lastPress = 0;
+  let start = 0, moving = false, timer = null, lastH = 0, lastW = 0, lastPress = 0;
   const STOP_MS = 400;   // two presses this close together stop the timer
   // seconds into the cycle: from the start point at the press, wrapping at the cycle length; null before a press
   const now = () => start ? ((+cfg.start || 0) + (performance.now() - start) / 1000) % Math.max(1, +cfg.cycle || 20) : null;
-  // the window follows the card's height
+  // the window follows the card's size
   function fit(){
-    const h = card.hidden ? 8 : Math.ceil(card.getBoundingClientRect().height + 8);
-    if (h === lastH || !T) return; lastH = h;
-    T.core.invoke('overlay_fit', {h, w: 240}).catch(() => {});
+    const r = card.getBoundingClientRect(), h = card.hidden ? 8 : Math.ceil(r.height + 8), w = card.hidden ? 240 : Math.ceil(r.width + 8);
+    if ((h === lastH && w === lastW) || !T) return; lastH = h; lastW = w;
+    T.core.invoke('overlay_fit', {h, w}).catch(() => {});
   }
   function draw(){
     if (cfg.timer === false) start = 0;
