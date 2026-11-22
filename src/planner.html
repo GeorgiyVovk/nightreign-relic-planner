@@ -93,6 +93,7 @@ select{-webkit-appearance:none;appearance:none;cursor:pointer;border:1px solid v
 .zlabel{font-size:12px;color:var(--muted)}
 .ovshow{display:flex;flex-direction:column;gap:6px}
 .ovshowrow{display:flex;flex-wrap:wrap;align-items:flex-end;gap:10px 22px}
+.ovnlrow{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px 22px}
 .ovshowrow .tgl{height:var(--h)}
 .ovbarh{width:170px;max-width:100%}
 .ovmk{width:170px;max-width:100%}
@@ -2996,8 +2997,8 @@ function overlayPage(){ const o=ovlGet();
       <div class="btns"><button class="btn" data-act="ovmove" ${o.on?'':'disabled'}>${ovlMoving?'Done moving':'Move'}</button></div>
       ${o.on?'':'<p class="msg">Turn on Show the overlay to move it.</p>'}
       <div class="field ovbg"><label for="ov-bg">Background <output id="ov-bgv" for="ov-bg">${o.bg}%</output></label><input type="range" id="ov-bg" min="0" max="100" step="5" value="${o.bg}" aria-describedby="ov-bgh"><span class="fhelp" id="ov-bgh">How solid the card's dark background is. Lower lets more of the game show through.</span></div></div>
-    <div class="ovsec"><h5 class="sh3">Nightlord</h5>${ovTgl('ov-nl',o.nl,"Show this run's Nightlord")}
-      <div class="seg" role="group" aria-label="Name on the card"><button data-act="ovname" data-v="boss" aria-pressed="${o.nlName!=='exp'}">Nightlord name</button><button data-act="ovname" data-v="exp" aria-pressed="${o.nlName==='exp'}">Expedition name</button></div>
+    <div class="ovsec"><h5 class="sh3">Nightlord</h5><div class="ovnlrow">${ovTgl('ov-nl',o.nl,"Show this run's Nightlord")}
+      <div class="seg" role="group" aria-label="Name on the card"><button data-act="ovname" data-v="boss" aria-pressed="${o.nlName!=='exp'}">Nightlord name</button><button data-act="ovname" data-v="exp" aria-pressed="${o.nlName==='exp'}">Expedition name</button></div></div>
       <p class="msg">Read from your save as soon as a run starts, so a hidden Nightlord isn't hidden from you. Under its name: the damage types it takes more of, then the statuses that build up on it, with a green bar if easily and yellow if slower.</p>
       <p class="msg ovnow" id="ov-runst">${ovlRunStatus()}</p></div>
     ${timerPage(o)}
