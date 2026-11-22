@@ -6,13 +6,14 @@ const path = require('path');
 const root = path.join(__dirname, '..');
 const pkg = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8'));
 // the overlay card's look and logic, shared by the overlay window and the preview in Settings (inlined into the page)
-// with the game's status icons (tools/status-icons) inlined into it as data URIs
-const STATUS_ICONS = ['Poison', 'Rot', 'Bleed', 'Frost', 'Sleep', 'Madness', 'Blight'];
-const statusImg = Object.fromEntries(STATUS_ICONS.map(n => [n, 'data:image/webp;base64,' +
-  fs.readFileSync(path.join(root, 'tools', 'status-icons', n.toLowerCase() + '.webp')).toString('base64')]));
+// with the game's damage type and status icons (tools/game-icons) inlined into it as data URIs
+const GAME_ICONS = ['Physical', 'Strike', 'Slash', 'Pierce', 'Magic', 'Fire', 'Lightning', 'Holy',
+  'Poison', 'Rot', 'Bleed', 'Frost', 'Sleep', 'Madness', 'Blight'];
+const gameImg = Object.fromEntries(GAME_ICONS.map(n => [n, 'data:image/webp;base64,' +
+  fs.readFileSync(path.join(root, 'tools', 'game-icons', n.toLowerCase() + '.webp')).toString('base64')]));
 const overlayCard = fs.readFileSync(path.join(root, 'tools', 'overlay-card.js'), 'utf8')
-  .replace('/*@status-icons*/{}', () => JSON.stringify(statusImg));
-if (overlayCard.includes('/*@status-icons*/')) throw new Error('the status icons were not inlined into overlay-card.js');
+  .replace('/*@game-icons*/{}', () => JSON.stringify(gameImg));
+if (overlayCard.includes('/*@game-icons*/')) throw new Error('the game icons were not inlined into overlay-card.js');
 const src = fs.readFileSync(path.join(root, 'src', 'planner.html'), 'utf8').replace(/__APP_VERSION__/g, pkg.version)
   .replace('/*@overlay-card*/', () => overlayCard);
 if (!src.includes('g.NROverlayCard')) throw new Error('overlay-card.js was not inlined into the page');
