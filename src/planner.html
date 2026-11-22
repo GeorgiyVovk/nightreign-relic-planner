@@ -107,7 +107,7 @@ select{-webkit-appearance:none;appearance:none;cursor:pointer;border:1px solid v
 .ovsec > .seg{align-self:flex-start}
 .ovsec .sh3{text-transform:none}
 .ocstage{display:flex;align-items:flex-start;min-height:70px;padding:14px;border-radius:var(--r-md);background:linear-gradient(135deg,#2a3029,#1b2120 55%,#2d2b24);border:1px solid var(--line)}
-.ocstage .oc{width:max-content;min-width:232px;max-width:100%;flex:none}
+.ocstage .oc{width:284px;max-width:100%;flex:none}
 .ocstage .ocnone{margin:auto;color:#C9D1DC}
 .occap{font-size:11px;color:var(--muted)}
 .zrow select{width:100%;min-width:0}
@@ -2993,7 +2993,7 @@ function overlayPage(){ const o=ovlGet();
       ${o.on?'':'<p class="msg">Turn on Show the overlay to move it.</p>'}</div>
     <div class="ovsec"><h5 class="sh3">Nightlord</h5>${ovTgl('ov-nl',o.nl,"Show this run's Nightlord")}
       <div class="seg" role="group" aria-label="Name on the card"><button data-act="ovname" data-v="boss" aria-pressed="${o.nlName!=='exp'}">Nightlord name</button><button data-act="ovname" data-v="exp" aria-pressed="${o.nlName==='exp'}">Expedition name</button></div>
-      <p class="msg">Read from your save as soon as a run starts, so a hidden Nightlord isn't hidden from you. Beside its name: the damage types it takes more of, then the statuses that build up on it, framed green if easily and yellow if slower.</p>
+      <p class="msg">Read from your save as soon as a run starts, so a hidden Nightlord isn't hidden from you. Under its name: the damage types it takes more of, then the statuses that build up on it, with a green bar if easily and yellow if slower.</p>
       <p class="msg ovnow" id="ov-runst">${ovlRunStatus()}</p></div>
     ${timerPage(o)}
     <p class="msg">The overlay reads your save file and listens to your hotkey. It never touches the game.</p>`; }
