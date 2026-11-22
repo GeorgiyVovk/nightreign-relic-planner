@@ -3,7 +3,7 @@
 //
 // render(cfg, run, t, moving) -> { html, cls, empty, state }
 //   cfg: the overlay settings (timer, simple, showTime, showZone, showBar, barH, mk, zones, cycle, key, nl)
-//   run: this run's Nightlord as the planner sends it ({name, title, don, ev}) or null
+//   run: this run's Nightlord as the planner sends it ({name, title, don, ev, weak: [{n, c}]}) or null
 //   t:   seconds into the Dreglord cycle, or null before the first press
 (function (g) {
   const CSS = `
@@ -18,6 +18,8 @@
 .oc-name{font-family:"EB Garamond",Georgia,serif;font-size:24px;font-weight:600;line-height:1.05}
 .oc-name .oc-ev{color:var(--oc-ev)}
 .oc-sub{font-size:12px;color:var(--oc-muted)}
+.oc-weak{font-size:12px;color:var(--oc-muted);margin-top:4px}
+.oc-weak b{font-weight:600}
 .oc-main{display:flex;align-items:baseline;gap:8px}
 .oc-big{font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:38px;font-weight:600;line-height:1;font-variant-numeric:tabular-nums}
 .oc-big small{font-size:16px;color:var(--oc-muted);margin-left:2px}
@@ -97,7 +99,9 @@
       return { state, html: `<div class="oc-sec oc-tm oc-simple oc-${state}"><div class="oc-main"><span class="oc-zbig">${cfg.showZone !== false ? zname(z) : ''}</span></div></div>` };
     }
     let html = '', state = null;
-    if (cfg.nl !== false && run) html += `<div class="oc-sec oc-nl"><div class="oc-name">${run.ev ? '<span class="oc-ev">Everdark</span> ' : ''}${esc(run.name)}</div><div class="oc-sub">${esc(run.title)}${run.don ? ' · Deep of Night' : ''}</div></div>`;
+    if (cfg.nl !== false && run) html += `<div class="oc-sec oc-nl"><div class="oc-name">${run.ev ? '<span class="oc-ev">Everdark</span> ' : ''}${esc(run.name)}</div><div class="oc-sub">${esc(run.title)}</div>`
+      // what it's weak to, coloured by damage type
+      + (Array.isArray(run.weak) ? `<div class="oc-weak">${run.weak.length ? 'Weak to ' + run.weak.map(w => `<b style="color:${/^#[0-9a-f]{6}$/i.test(w.c || '') ? w.c : 'inherit'}">${esc(w.n)}</b>`).join(', ') : 'No damage type it is weak to'}</div>` : '') + '</div>';
     if (cfg.timer !== false) { const r = cfg.simple === true ? simple(t) : full(t); html += r.html; state = r.state; }
     if (!html && moving) html = '<div class="oc-sec"><span class="oc-hint">Drag me</span></div>';
     const cls = 'oc' + (state === 'danger' ? ' oc-alert' : state === 'safe' ? ' oc-calm' : '') + (moving ? ' oc-move' : '');
