@@ -20,10 +20,10 @@
 .oc-sub{font-size:12px;color:var(--oc-muted)}
 /* what the Nightlord is weak to: damage types, then statuses, as bare icons in their own colours */
 .oc-weak{display:grid;grid-template-columns:auto minmax(0,1fr);gap:3px 6px;align-items:start;margin-top:6px}
-.oc-wl{grid-row:1 / span 2;font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--oc-muted);line-height:20px}
+.oc-wl{grid-row:1 / span 2;font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--oc-muted);line-height:22px}
 .oc-row{display:flex;flex-wrap:wrap;gap:5px}
-.oc-tag{display:inline-flex;align-items:center;justify-content:center;width:18px;height:20px;color:var(--c)}
-.oc-tag svg{width:17px;height:17px;flex:none;fill:currentColor}
+.oc-tag{display:inline-flex;align-items:center;justify-content:center;width:21px;height:22px;color:var(--c)}
+.oc-tag svg{width:21px;height:21px;flex:none;fill:currentColor}
 .oc-none{font-size:12px;color:var(--oc-muted)}
 .oc-main{display:flex;align-items:baseline;gap:8px}
 .oc-big{font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:38px;font-weight:600;line-height:1;font-variant-numeric:tabular-nums}
@@ -57,25 +57,25 @@
 `;
   const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
 
-  // Our own small icons for each damage type and status (not the game's art), drawn on a 16-unit grid in the
-  // tag's colour. Lines use stroke, shapes use fill.
-  const L = d => `<path d="${d}" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>`;
+  // Our own icons for each damage type and status, drawn for the planner on a 24-unit grid in the type's colour.
+  // They use the symbols the game uses for each one, not its art: weapons for the physical types, a glintstone
+  // sparkle for magic, a halo for holy, a scarlet bloom for rot, a closed eye for sleep, a flame-crowned eye for madness.
   const ICON = {
-    Physical: '<path d="M14.6 1.4 14 4 6.6 11.4 4.6 9.4 12 2z"/><path d="M2.6 8.6 7.4 13.4 6.4 14.4 1.6 9.6z"/><path d="M3.4 11.6 4.4 12.6 2.2 14.8 1.2 13.8z"/>',
-    Strike: '<path d="M9.6 1.2 14.8 6.4 12.6 8.6 7.4 3.4z"/><path d="M9.1 6.5 9.5 6.9 3.4 15 1 12.6 9.1 4.5z"/>',
-    Slash: L('M2 11.5 10.5 2M5 14 14 4M8.5 14.5 14.5 8'),
-    Pierce: '<path d="M15 1 13.4 7.8 11.1 6 3.2 13.9 2.1 12.8 10 4.9 8.2 2.6z"/>',
-    Magic: '<path d="M7 .8c.6 3.4 1.8 4.6 5.2 5.2C8.8 6.6 7.6 7.8 7 11.2 6.4 7.8 5.2 6.6 1.8 6 5.2 5.4 6.4 4.2 7 .8z"/><path d="M12.4 9.6c.3 1.6.8 2.1 2.4 2.4-1.6.3-2.1.8-2.4 2.4-.3-1.6-.8-2.1-2.4-2.4 1.6-.3 2.1-.8 2.4-2.4z"/>',
-    Fire: '<path d="M8.4.8c2.6 2.4 5.1 5 5.1 8.6a5.5 5.5 0 0 1-11 0c0-2.1 1-3.6 2.4-4.8.1 1.4.7 2.5 1.8 3C6.7 5.3 7.3 2.9 8.4.8z"/>',
-    Lightning: '<path d="M10 .8 2.8 9.2h4.4L5.6 15.2 13.2 6.6H8.9z"/>',
-    Holy: '<circle cx="8" cy="8" r="3"/>' + L('M8 1v2M8 13v2M1 8h2M13 8h2M3 3l1.4 1.4M11.6 11.6 13 13M3 13l1.4-1.4M11.6 4.4 13 3'),
-    Poison: '<circle cx="6" cy="10.2" r="3.9"/><circle cx="12" cy="5" r="2.6"/><circle cx="12.6" cy="12.2" r="1.6"/><circle cx="4.6" cy="3" r="1.5"/>',
-    Rot: '<path d="M8 1.6c.9 1.8 1.7 2 3.3 1.1-.4 1.8 0 2.4 2 2.7-1.5 1.1-1.5 1.8-.3 3.3-2 .1-2.4.7-2.1 2.7-1.7-1-2.4-.9-3.2 1-.9-1.9-1.6-2-3.3-1 .3-2-.1-2.6-2.1-2.7 1.3-1.5 1.3-2.2-.3-3.3 2-.3 2.4-.9 2-2.7 1.6.9 2.4.7 3.3-1.1z"/>',
-    Bleed: '<path d="M8 1c2.9 3.9 5.1 6.6 5.1 9.4a5.1 5.1 0 0 1-10.2 0C2.9 7.6 5.1 4.9 8 1z"/>',
-    Frost: L('M8 1v14M1.9 4.5l12.2 7M1.9 11.5l12.2-7M6.3 2.3 8 3.6l1.7-1.3M6.3 13.7 8 12.4l1.7 1.3'),
-    Sleep: '<path d="M9.6 1.2A6.6 6.6 0 1 0 14.8 11 5.2 5.2 0 0 1 9.6 1.2z"/>',
-    Madness: '<path d="M.8 8C2.9 4.5 5.3 2.9 8 2.9s5.1 1.6 7.2 5.1c-2.1 3.5-4.5 5.1-7.2 5.1S2.9 11.5.8 8z" fill="none" stroke="currentColor" stroke-width="1.5"/><circle cx="8" cy="8" r="2.5"/>',
-    Blight: '<path fill-rule="evenodd" d="M8 1.2c-3.6 0-6.1 2.4-6.1 5.5 0 1.8.9 3.2 2.3 4V13c0 .6.4 1 1 1h5.6c.6 0 1-.4 1-1v-2.3c1.4-.8 2.3-2.2 2.3-4 0-3.1-2.5-5.5-6.1-5.5zM5.4 6.3a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3zm5.2 0a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3z"/>',
+    Physical: "<path d=\"M22 2 21.6 5.4 10.9 15.5 8.5 13.1 18.6 2.4Z M4.88 11.32 12.68 19.12 14.52 17.28 6.72 9.48Z M8.88 13.49 6.34 16.04 7.96 17.66 10.51 15.12Z M4.79 17.41a1.8 1.8 0 1 0 3.6 0a1.8 1.8 0 1 0 -3.6 0Z\"/>",
+    Strike: "<path d=\"M22.26 11.07 17.87 15.46 8.54 6.13 12.93 1.74Z M12.71 9.45 2.18 19.98 4.02 21.82 14.55 11.29Z\"/>",
+    Slash: "<path d=\"M22.4 1.6C20.6 9.6 14.6 15.6 8.6 18.4L5.6 15.4C12 12.4 17.4 8 22.4 1.6Z M2.68 14.72 9.08 21.12 10.92 19.28 4.52 12.88Z M5.79 16.79 2.19 20.39 3.81 22.01 7.41 18.41Z M1 21.6a1.6 1.6 0 1 0 3.2 0a1.6 1.6 0 1 0 -3.2 0Z\"/>",
+    Pierce: "<path d=\"M22.4 1.6 20 9.4 14.6 10.6 13.4 10.2 13.8 9.4 14.6 4Z M13.72 8.52 1.32 20.92 3.08 22.68 15.48 10.28Z\"/>",
+    Magic: "<path d=\"M10 1.5C11.44 9.06 11.44 9.06 19 10.5C11.44 11.94 11.44 11.94 10 19.5C8.56 11.94 8.56 11.94 1 10.5C8.56 9.06 8.56 9.06 10 1.5Z M19 15C19.64 18.36 19.64 18.36 23 19C19.64 19.64 19.64 19.64 19 23C18.36 19.64 18.36 19.64 15 19C18.36 18.36 18.36 18.36 19 15Z M19.4 1.6C19.88 3.52 19.88 3.52 21.8 4C19.88 4.48 19.88 4.48 19.4 6.4C18.92 4.48 18.92 4.48 17 4C18.92 3.52 18.92 3.52 19.4 1.6Z\"/>",
+    Fire: "<path fill-rule=\"evenodd\" d=\"M12.6 1.2C13.4 5.6 20 8.6 20 15A8 8 0 0 1 4 15C4 11.4 6 8.8 8 7.4 8 9.8 8.8 11.4 10.4 12.2 9.6 8.2 10.6 4.4 12.6 1.2ZM12.4 13.2C13.6 15.4 16 16.6 16 19A4 4 0 0 1 8 19C8 17.4 8.9 16.2 9.9 15.6 10.3 16.7 10.9 17.3 11.6 17.5 11.3 15.8 11.6 14.4 12.4 13.2Z\"/>",
+    Lightning: "<path d=\"M13.4 1 3.8 13.8H11L8.8 23 20.2 9.6H13L15.8 1Z\"/>",
+    Holy: "<path fill-rule=\"evenodd\" d=\"M6.6 12a5.4 5.4 0 1 0 10.8 0a5.4 5.4 0 1 0 -10.8 0ZM8.8 12a3.2 3.2 0 1 0 6.4 0a3.2 3.2 0 1 0 -6.4 0Z\"/><path d=\"M12 4.4L12 0.6M17.37 6.63L18.79 5.21M19.6 12L23.4 12M17.37 17.37L18.79 18.79M12 19.6L12 23.4M6.63 17.37L5.21 18.79M4.4 12L0.6 12M6.63 6.63L5.21 5.21\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/>",
+    Poison: "<path fill-rule=\"evenodd\" d=\"M8.2 1.4H15.8V3.8H14.6V8.4A7.4 7.4 0 1 1 9.4 8.4V3.8H8.2ZM7.5 16.6a1.9 1.9 0 1 0 3.8 0a1.9 1.9 0 1 0 -3.8 0ZM12.8 14.6a1.4 1.4 0 1 0 2.8 0a1.4 1.4 0 1 0 -2.8 0ZM12.3 19.4a1.3 1.3 0 1 0 2.6 0a1.3 1.3 0 1 0 -2.6 0Z\"/>",
+    Rot: "<ellipse cx=\"12\" cy=\"5\" rx=\"3.3\" ry=\"4.4\" transform=\"rotate(0 12 5)\"/><ellipse cx=\"18.66\" cy=\"9.84\" rx=\"3.3\" ry=\"4.4\" transform=\"rotate(72 18.66 9.84)\"/><ellipse cx=\"16.11\" cy=\"17.66\" rx=\"3.3\" ry=\"4.4\" transform=\"rotate(144 16.11 17.66)\"/><ellipse cx=\"7.89\" cy=\"17.66\" rx=\"3.3\" ry=\"4.4\" transform=\"rotate(216 7.89 17.66)\"/><ellipse cx=\"5.34\" cy=\"9.84\" rx=\"3.3\" ry=\"4.4\" transform=\"rotate(288 5.34 9.84)\"/><circle cx=\"12\" cy=\"12\" r=\"2.3\"/>",
+    Bleed: "<path d=\"M10 1.6C13 6.4 16.2 9.8 16.2 13.8A6.2 6.2 0 0 1 3.8 13.8C3.8 9.8 7 6.4 10 1.6ZM17.7 6.6a1.7 1.7 0 1 0 3.4 0a1.7 1.7 0 1 0 -3.4 0ZM17.7 15.4a2.1 2.1 0 1 0 4.2 0a2.1 2.1 0 1 0 -4.2 0ZM13.3 21.6a1.3 1.3 0 1 0 2.6 0a1.3 1.3 0 1 0 -2.6 0Z\"/>",
+    Frost: "<path d=\"M12 12L12 2M12 5.6L9.72 3.07M12 5.6L14.28 3.07M12 12L20.66 7M17.54 8.8L18.59 5.57M17.54 8.8L20.87 9.51M12 12L20.66 17M17.54 15.2L20.87 14.49M17.54 15.2L18.59 18.43M12 12L12 22M12 18.4L14.28 20.93M12 18.4L9.72 20.93M12 12L3.34 17M6.46 15.2L5.41 18.43M6.46 15.2L3.13 14.49M12 12L3.34 7M6.46 8.8L3.13 9.51M6.46 8.8L5.41 5.57\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/>",
+    Sleep: "<path d=\"M2.5 11Q12 19 21.5 11M5.92 13.36L4.4 16.18M9.91 14.81L9.33 17.95M14.09 14.81L14.67 17.95M18.08 13.36L19.6 16.18\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/><path d=\"M15.5 1.8H20.6L15.5 6.6H20.6\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/>",
+    Madness: "<path d=\"M2 15.5Q12 6 22 15.5Q12 25 2 15.5Z\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/><circle cx=\"12\" cy=\"15.5\" r=\"3\"/><path d=\"M12 1C13.8 3.4 14.6 5.2 13.4 8.2H10.6C9.4 5.2 10.2 3.4 12 1ZM6.4 4.6C7.8 6.2 8.4 7.6 7.8 9.6L6 10.4C5 8.6 5.2 6.6 6.4 4.6ZM17.6 4.6C18.8 6.6 19 8.6 18 10.4L16.2 9.6C15.6 7.6 16.2 6.2 17.6 4.6Z\"/>",
+    Blight: "<path fill-rule=\"evenodd\" d=\"M12 1.8C6.6 1.8 2.9 5.4 2.9 10c0 2.7 1.3 4.8 3.4 6v3.4c0 .9.6 1.5 1.5 1.5h8.4c.9 0 1.5-.6 1.5-1.5V16c2.1-1.2 3.4-3.3 3.4-6 0-4.6-3.7-8.2-9.1-8.2ZM5.8 10.4a2.3 2.3 0 1 0 4.6 0a2.3 2.3 0 1 0 -4.6 0ZM13.6 10.4a2.3 2.3 0 1 0 4.6 0a2.3 2.3 0 1 0 -4.6 0ZM12 13.6 13.3 16H10.7Z\"/>",
   };
   ICON.Standard = ICON.Physical;
   // run.weak: {dmg: [{n, c}], st: [{n, c}]} (an older planner sends just the damage list)
@@ -85,8 +85,8 @@
     const dmg = Array.isArray(w) ? w : (w.dmg || []), st = Array.isArray(w) ? [] : (w.st || []);
     if (!dmg.length && !st.length) return '<div class="oc-weak"><span class="oc-none">No weakness in the game data</span></div>';
     // icons only; the name stays as the tag's title and for screen readers (a type with no icon shows its name)
-    const tag = (x, cls) => `<span class="oc-tag${cls}" style="--c:${col(x.c)}" title="${esc(x.n)}" role="img" aria-label="${esc(x.n)}">${ICON[x.n] ? `<svg viewBox="0 0 16 16" aria-hidden="true">${ICON[x.n]}</svg>` : esc(x.n)}</span>`;
-    // damage types on the first line, statuses (rounded) on the next, both after one "Weak" label
+    const tag = (x, cls) => `<span class="oc-tag${cls}" style="--c:${col(x.c)}" title="${esc(x.n)}" role="img" aria-label="${esc(x.n)}">${ICON[x.n] ? `<svg viewBox="0 0 24 24" aria-hidden="true">${ICON[x.n]}</svg>` : esc(x.n)}</span>`;
+    // damage types on the first line, statuses on the next, both after one "Weak" label
     return `<div class="oc-weak"><span class="oc-wl">Weak</span>${dmg.length ? `<div class="oc-row">${dmg.map(x => tag(x, '')).join('')}</div>` : ''}${st.length ? `<div class="oc-row">${st.map(x => tag(x, ' oc-st')).join('')}</div>` : ''}</div>`;
   }
   function render(cfg, run, t, moving) {
