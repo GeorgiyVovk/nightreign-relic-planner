@@ -19,12 +19,13 @@
 .oc-name .oc-ev{color:var(--oc-ev)}
 .oc-sub{font-size:12px;color:var(--oc-muted)}
 /* what the Nightlord is weak to: damage types, then statuses, as small tinted tags in their own colours */
-.oc-weak{display:grid;grid-template-columns:auto minmax(0,1fr);gap:4px 6px;align-items:start;margin-top:6px}
+.oc-weak{display:grid;grid-template-columns:auto minmax(0,1fr);gap:3px 6px;align-items:start;margin-top:6px}
 .oc-wl{grid-row:1 / span 2;font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--oc-muted);line-height:18px}
-.oc-row{display:flex;flex-wrap:wrap;gap:4px}
-.oc-tag{display:inline-flex;align-items:center;height:18px;padding:0 6px;border-radius:3px;font-size:11px;font-weight:600;line-height:1;
+.oc-row{display:flex;flex-wrap:wrap;gap:3px}
+.oc-tag{display:inline-flex;align-items:center;gap:3px;height:18px;padding:0 5px 0 4px;border-radius:3px;font-size:10.5px;font-weight:600;line-height:1;
   color:var(--c);background:color-mix(in srgb,var(--c) 16%,transparent);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--c) 42%,transparent)}
 .oc-tag.oc-st{border-radius:9px}
+.oc-tag svg{width:11px;height:11px;flex:none;fill:currentColor}
 .oc-none{font-size:12px;color:var(--oc-muted)}
 .oc-main{display:flex;align-items:baseline;gap:8px}
 .oc-big{font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:38px;font-weight:600;line-height:1;font-variant-numeric:tabular-nums}
@@ -58,13 +59,34 @@
 `;
   const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
 
+  // Our own small icons for each damage type and status (not the game's art), drawn on a 16-unit grid in the
+  // tag's colour. Lines use stroke, shapes use fill.
+  const L = d => `<path d="${d}" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>`;
+  const ICON = {
+    Physical: '<path d="M14.6 1.4 14 4 6.6 11.4 4.6 9.4 12 2z"/><path d="M2.6 8.6 7.4 13.4 6.4 14.4 1.6 9.6z"/><path d="M3.4 11.6 4.4 12.6 2.2 14.8 1.2 13.8z"/>',
+    Strike: '<path d="M9.6 1.2 14.8 6.4 12.6 8.6 7.4 3.4z"/><path d="M9.1 6.5 9.5 6.9 3.4 15 1 12.6 9.1 4.5z"/>',
+    Slash: L('M2 11.5 10.5 2M5 14 14 4M8.5 14.5 14.5 8'),
+    Pierce: '<path d="M15 1 13.4 7.8 11.1 6 3.2 13.9 2.1 12.8 10 4.9 8.2 2.6z"/>',
+    Magic: '<path d="M7 .8c.6 3.4 1.8 4.6 5.2 5.2C8.8 6.6 7.6 7.8 7 11.2 6.4 7.8 5.2 6.6 1.8 6 5.2 5.4 6.4 4.2 7 .8z"/><path d="M12.4 9.6c.3 1.6.8 2.1 2.4 2.4-1.6.3-2.1.8-2.4 2.4-.3-1.6-.8-2.1-2.4-2.4 1.6-.3 2.1-.8 2.4-2.4z"/>',
+    Fire: '<path d="M8.4.8c2.6 2.4 5.1 5 5.1 8.6a5.5 5.5 0 0 1-11 0c0-2.1 1-3.6 2.4-4.8.1 1.4.7 2.5 1.8 3C6.7 5.3 7.3 2.9 8.4.8z"/>',
+    Lightning: '<path d="M10 .8 2.8 9.2h4.4L5.6 15.2 13.2 6.6H8.9z"/>',
+    Holy: '<circle cx="8" cy="8" r="3"/>' + L('M8 1v2M8 13v2M1 8h2M13 8h2M3 3l1.4 1.4M11.6 11.6 13 13M3 13l1.4-1.4M11.6 4.4 13 3'),
+    Poison: '<circle cx="6" cy="10.2" r="3.9"/><circle cx="12" cy="5" r="2.6"/><circle cx="12.6" cy="12.2" r="1.6"/><circle cx="4.6" cy="3" r="1.5"/>',
+    Rot: '<path d="M8 1.6c.9 1.8 1.7 2 3.3 1.1-.4 1.8 0 2.4 2 2.7-1.5 1.1-1.5 1.8-.3 3.3-2 .1-2.4.7-2.1 2.7-1.7-1-2.4-.9-3.2 1-.9-1.9-1.6-2-3.3-1 .3-2-.1-2.6-2.1-2.7 1.3-1.5 1.3-2.2-.3-3.3 2-.3 2.4-.9 2-2.7 1.6.9 2.4.7 3.3-1.1z"/>',
+    Bleed: '<path d="M8 1c2.9 3.9 5.1 6.6 5.1 9.4a5.1 5.1 0 0 1-10.2 0C2.9 7.6 5.1 4.9 8 1z"/>',
+    Frost: L('M8 1v14M1.9 4.5l12.2 7M1.9 11.5l12.2-7M6.3 2.3 8 3.6l1.7-1.3M6.3 13.7 8 12.4l1.7 1.3'),
+    Sleep: '<path d="M9.6 1.2A6.6 6.6 0 1 0 14.8 11 5.2 5.2 0 0 1 9.6 1.2z"/>',
+    Madness: '<path d="M.8 8C2.9 4.5 5.3 2.9 8 2.9s5.1 1.6 7.2 5.1c-2.1 3.5-4.5 5.1-7.2 5.1S2.9 11.5.8 8z" fill="none" stroke="currentColor" stroke-width="1.5"/><circle cx="8" cy="8" r="2.5"/>',
+    Blight: '<path fill-rule="evenodd" d="M8 1.2c-3.6 0-6.1 2.4-6.1 5.5 0 1.8.9 3.2 2.3 4V13c0 .6.4 1 1 1h5.6c.6 0 1-.4 1-1v-2.3c1.4-.8 2.3-2.2 2.3-4 0-3.1-2.5-5.5-6.1-5.5zM5.4 6.3a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3zm5.2 0a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3z"/>',
+  };
+  ICON.Standard = ICON.Physical;
   // run.weak: {dmg: [{n, c}], st: [{n, c}]} (an older planner sends just the damage list)
   const col = c => /^#[0-9a-f]{6}$/i.test(c || '') ? c : '#C9D1DC';
   function weakHtml(w) {
     if (!w) return '';
     const dmg = Array.isArray(w) ? w : (w.dmg || []), st = Array.isArray(w) ? [] : (w.st || []);
     if (!dmg.length && !st.length) return '<div class="oc-weak"><span class="oc-none">No weakness in the game data</span></div>';
-    const tag = (x, cls) => `<span class="oc-tag${cls}" style="--c:${col(x.c)}">${esc(x.n)}</span>`;
+    const tag = (x, cls) => `<span class="oc-tag${cls}" style="--c:${col(x.c)}">${ICON[x.n] ? `<svg viewBox="0 0 16 16" aria-hidden="true">${ICON[x.n]}</svg>` : ''}${esc(x.n)}</span>`;
     // damage types on the first line, statuses (rounded) on the next, both after one "Weak" label
     return `<div class="oc-weak"><span class="oc-wl">Weak</span>${dmg.length ? `<div class="oc-row">${dmg.map(x => tag(x, '')).join('')}</div>` : ''}${st.length ? `<div class="oc-row">${st.map(x => tag(x, ' oc-st')).join('')}</div>` : ''}</div>`;
   }
@@ -122,5 +144,5 @@
     const cls = 'oc' + (state === 'danger' ? ' oc-alert' : state === 'safe' ? ' oc-calm' : '') + (moving ? ' oc-move' : '');
     return { html, cls, empty: !html, state };
   }
-  g.NROverlayCard = { css: CSS, render };
+  g.NROverlayCard = { css: CSS, render, icon: n => ICON[n] || '' };
 })(window);
