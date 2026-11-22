@@ -80,8 +80,10 @@
     Blight: "<path fill-rule=\"evenodd\" d=\"M12 1.8C6.6 1.8 2.9 5.4 2.9 10c0 2.7 1.3 4.8 3.4 6v3.4c0 .9.6 1.5 1.5 1.5h8.4c.9 0 1.5-.6 1.5-1.5V16c2.1-1.2 3.4-3.3 3.4-6 0-4.6-3.7-8.2-9.1-8.2ZM5.8 10.4a2.3 2.3 0 1 0 4.6 0a2.3 2.3 0 1 0 -4.6 0ZM13.6 10.4a2.3 2.3 0 1 0 4.6 0a2.3 2.3 0 1 0 -4.6 0ZM12 13.6 13.3 16H10.7Z\"/>",
   };
   ICON.Standard = ICON.Physical;
-  // the game's own status icons, inlined at build time (tools/status-icons); the drawings above stand in without them
-  const IMG = /*@status-icons*/{};
+  // the game's own damage type and status icons, inlined at build time (tools/game-icons); the drawings above
+  // stand in without them
+  const IMG = /*@game-icons*/{};
+  IMG.Standard = IMG.Physical;
   // run.weak: {dmg: [{n, c}], st: [{n, c}]} (an older planner sends just the damage list)
   const col = c => /^#[0-9a-f]{6}$/i.test(c || '') ? c : '#C9D1DC';
   function weakHtml(w) {
