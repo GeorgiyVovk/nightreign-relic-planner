@@ -23,8 +23,9 @@ html,body{margin:0;background:transparent;overflow:hidden;user-select:none;-webk
   const T = window.__TAURI__, OC = window.NROverlayCard;
   const css = document.createElement('style'); css.textContent = OC.css; document.head.appendChild(css);
   const card = document.getElementById('card');
-  let cfg = {key:'F8', cycle:20, start:1, zones:[{c:'g',a:2,b:15},{c:'r',a:15,b:2}], nl:true, timer:true, showTime:true, showBar:true, barH:8, mk:'#ffffff', simple:false, showZone:true, nlName:'boss'}, run = null;
+  let cfg = {key:'F8', cycle:20, start:1, zones:[{c:'g',a:2,b:15},{c:'r',a:15,b:2}], nl:true, timer:true, showTime:true, showBar:true, barH:8, mk:'#ffffff', simple:false, showZone:true, nlName:'boss', bg:80}, run = null;
   try { Object.assign(cfg, JSON.parse(localStorage.getItem('nr-overlay')||'{}')); } catch(e) {}
+  if (String(cfg.mk).toLowerCase() === '#ffd43b') cfg.mk = '#2ce0ff';   // the old yellow playhead is cyan now
   try { run = JSON.parse(localStorage.getItem('nr-overlay-run')||'null'); } catch(e) {}
   let start = 0, moving = false, timer = null, lastH = 0, lastW = 0, lastPress = 0;
   const STOP_MS = 400;   // two presses this close together stop the timer
@@ -39,7 +40,7 @@ html,body{margin:0;background:transparent;overflow:hidden;user-select:none;-webk
   function draw(){
     if (cfg.timer === false) start = 0;
     const r = OC.render(cfg, run, now(), moving);
-    card.hidden = r.empty; card.className = r.cls; card.innerHTML = r.html;
+    card.hidden = r.empty; card.className = r.cls; card.innerHTML = r.html; card.style.setProperty('--oc-bga', r.bga);
     if (moving) card.setAttribute('data-tauri-drag-region', ''); else card.removeAttribute('data-tauri-drag-region');
     card.querySelectorAll('*').forEach(el => moving ? el.setAttribute('data-tauri-drag-region','') : el.removeAttribute('data-tauri-drag-region'));
     fit();
