@@ -35,7 +35,7 @@
       hotkey: (key) => invoke('overlay_hotkey', { key }),
       config: (cfg) => T.event.emit('overlay:config', cfg),
       run: (run) => T.event.emit('overlay:run', run),
-      test: () => T.event.emit('overlay:hotkey'),
+      test: () => T.event.emit('overlay:restart'),
       stop: () => T.event.emit('overlay:stop'),
     },
   };

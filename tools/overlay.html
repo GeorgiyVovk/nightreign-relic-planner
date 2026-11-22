@@ -28,8 +28,8 @@ html,body{margin:0;background:transparent;overflow:hidden;user-select:none;-webk
   if (String(cfg.mk).toLowerCase() === '#ffd43b') cfg.mk = '#2ce0ff';   // the old yellow playhead is cyan now
   if (cfg.tr != null) cfg.bg = 100 - cfg.tr;   // saved settings keep the background as transparency
   try { run = JSON.parse(localStorage.getItem('nr-overlay-run')||'null'); } catch(e) {}
-  let start = 0, moving = false, timer = null, lastH = 0, lastW = 0, lastPress = 0;
-  const STOP_MS = 400;   // two presses this close together stop the timer
+  let start = 0, moving = false, timer = null, lastH = 0, lastW = 0, lastPress = 0, presses = 0, first = 0;
+  const MULTI_MS = 400;   // presses this close together count as one double or triple press
   // seconds into the cycle: from the start point at the press, wrapping at the cycle length; null before a press
   const now = () => start ? ((+cfg.start || 0) + (performance.now() - start) / 1000) % Math.max(1, +cfg.cycle || 20) : null;
   // the window follows the card's size
@@ -47,16 +47,22 @@ html,body{margin:0;background:transparent;overflow:hidden;user-select:none;-webk
     fit();
   }
   function tick(){ draw(); if (!start && timer){ clearInterval(timer); timer = null; } }
-  function stop(){ start = 0; lastPress = 0; tick(); }
-  // a press (re)starts the cycle from the start point; a second press right after it stops the timer
+  function stop(){ start = 0; lastPress = 0; presses = 0; tick(); }
+  // (re)start the cycle from the start point, counted from the moment at
+  function restart(at){ if (cfg.timer === false) return; start = at; if (!timer) timer = setInterval(tick, 100); draw(); }
+  // one press does nothing; a double press (re)starts the cycle, counted from its first press, when you reacted;
+  // a triple press stops it
   function go(){
     if (cfg.timer === false) return;
     const t = performance.now();
-    if (start && t - lastPress < STOP_MS){ stop(); return; }
-    lastPress = t; start = t; if (!timer) timer = setInterval(tick, 100); draw();
+    if (presses && t - lastPress < MULTI_MS) presses++; else { presses = 1; first = t; }
+    lastPress = t;
+    if (presses === 2) restart(first);
+    else if (presses >= 3) stop();
   }
   if (T){
     T.event.listen('overlay:hotkey', go);
+    T.event.listen('overlay:restart', () => restart(performance.now()));   // Test in Settings
     T.event.listen('overlay:stop', stop);
     T.event.listen('overlay:config', e => { Object.assign(cfg, e.payload||{}); draw(); });
     T.event.listen('overlay:run', e => { run = e.payload || null; draw(); });

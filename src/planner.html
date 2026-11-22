@@ -3010,10 +3010,10 @@ function zoneWarn(o){ return o.safe.a===o.safe.b?'<p class="msg bad">The safe zo
 function timerPage(o){ const full=!o.simple;
   const testWhy=!o.on?'<p class="msg">Test shows the timer on the overlay: turn on Show the overlay above first.</p>':!o.timer?'<p class="msg">Turn on Show the timer to test it.</p>':'';
   return `<div class="ovsec"><h5 class="sh3">Dreglord timer</h5>${ovTgl('ov-tm',o.timer,'Show the timer')}
-      <p class="msg">Press the hotkey when the Dreglord status shows. The card tells you when touching grace is safe.</p>
-      <div class="ovrow3"><div class="field"><label for="ov-key">Hotkey</label><select id="ov-key" aria-describedby="ov-keyhelp">${OVL_KEYS.map(k=>`<option ${k===o.key?'selected':''}>${k}</option>`).join('')}</select><span class="fhelp" id="ov-keyhelp">Press: start or resync · twice fast: stop</span></div>
+      <p class="msg">Double-press the hotkey when the Dreglord status shows. The card tells you when touching grace is safe.</p>
+      <div class="ovrow3"><div class="field"><label for="ov-key">Hotkey</label><select id="ov-key" aria-describedby="ov-keyhelp">${OVL_KEYS.map(k=>`<option ${k===o.key?'selected':''}>${k}</option>`).join('')}</select><span class="fhelp" id="ov-keyhelp">Twice fast: start or resync · three times: stop · once: nothing</span></div>
         <div class="field"><label for="ov-cycle">Cycle, seconds</label><input id="ov-cycle" type="number" min="1" max="600" step="0.1" value="${o.cycle}"></div>
-        <div class="field"><label for="ov-start">Start at, seconds</label><input id="ov-start" type="number" min="0" max="${o.cycle}" step="0.1" value="${o.start}" aria-describedby="ov-starthelp"><span class="fhelp" id="ov-starthelp">Where the timer begins when you press</span></div></div></div>
+        <div class="field"><label for="ov-start">Start at, seconds</label><input id="ov-start" type="number" min="0" max="${o.cycle}" step="0.1" value="${o.start}" aria-describedby="ov-starthelp"><span class="fhelp" id="ov-starthelp">Where the timer begins when you double-press</span></div></div></div>
     <div class="ovsec"><h5 class="sh3">Safe zone</h5>
       <div class="zsafe" role="group" aria-label="Safe zone"><i class="zsw zg" aria-hidden="true"></i><span>From</span><input type="number" id="ov-sa" min="0" max="${o.cycle}" step="0.1" value="${o.safe.a}" aria-label="Safe zone from, seconds"><span>to</span><input type="number" id="ov-sb" min="0" max="${o.cycle}" step="0.1" value="${o.safe.b}" aria-label="Safe zone to, seconds"><span>seconds</span></div>
       <p class="msg">The rest of the cycle is danger. The safe zone can wrap past the end, like 15 to 2.</p>
