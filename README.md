@@ -55,7 +55,7 @@ Other buffs, boss HP and negation, and status buildup come from the data and are
 The gear button in the header opens Settings, with its pages down the left:
 
 - **Overlay**: a live preview of the card, showing it on top of the game and moving it, this run's Nightlord, and the Dreglord timer's hotkey, cycle, start point, zones and look (below).
-- **Updates**: the installed version, "Check for updates when the app starts" (on by default) and a Check for updates button. The app asks GitHub for the latest release; when a newer one is out, the gear gets a dot and Download opens the release page.
+- **Updates**: the installed version, "Check for updates when the app starts" (on by default) and a Check for updates button. The app asks GitHub for the latest release; when a newer one is out, the gear gets a dot. The installed app updates itself: Update now downloads the new installer, checks its signature against the key built into the app, installs it and opens the app again. The portable exe can't replace itself, so it opens the release page instead.
 
 ## Overlay (desktop app)
 

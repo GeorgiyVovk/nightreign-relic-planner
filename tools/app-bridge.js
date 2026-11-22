@@ -18,6 +18,15 @@
     version: () => T.app.getVersion(),
     // the latest release page on GitHub, in the default browser (the address is fixed in the app)
     openReleases: () => invoke('open_releases'),
+    // updates: the installed app downloads, verifies and installs a new version itself; the portable exe can't
+    installed: () => invoke('app_installed'),
+    updateCheck: () => invoke('update_check'),
+    updateInstall: () => invoke('update_install'),
+    onUpdateProgress: (cb) => {
+      let stop = null;
+      listen('update:progress', (e) => cb(e.payload)).then((f) => { stop = f; });
+      return () => { if (stop) stop(); };
+    },
     // the overlay: a click-through window on top of the game with this run's Nightlord and the Dreglord cycle timer
     overlay: {
       show: (x, y) => invoke('overlay_show', { x: x ?? null, y: y ?? null }),

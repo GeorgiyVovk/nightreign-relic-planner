@@ -136,6 +136,7 @@ select{-webkit-appearance:none;appearance:none;cursor:pointer;border:1px solid v
 .setpanel .spt{font-family:var(--f-display);font-size:18px;font-weight:600;margin:0;line-height:1.2}
 .updnew{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:12px 14px;border:1px solid var(--line2);border-radius:var(--r-md);background:var(--surface2)}
 .updnew div{display:flex;flex-direction:column;gap:2px}
+.updnew .btns{flex-direction:row;flex-wrap:nowrap}
 .updst{display:flex;align-items:center;gap:8px;margin:0}
 .updst .spin{width:14px;height:14px;flex:none;border-radius:50%;border:2px solid var(--line2);border-top-color:var(--accent)}
 @media (prefers-reduced-motion: no-preference){ .updst .spin{animation:spin .8s linear infinite} }
@@ -2991,13 +2992,13 @@ function startPreview(){ const OC=window.NROverlayCard; if(!OC) return;
   if(!prevTimer){ prevT0=performance.now(); prevTimer=setInterval(ovPreview,100); } ovPreview(); }
 // updates: the app asks GitHub for the latest release and compares it with its own version
 const SET_KEY='nrp.settings', APP_VER='__APP_VERSION__', REL_API='https://api.github.com/repos/GeorgiyVovk/nightreign-relic-planner/releases/latest';
-let setPage='overlay', upd={st:'idle'};
+let setPage='overlay', upd={st:'idle'}, appInstalled=false;
 function setGet(){ let o={}; try{ o=JSON.parse(localStorage.getItem(SET_KEY)||'{}')||{}; }catch(e){} return Object.assign({updStart:true},o); }
 function setSave(o){ try{ localStorage.setItem(SET_KEY,JSON.stringify(o)); }catch(e){} }
 const verNum=v=>String(v||'').replace(/^v/,'').split('.').map(x=>parseInt(x,10)||0);
 const verNewer=(a,b)=>{ const x=verNum(a), y=verNum(b); for(let i=0;i<3;i++){ if((x[i]||0)!==(y[i]||0)) return (x[i]||0)>(y[i]||0); } return false; };
 async function checkUpdates(quiet){
-  if(!APP||upd.st==='checking') return;
+  if(!APP||upd.st==='checking'||upd.st==='installing') return;
   upd={st:'checking'}; if($('#setdlg')) openSettings();
   try{ const r=await fetch(REL_API,{headers:{Accept:'application/vnd.github+json'},cache:'no-store'}); if(!r.ok) throw new Error('HTTP '+r.status);
     const j=await r.json(), v=String(j.tag_name||'').replace(/^v/,''); if(!/^\d+\.\d+\.\d+$/.test(v)) throw new Error('No version');
@@ -3006,17 +3007,34 @@ async function checkUpdates(quiet){
   const b=$('#ovbtn'); if(b){ b.classList.toggle('has-upd',upd.st==='new'); b.title=upd.st==='new'?`Settings: version ${upd.v} is out`:'Settings'; }
   if($('#setdlg')) openSettings();
   else if(quiet&&upd.st==='new') toast(`Version ${upd.v} is out. Get it in Settings, under Updates.`); }
+// the installed app installs the update itself: download (with progress), signature check, installer, reopen
+async function installUpdate(){
+  if(!APP||!APP.updateInstall||upd.st!=='new') return;
+  upd.st='installing'; upd.err=''; upd.prog='Downloading…'; if($('#setdlg')) openSettings();
+  const stop=APP.onUpdateProgress(([got,total])=>{ upd.prog=total?`Downloading… ${Math.min(100,Math.round(got/total*100))}%`:`Downloading… ${(got/1048576).toFixed(1)} MB`; if(got&&total&&got>=total) upd.prog='Installing: the app closes and opens again'; const el=$('#upd-prog'); if(el) el.textContent=upd.prog; });
+  try{ await APP.updateInstall(); }
+  catch(e){ stop(); upd.st='new'; const m=String(e||'');
+    // a release built without the update files can't install itself: send people to the release page
+    if(/No update|latest\.json|404|signature/i.test(m)) upd.noSelf=true;
+    upd.err=upd.noSelf?"This update can't install itself. Download it from the release page instead.":`Couldn't install the update: ${m}. Try again, or download it from the release page.`;
+    if($('#setdlg')) openSettings(); } }
 function updatesPage(){ const s=setGet();
   let st='';
   if(upd.st==='checking') st=`<p class="msg updst"><i class="spin" aria-hidden="true"></i>Checking for updates…</p>`;
   else if(upd.st==='latest') st=`<p class="msg good updst">You're on the latest version.</p>`;
   else if(upd.st==='error') st=`<p class="msg bad updst">Couldn't reach GitHub. Check your internet connection and try again.</p>`;
-  else if(upd.st==='new') st=`<div class="updnew"><div><b>Version ${esc(upd.v)} is out</b>${upd.date?`<span class="msg">Released ${esc(new Date(upd.date).toLocaleDateString())}</span>`:''}</div><button class="btn pri" data-act="updget">Download</button></div>
-    <p class="msg">On the page that opens, download NightreignRelicPlanner-Setup.exe and run it. Your relics, builds and settings stay.</p>`;
+  else if(upd.st==='new'||upd.st==='installing'){ const busy=upd.st==='installing';
+    // the installed app updates itself; the portable exe (or an update that can't install itself) goes to the release page
+    const btn=appInstalled&&!upd.noSelf?`<div class="btns">${upd.err?'<button class="btn" data-act="updget">Release page</button>':''}<button class="btn pri" data-act="updinstall" ${busy?'disabled':''}>${busy?'Updating…':'Update now'}</button></div>`:'<button class="btn pri" data-act="updget">Download</button>';
+    st=`<div class="updnew"><div><b>Version ${esc(upd.v)} is out</b>${upd.date?`<span class="msg">Released ${esc(new Date(upd.date).toLocaleDateString())}</span>`:''}</div>${btn}</div>`
+      +(busy?`<p class="msg updst"><i class="spin" aria-hidden="true"></i><span id="upd-prog">${esc(upd.prog||'Downloading…')}</span></p>`
+      :upd.err?`<p class="msg bad">${esc(upd.err)}</p>`
+      :appInstalled&&!upd.noSelf?'<p class="msg">Downloads it, checks it is really ours, installs it and opens the app again. Your relics, builds and settings stay.</p>'
+      :`<p class="msg">${appInstalled?'':'This copy runs without installing, so it can\'t update itself. '}On the page that opens, download NightreignRelicPlanner-Setup.exe and run it. Your relics, builds and settings stay.</p>`); }
   return `<h4 class="spt">Updates</h4>
     <div class="ovsec"><p class="msg">Installed: <b>version <span class="mono">${esc(APP_VER)}</span></b></p>
       ${ovTgl('set-updstart',s.updStart,'Check for updates when the app starts')}
-      <div class="btns"><button class="btn" data-act="updcheck" ${upd.st==='checking'?'disabled':''}>Check for updates</button></div>
+      <div class="btns"><button class="btn" data-act="updcheck" ${upd.st==='checking'||upd.st==='installing'?'disabled':''}>Check for updates</button></div>
       <div role="status">${st}</div></div>`; }
 const SET_PAGES=[['overlay','Overlay'],['updates','Updates']];
 function openSettings(pg){ const old=document.querySelector('#setdlg .setpanel'), same=!pg||pg===setPage, keep=old&&same?old.scrollTop:0; if(pg) setPage=pg;
@@ -3035,6 +3053,7 @@ async function startApp(){
   try{ const r=await APP.listSaves(); appSaves=r.saves||[]; }catch(e){}
   const known=!!p && appSaves.some(x=>x.path===p), first=known?loadAppSave(p,{quiet:true}):null;
   if(p && !known){ try{ localStorage.removeItem(LS_APP); }catch(e){} }
+  if(APP.installed) APP.installed().then(v=>{ appInstalled=!!v; }).catch(()=>{});
   if(setGet().updStart) Promise.resolve(first).finally(()=>setTimeout(()=>checkUpdates(true),2500));   // after the save's own toast
   renderStore();
 }
@@ -3176,6 +3195,7 @@ document.addEventListener('click', async ev=>{
   if(a==='setpage'){ openSettings(t.dataset.p); return; }
   if(a==='updcheck'){ checkUpdates(false); return; }
   if(a==='updget'){ try{ await APP.openReleases(); }catch(e){ toast(`Couldn't open the browser: ${e}`,'bad'); } return; }
+  if(a==='updinstall'){ installUpdate(); return; }
   if(a==='ovmove'){ await ovlLock(ovlMoving); openOverlayDlg(); return; }
   if(a==='ovtest'){ try{ APP.overlay.test(); }catch(e){} return; }
   if(a==='ovstop'){ try{ APP.overlay.stop(); }catch(e){} return; }

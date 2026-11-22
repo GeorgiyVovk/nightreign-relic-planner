@@ -1,7 +1,8 @@
 // Nightreign Relic Planner: desktop shell.
 // Shows the planner page and gives it read-only access to Nightreign save files:
 // list them, read one, let the user pick one, and say when the game rewrites it.
-// Settings > Updates checks GitHub for a newer release and can open its page.
+// Settings > Updates checks GitHub for a newer release; the installed app downloads, checks the signature of and
+// installs it (Tauri's updater), the portable one opens the release page.
 // Also runs the overlay: a small click-through window on top of the game that shows this run's Nightlord
 // (read from the save by the planner page) and a timer started by a global hotkey. It never touches the game itself.
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
@@ -20,6 +21,7 @@ use std::{
 use tauri::{ipc::Response, AppHandle, Emitter, Manager, State, WebviewUrl, WebviewWindowBuilder, WindowEvent};
 use tauri_plugin_dialog::DialogExt;
 use tauri_plugin_global_shortcut::{GlobalShortcutExt, Shortcut, ShortcutState};
+use tauri_plugin_updater::UpdaterExt;
 
 #[derive(Serialize, Clone)]
 struct SaveInfo {
@@ -261,6 +263,46 @@ fn open_releases() -> Result<(), String> {
     r.map(|_| ()).map_err(|e| e.to_string())
 }
 
+/// The installer puts an uninstaller next to the app; the portable exe has none, and can't update itself.
+#[tauri::command]
+fn app_installed() -> bool {
+    std::env::current_exe().ok().and_then(|p| p.parent().map(|d| d.join("uninstall.exe").is_file())).unwrap_or(false)
+}
+
+#[derive(Serialize)]
+struct UpdateInfo {
+    version: String,
+    notes: Option<String>,
+}
+
+/// Asks the release's latest.json whether a newer, signed version is out.
+#[tauri::command]
+async fn update_check(app: AppHandle) -> Result<Option<UpdateInfo>, String> {
+    let found = app.updater().map_err(|e| e.to_string())?.check().await.map_err(|e| e.to_string())?;
+    Ok(found.map(|u| UpdateInfo { version: u.version.clone(), notes: u.body.clone() }))
+}
+
+/// Downloads the new version, checks its signature against the key built into the app, and runs its installer;
+/// the page hears the download's progress as "update:progress" (bytes so far, total). Windows closes the app
+/// to install; elsewhere it restarts.
+#[tauri::command]
+async fn update_install(app: AppHandle) -> Result<(), String> {
+    let found = app.updater().map_err(|e| e.to_string())?.check().await.map_err(|e| e.to_string())?;
+    let Some(update) = found else { return Err("No update to install".into()) };
+    let (tx, mut got) = (app.clone(), 0u64);
+    update
+        .download_and_install(
+            move |chunk, total| {
+                got += chunk as u64;
+                let _ = tx.emit("update:progress", (got, total));
+            },
+            || {},
+        )
+        .await
+        .map_err(|e| e.to_string())?;
+    app.restart();
+}
+
 /// The overlay page asks for the size its card needs: always the height, and the width only for
 /// simple mode's bare square (otherwise the usual width).
 #[tauri::command]
@@ -285,6 +327,7 @@ fn overlay_hotkey(app: AppHandle, key: String) -> Result<(), String> {
 fn main() {
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
+        .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(
             tauri_plugin_global_shortcut::Builder::new()
                 .with_handler(|app, _shortcut, event| {
@@ -315,7 +358,7 @@ fn main() {
             }
             Ok(())
         })
-        .invoke_handler(tauri::generate_handler![list_saves, read_save, pick_save, watch_save, overlay_show, overlay_hide, overlay_lock, overlay_fit, overlay_hotkey, open_releases])
+        .invoke_handler(tauri::generate_handler![list_saves, read_save, pick_save, watch_save, overlay_show, overlay_hide, overlay_lock, overlay_fit, overlay_hotkey, open_releases, app_installed, update_check, update_install])
         .run(tauri::generate_context!())
         .expect("error while running Nightreign Relic Planner");
 }
