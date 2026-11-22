@@ -20,12 +20,12 @@
 .oc-sub{font-size:12px;color:var(--oc-muted)}
 /* what the Nightlord is weak to: damage types, then statuses, as small tinted tags in their own colours */
 .oc-weak{display:grid;grid-template-columns:auto minmax(0,1fr);gap:3px 6px;align-items:start;margin-top:6px}
-.oc-wl{grid-row:1 / span 2;font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--oc-muted);line-height:18px}
+.oc-wl{grid-row:1 / span 2;font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--oc-muted);line-height:20px}
 .oc-row{display:flex;flex-wrap:wrap;gap:3px}
-.oc-tag{display:inline-flex;align-items:center;gap:3px;height:18px;padding:0 5px 0 4px;border-radius:3px;font-size:10.5px;font-weight:600;line-height:1;
+.oc-tag{display:inline-flex;align-items:center;justify-content:center;width:22px;height:20px;border-radius:3px;
   color:var(--c);background:color-mix(in srgb,var(--c) 16%,transparent);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--c) 42%,transparent)}
-.oc-tag.oc-st{border-radius:9px}
-.oc-tag svg{width:11px;height:11px;flex:none;fill:currentColor}
+.oc-tag.oc-st{border-radius:10px}
+.oc-tag svg{width:13px;height:13px;flex:none;fill:currentColor}
 .oc-none{font-size:12px;color:var(--oc-muted)}
 .oc-main{display:flex;align-items:baseline;gap:8px}
 .oc-big{font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:38px;font-weight:600;line-height:1;font-variant-numeric:tabular-nums}
@@ -86,7 +86,8 @@
     if (!w) return '';
     const dmg = Array.isArray(w) ? w : (w.dmg || []), st = Array.isArray(w) ? [] : (w.st || []);
     if (!dmg.length && !st.length) return '<div class="oc-weak"><span class="oc-none">No weakness in the game data</span></div>';
-    const tag = (x, cls) => `<span class="oc-tag${cls}" style="--c:${col(x.c)}">${ICON[x.n] ? `<svg viewBox="0 0 16 16" aria-hidden="true">${ICON[x.n]}</svg>` : ''}${esc(x.n)}</span>`;
+    // icons only; the name stays as the tag's title and for screen readers (a type with no icon shows its name)
+    const tag = (x, cls) => `<span class="oc-tag${cls}" style="--c:${col(x.c)}" title="${esc(x.n)}" role="img" aria-label="${esc(x.n)}">${ICON[x.n] ? `<svg viewBox="0 0 16 16" aria-hidden="true">${ICON[x.n]}</svg>` : esc(x.n)}</span>`;
     // damage types on the first line, statuses (rounded) on the next, both after one "Weak" label
     return `<div class="oc-weak"><span class="oc-wl">Weak</span>${dmg.length ? `<div class="oc-row">${dmg.map(x => tag(x, '')).join('')}</div>` : ''}${st.length ? `<div class="oc-row">${st.map(x => tag(x, ' oc-st')).join('')}</div>` : ''}</div>`;
   }
