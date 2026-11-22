@@ -7,7 +7,7 @@
 //   t:   seconds into the Dreglord cycle, or null before the first press
 (function (g) {
   const CSS = `
-.oc{--oc-fg:#DDE3EC;--oc-muted:#8E9AB0;--oc-accent:#AFC3E3;--oc-good:#6CC48C;--oc-bad:#E2685A;--oc-ev:#B48AE8;--oc-line:rgba(175,195,227,.22);
+.oc{--oc-fg:#DDE3EC;--oc-muted:#8E9AB0;--oc-accent:#AFC3E3;--oc-good:#6CC48C;--oc-mid:#E8C04A;--oc-bad:#E2685A;--oc-ev:#B48AE8;--oc-line:rgba(175,195,227,.22);
   font-family:"Inter",system-ui,"Segoe UI",sans-serif;font-size:14px;line-height:normal;text-align:left;color:var(--oc-fg);
   border-radius:8px;background:rgba(9,14,24,.78);border:1px solid var(--oc-line);padding:10px 14px;display:flex;flex-direction:column;gap:10px;box-sizing:border-box}
 .oc[hidden]{display:none}
@@ -19,9 +19,14 @@
 .oc-name .oc-ev{color:var(--oc-ev)}
 .oc-sub{font-size:12px;color:var(--oc-muted)}
 /* what the Nightlord is weak to: damage types, then statuses, as bare icons in their own colours */
-.oc-weak{display:grid;grid-template-columns:auto minmax(0,1fr);gap:3px 6px;align-items:start;margin-top:6px}
-.oc-wl{grid-row:1 / span 2;font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--oc-muted);line-height:24px}
-.oc-row{display:flex;flex-wrap:wrap;gap:5px}
+.oc-head{display:flex;align-items:flex-start;gap:14px}
+.oc-id{display:flex;flex-direction:column;gap:2px;flex:1 1 auto;min-width:0}
+.oc-id .oc-name{white-space:nowrap}
+.oc-weak{display:flex;flex-direction:column;align-items:flex-end;gap:6px;flex:none;padding-top:2px}
+.oc-row{display:flex;gap:6px;justify-content:flex-end}
+/* how easily a status builds up on it: green frame easy, yellow slower */
+.oc-tag.oc-lv1{outline:2px solid var(--oc-good);border-radius:4px}
+.oc-tag.oc-lv2{outline:2px solid var(--oc-mid);border-radius:4px}
 .oc-tag{display:inline-flex;align-items:center;justify-content:center;width:21px;height:22px;color:var(--c)}
 .oc-tag svg{width:21px;height:21px;flex:none;fill:currentColor}
 .oc-tag.oc-im{width:24px;height:24px}
@@ -89,13 +94,18 @@
   function weakHtml(w) {
     if (!w) return '';
     const dmg = Array.isArray(w) ? w : (w.dmg || []), st = Array.isArray(w) ? [] : (w.st || []);
-    if (!dmg.length && !st.length) return '<div class="oc-weak"><span class="oc-none">No weakness in the game data</span></div>';
+    if (!dmg.length && !st.length) return '<div class="oc-weak"><span class="oc-none">No weakness</span></div>';
     // icons only; the name stays as the tag's title and for screen readers (a type with no icon shows its name)
-    const tag = (x, cls) => IMG[x.n]
-      ? `<span class="oc-tag oc-im" title="${esc(x.n)}" role="img" aria-label="${esc(x.n)}"><img src="${IMG[x.n]}" alt=""></span>`
-      : `<span class="oc-tag${cls}" style="--c:${col(x.c)}" title="${esc(x.n)}" role="img" aria-label="${esc(x.n)}">${ICON[x.n] ? `<svg viewBox="0 0 24 24" aria-hidden="true">${ICON[x.n]}</svg>` : esc(x.n)}</span>`;
-    // damage types on the first line, statuses on the next, both after one "Weak" label
-    return `<div class="oc-weak"><span class="oc-wl">Weak</span>${dmg.length ? `<div class="oc-row">${dmg.map(x => tag(x, '')).join('')}</div>` : ''}${st.length ? `<div class="oc-row">${st.map(x => tag(x, ' oc-st')).join('')}</div>` : ''}</div>`;
+    // a status may carry lv: 1 builds up easily, 2 slower (framed green and yellow)
+    const tag = (x, cls) => {
+      const lv = x.lv === 1 || x.lv === 2 ? x.lv : 0, name = esc(x.n + (lv === 1 ? ', builds up easily' : lv === 2 ? ', builds up slower' : ''));
+      cls += lv ? ' oc-lv' + lv : '';
+      return IMG[x.n]
+        ? `<span class="oc-tag oc-im${cls}" title="${name}" role="img" aria-label="${name}"><img src="${IMG[x.n]}" alt=""></span>`
+        : `<span class="oc-tag${cls}" style="--c:${col(x.c)}" title="${name}" role="img" aria-label="${name}">${ICON[x.n] ? `<svg viewBox="0 0 24 24" aria-hidden="true">${ICON[x.n]}</svg>` : esc(x.n)}</span>`;
+    };
+    // damage types on the first line, statuses on the next
+    return `<div class="oc-weak">${dmg.length ? `<div class="oc-row">${dmg.map(x => tag(x, '')).join('')}</div>` : ''}${st.length ? `<div class="oc-row">${st.map(x => tag(x, ' oc-st')).join('')}</div>` : ''}</div>`;
   }
   function render(cfg, run, t, moving) {
     cfg = cfg || {};
@@ -144,8 +154,9 @@
       return { state, html: `<div class="oc-sec oc-tm oc-simple oc-${state}"><div class="oc-main"><span class="oc-zbig">${cfg.showZone !== false ? zname(z) : ''}</span></div></div>` };
     }
     let html = '', state = null;
-    if (cfg.nl !== false && run) html += `<div class="oc-sec oc-nl"><div class="oc-name">${run.ev ? '<span class="oc-ev">Everdark</span> ' : ''}${esc(run.name)}</div><div class="oc-sub">${esc(run.title)}</div>`
-      + weakHtml(run.weak) + '</div>';
+    // the Nightlord's name on the left, what it's weak to on the right
+    if (cfg.nl !== false && run) html += `<div class="oc-sec oc-nl"><div class="oc-head"><div class="oc-id"><div class="oc-name">${run.ev ? '<span class="oc-ev">Everdark</span> ' : ''}${esc(run.name)}</div><div class="oc-sub">${esc(run.title)}</div></div>`
+      + weakHtml(run.weak) + '</div></div>';
     if (cfg.timer !== false) { const r = cfg.simple === true ? simple(t) : full(t); html += r.html; state = r.state; }
     if (!html && moving) html = '<div class="oc-sec"><span class="oc-hint">Drag me</span></div>';
     const cls = 'oc' + (state === 'danger' ? ' oc-alert' : state === 'safe' ? ' oc-calm' : '') + (moving ? ' oc-move' : '');
