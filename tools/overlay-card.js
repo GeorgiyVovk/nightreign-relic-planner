@@ -9,7 +9,7 @@
   const CSS = `
 .oc{--oc-fg:#DDE3EC;--oc-muted:#8E9AB0;--oc-accent:#AFC3E3;--oc-good:#6CC48C;--oc-mid:#E8C04A;--oc-bad:#E2685A;--oc-ev:#B48AE8;--oc-line:rgba(175,195,227,.22);
   font-family:"Inter",system-ui,"Segoe UI",sans-serif;font-size:14px;line-height:normal;text-align:left;color:var(--oc-fg);
-  border-radius:8px;background:rgba(9,14,24,var(--oc-bga,.8));text-shadow:0 1px 3px rgba(0,0,0,calc((1 - var(--oc-bga,.8)) * .9));border:1px solid var(--oc-line);padding:10px 14px;display:flex;flex-direction:column;gap:10px;box-sizing:border-box}
+  border-radius:8px;background:rgba(9,14,24,var(--oc-bga,.7));text-shadow:0 1px 3px rgba(0,0,0,calc((1 - var(--oc-bga,.7)) * .9));border:1px solid var(--oc-line);padding:10px 14px;display:flex;flex-direction:column;gap:10px;box-sizing:border-box}
 .oc[hidden]{display:none}
 .oc *{box-sizing:border-box}
 .oc-sec{display:flex;flex-direction:column;gap:8px}
@@ -130,9 +130,8 @@
       }
       // the bar can be made much taller, so it reads at a glance; the playhead grows with it
       const h = Math.max(4, Math.min(80, +cfg.barH || 8)), mk = h >= 28 ? 5 : h >= 16 ? 4 : 3, at = x == null ? null : (x / C * 100).toFixed(2);
-      // the playhead's colour: cfg.mk is a colour, or 'danger' for cyan only inside a danger zone
-      const dz = x != null && (zoneAt(x) || {}).c === 'r';
-      const mkc = cfg.mk === 'danger' ? (dz ? '#2ce0ff' : '#ffffff') : /^#[0-9a-f]{6}$/i.test(cfg.mk || '') ? cfg.mk : '#ffffff';
+      // the playhead's colour (white or cyan)
+      const mkc = /^#[0-9a-f]{6}$/i.test(cfg.mk || '') ? cfg.mk : '#ffffff';
       return `<div class="oc-trackw" style="--mk:${mk}px;--mkc:${mkc}"><div class="oc-track" style="height:${h}px">${segs.join('')}${at == null ? '' : `<s style="width:${at}%"></s>`}</div>${at == null ? '' : `<b style="left:${at}%"></b>`}</div>`;
     }
     // before the first press the timer says Ready and names the hotkey; after that there are no labels at all
@@ -159,7 +158,7 @@
     if (!html && moving) html = '<div class="oc-sec"><span class="oc-hint">Drag me</span></div>';
     const cls = 'oc' + (state === 'danger' ? ' oc-alert' : state === 'safe' ? ' oc-calm' : '') + (moving ? ' oc-move' : '');
     // how solid the card's dark background is, 0 to 1 (cfg.bg is 0 to 100); the host sets it as --oc-bga
-    const bga = Math.min(100, Math.max(0, cfg.bg == null || isNaN(+cfg.bg) ? 80 : +cfg.bg)) / 100;
+    const bga = Math.min(100, Math.max(0, cfg.bg == null || isNaN(+cfg.bg) ? 70 : +cfg.bg)) / 100;
     return { html, cls, empty: !html, state, bga };
   }
   g.NROverlayCard = { css: CSS, render, icon: n => ICON[n] || '' };
