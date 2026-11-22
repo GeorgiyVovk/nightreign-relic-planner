@@ -22,6 +22,7 @@ use tauri::{ipc::Response, AppHandle, Emitter, Manager, State, WebviewUrl, Webvi
 use tauri_plugin_dialog::DialogExt;
 use tauri_plugin_global_shortcut::{GlobalShortcutExt, Shortcut, ShortcutState};
 use tauri_plugin_updater::UpdaterExt;
+use tauri_plugin_window_state::StateFlags;
 
 #[derive(Serialize, Clone)]
 struct SaveInfo {
@@ -324,9 +325,51 @@ fn overlay_hotkey(app: AppHandle, key: String) -> Result<(), String> {
     gs.register(sc).map_err(|e| e.to_string())
 }
 
+/// Keeps the planner window inside its screen's usable area, so the taskbar stays visible. A window too big for the
+/// screen (the default size on a small or scaled screen) shrinks to fit and is centred; one that only hangs over an
+/// edge moves back in.
+fn fit_to_screen(win: &tauri::WebviewWindow) {
+    if win.is_maximized().unwrap_or(false) || win.is_fullscreen().unwrap_or(false) {
+        return;
+    }
+    let mon = match win.current_monitor() {
+        Ok(Some(m)) => m,
+        _ => match win.primary_monitor() {
+            Ok(Some(m)) => m,
+            _ => return,
+        },
+    };
+    let wa = *mon.work_area();
+    let (Ok(outer), Ok(inner), Ok(pos)) = (win.outer_size(), win.inner_size(), win.outer_position()) else { return };
+    let (ax, ay, aw, ah) = (wa.position.x, wa.position.y, wa.size.width as i32, wa.size.height as i32);
+    if aw <= 0 || ah <= 0 {
+        return;
+    }
+    let (w, h) = (outer.width as i32, outer.height as i32);
+    if w > aw || h > ah {
+        let (w, h) = (w.min(aw * 94 / 100), h.min(ah * 94 / 100));
+        // set_size takes the inner size: take off the title bar and borders
+        let (fw, fh) = (outer.width as i32 - inner.width as i32, outer.height as i32 - inner.height as i32);
+        let _ = win.set_size(tauri::PhysicalSize::new((w - fw).max(1) as u32, (h - fh).max(1) as u32));
+        let _ = win.set_position(tauri::PhysicalPosition::new(ax + (aw - w) / 2, ay + (ah - h) / 2));
+        return;
+    }
+    let (x, y) = (pos.x.clamp(ax, ax + aw - w), pos.y.clamp(ay, ay + ah - h));
+    if (x, y) != (pos.x, pos.y) {
+        let _ = win.set_position(tauri::PhysicalPosition::new(x, y));
+    }
+}
+
 fn main() {
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
+        // the planner window opens where and as big as you left it (maximized too); the overlay places itself
+        .plugin(
+            tauri_plugin_window_state::Builder::default()
+                .with_state_flags(StateFlags::SIZE | StateFlags::POSITION | StateFlags::MAXIMIZED)
+                .with_denylist(&["overlay"])
+                .build(),
+        )
         .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(
             tauri_plugin_global_shortcut::Builder::new()
@@ -347,6 +390,9 @@ fn main() {
         })
         .manage(AppState::default())
         .setup(|app| {
+            if let Some(win) = app.get_webview_window("main") {
+                fit_to_screen(&win);
+            }
             if let Some(file) = picked_file(app.handle()) {
                 if let Ok(text) = fs::read_to_string(file) {
                     if let Ok(list) = serde_json::from_str::<Vec<String>>(&text) {
