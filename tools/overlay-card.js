@@ -18,14 +18,12 @@
 .oc-name{font-family:"EB Garamond",Georgia,serif;font-size:24px;font-weight:600;line-height:1.05}
 .oc-name .oc-ev{color:var(--oc-ev)}
 .oc-sub{font-size:12px;color:var(--oc-muted)}
-/* what the Nightlord is weak to: damage types, then statuses, as small tinted tags in their own colours */
+/* what the Nightlord is weak to: damage types, then statuses, as bare icons in their own colours */
 .oc-weak{display:grid;grid-template-columns:auto minmax(0,1fr);gap:3px 6px;align-items:start;margin-top:6px}
 .oc-wl{grid-row:1 / span 2;font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--oc-muted);line-height:20px}
-.oc-row{display:flex;flex-wrap:wrap;gap:3px}
-.oc-tag{display:inline-flex;align-items:center;justify-content:center;width:22px;height:20px;border-radius:3px;
-  color:var(--c);background:color-mix(in srgb,var(--c) 16%,transparent);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--c) 42%,transparent)}
-.oc-tag.oc-st{border-radius:10px}
-.oc-tag svg{width:13px;height:13px;flex:none;fill:currentColor}
+.oc-row{display:flex;flex-wrap:wrap;gap:5px}
+.oc-tag{display:inline-flex;align-items:center;justify-content:center;width:18px;height:20px;color:var(--c)}
+.oc-tag svg{width:17px;height:17px;flex:none;fill:currentColor}
 .oc-none{font-size:12px;color:var(--oc-muted)}
 .oc-main{display:flex;align-items:baseline;gap:8px}
 .oc-big{font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:38px;font-weight:600;line-height:1;font-variant-numeric:tabular-nums}
