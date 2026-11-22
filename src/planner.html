@@ -2960,10 +2960,16 @@ const runCard = r => r?{name:NLORD[r.nl][0],title:NLORD[r.nl][1],don:r.mode===2,
 // uses the Everdark Sovereign's numbers where the data has them.
 const NL_PARTS=[['Gladius'],['Adel'],['Gnoster','Faurtis'],['Maris'],['Libra'],['Fulghor'],['Caligo'],['Shape of Night','Heolstor'],['Harmonia'],['Straghess']];
 const WEAK_COL=['#C9D1DC','#C9D1DC','#C9D1DC','#C9D1DC','#6FA3EA','#F0874A','#F2D357','#F3E3A0'];   // physical types, magic, fire, lightning, holy
+const WEAK_ST=[['Poison','#6CC05A'],['Rot','#E2643F'],['Bleed','#E0485F'],['Frost','#6FC2EA'],['Sleep','#A391F0'],['Madness','#EDA63A'],['Blight','#B4BAC6']];   // short names and colours for the card
+// Statuses: the ones that build up fastest on it, i.e. its lowest resistance (0 means immune, so it doesn't count).
 function nlWeak(nl,ev){ const parts=NL_PARTS[nl]||[], is=z=>parts.some(p=>z.n===p||z.n.startsWith(p+' '));
   let es=EN.filter(z=>z.cat===(ev?1:0)&&is(z)); if(!es.length) es=EN.filter(z=>z.cat===0&&is(z));
-  return ENEG.map(([n],i)=>({n,c:WEAK_COL[i],v:Math.min(0,...es.map(z=>z.neg[i]||0))})).filter(w=>w.v<0)
-    .sort((a,b)=>a.v-b.v).slice(0,3).map(({n,c})=>({n:n==='Standard'?'Physical':n,c})); }
+  const dmg=ENEG.map(([n],i)=>({n,c:WEAK_COL[i],v:Math.min(0,...es.map(z=>z.neg[i]||0))})).filter(w=>w.v<0)
+    .sort((a,b)=>a.v-b.v).slice(0,3).map(({n,c})=>({n:n==='Standard'?'Physical':n,c}));
+  // per status, the part of the fight it builds up fastest on; immune everywhere stays out
+  const res=WEAK_ST.map((_,i)=>{ const v=es.map(z=>z.res[i]||0).filter(x=>x>0); return v.length?Math.min(...v):0; });
+  const low=Math.min(...res.filter(v=>v>0)), st=isFinite(low)&&low<=252?WEAK_ST.map(([n,c],i)=>({n,c,v:res[i]})).filter(w=>w.v===low).map(({n,c})=>({n,c})):[];
+  return {dmg,st}; }
 function setCurRun(r){ const same=JSON.stringify(curRun)===JSON.stringify(r||null); curRun=r||null; if(same) return;
   try{ localStorage.setItem(OVL_RUN,JSON.stringify(runCard(curRun))); }catch(e){}
   if(APP&&APP.overlay&&ovlGet().on) APP.overlay.run(runCard(curRun));
