@@ -2,7 +2,7 @@
 // live preview in the planner's Settings, so the two can't drift apart. Every class starts with "oc".
 //
 // render(cfg, run, t, moving) -> { html, cls, empty, state }
-//   cfg: the overlay settings (timer, simple, showTime, showZone, showBar, barH, mk, zones, cycle, key, nl)
+//   cfg: the overlay settings (timer, simple, showTime, showZone, showBar, barH, mk, zones, cycle, key, nl, nlName)
 //   run: this run's Nightlord as the planner sends it ({name, title, don, ev, weak: {dmg, st}}) or null
 //   t:   seconds into the Dreglord cycle, or null before the first press
 (function (g) {
@@ -17,11 +17,9 @@
 .oc-nl{gap:2px}
 .oc-name{font-family:"EB Garamond",Georgia,serif;font-size:24px;font-weight:600;line-height:1.05}
 .oc-name .oc-ev{color:var(--oc-ev)}
-.oc-sub{font-size:12px;color:var(--oc-muted)}
 /* what the Nightlord is weak to: damage types, then statuses, as bare icons in their own colours */
-.oc-head{display:flex;align-items:flex-start;gap:14px}
-.oc-id{display:flex;flex-direction:column;gap:2px;flex:1 1 auto;min-width:0}
-.oc-id .oc-name{white-space:nowrap}
+.oc-head{display:flex;align-items:center;gap:14px}
+.oc-head .oc-name{flex:1 1 auto;min-width:0}
 .oc-weak{display:flex;flex-direction:column;align-items:flex-end;gap:6px;flex:none;padding-top:2px}
 .oc-row{display:flex;gap:6px;justify-content:flex-end}
 /* how easily a status builds up on it: green frame easy, yellow slower */
@@ -154,8 +152,8 @@
       return { state, html: `<div class="oc-sec oc-tm oc-simple oc-${state}"><div class="oc-main"><span class="oc-zbig">${cfg.showZone !== false ? zname(z) : ''}</span></div></div>` };
     }
     let html = '', state = null;
-    // the Nightlord's name on the left, what it's weak to on the right
-    if (cfg.nl !== false && run) html += `<div class="oc-sec oc-nl"><div class="oc-head"><div class="oc-id"><div class="oc-name">${run.ev ? '<span class="oc-ev">Everdark</span> ' : ''}${esc(run.name)}</div><div class="oc-sub">${esc(run.title)}</div></div>`
+    // the Nightlord's name (or its expedition's, cfg.nlName 'exp') on the left, what it's weak to on the right
+    if (cfg.nl !== false && run) html += `<div class="oc-sec oc-nl"><div class="oc-head"><div class="oc-name">${run.ev ? '<span class="oc-ev">Everdark</span> ' : ''}${esc(cfg.nlName === 'exp' ? run.title : run.name)}</div>`
       + weakHtml(run.weak) + '</div></div>';
     if (cfg.timer !== false) { const r = cfg.simple === true ? simple(t) : full(t); html += r.html; state = r.state; }
     if (!html && moving) html = '<div class="oc-sec"><span class="oc-hint">Drag me</span></div>';

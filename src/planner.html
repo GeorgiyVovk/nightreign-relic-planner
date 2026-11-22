@@ -2936,7 +2936,7 @@ const r1=x=>Math.round(x*10)/10;
 const OVL_BARS=[[8,'Thin'],[16,'Medium'],[28,'Thick'],[44,'Large'],[64,'Huge']];   // bar heights on the overlay, px
 const OVL_MK=[['#ffffff','White'],['danger','Yellow in danger'],['#ffd43b','Yellow']];   // playhead colours; 'danger': yellow only inside a danger zone
 const mkAt=(o,t)=>o.mk!=='danger'?o.mk:o.zones.some(z=>z.c==='r'&&(z.a<z.b?t>=z.a&&t<z.b:z.a>z.b&&(t>=z.a||t<z.b)))?'#ffd43b':'#ffffff';
-function ovlGet(){ let o={}; try{ o=JSON.parse(localStorage.getItem(OVL_KEY)||'{}')||{}; }catch(e){} o=Object.assign({on:false,key:'F8',cycle:20,start:1,x:null,y:null,nl:true,timer:true,showTime:true,showBar:true,barH:8,mk:'#ffffff',simple:false,showZone:true},o); delete o.secs; delete o.sq;
+function ovlGet(){ let o={}; try{ o=JSON.parse(localStorage.getItem(OVL_KEY)||'{}')||{}; }catch(e){} o=Object.assign({on:false,key:'F8',cycle:20,start:1,x:null,y:null,nl:true,timer:true,showTime:true,showBar:true,barH:8,mk:'#ffffff',simple:false,showZone:true,nlName:'boss'},o); delete o.secs; delete o.sq;
   o.simple=o.simple===true; o.showZone=o.showZone!==false;
   o.mk=String(o.mk).toLowerCase(); if(!OVL_MK.some(m=>m[0]===o.mk)) o.mk='#ffffff';
   o.showTime=o.showTime!==false; o.showBar=o.showBar!==false; if(!OVL_BARS.some(b=>b[0]===+o.barH)) o.barH=8; o.barH=+o.barH;
@@ -2949,7 +2949,7 @@ function ovlGet(){ let o={}; try{ o=JSON.parse(localStorage.getItem(OVL_KEY)||'{
   o.zones=o.safe.a===o.safe.b?[{c:'r',a:0,b:o.cycle}]:[{c:'g',a:o.safe.a,b:o.safe.b},{c:'r',a:o.safe.b,b:o.safe.a}];
   return o; }
 function ovlSet(o){ try{ localStorage.setItem(OVL_KEY,JSON.stringify(o)); }catch(e){} }
-const ovlCfg = o => ({key:o.key,cycle:o.cycle,start:o.start,zones:o.zones,nl:o.nl,timer:o.timer,showTime:o.showTime,showBar:o.showBar,barH:o.barH,mk:o.mk,simple:o.simple,showZone:o.showZone});
+const ovlCfg = o => ({key:o.key,cycle:o.cycle,start:o.start,zones:o.zones,nl:o.nl,timer:o.timer,showTime:o.showTime,showBar:o.showBar,barH:o.barH,mk:o.mk,simple:o.simple,showZone:o.showZone,nlName:o.nlName});
 // the cycle drawn as a bar: each zone's share of it, split in two when it wraps past the end
 const zoneSegs=(z,c)=>z.a===z.b?[]:z.a<z.b?[[z.a,z.b-z.a]]:[[z.a,c-z.a],[0,z.b]];
 const zoneTrack=o=>`<div class="ztrack">${o.zones.flatMap(z=>zoneSegs(z,o.cycle).map(([x,w])=>`<i class="z${z.c}" style="left:${(x/o.cycle*100).toFixed(2)}%;width:${(w/o.cycle*100).toFixed(2)}%"></i>`)).join('')}<b style="left:${(o.start/o.cycle*100).toFixed(2)}%;background:${mkAt(o,o.start)}" title="Start point"></b></div><div class="zticks"><span>0 s</span><span class="zleg"><i aria-hidden="true" style="background:${mkAt(o,o.start)}"></i>start ${o.start} s</span><span>${o.cycle} s</span></div>`;
@@ -2992,6 +2992,7 @@ function overlayPage(){ const o=ovlGet();
       <div class="btns"><button class="btn" data-act="ovmove" ${o.on?'':'disabled'}>${ovlMoving?'Done moving':'Move'}</button></div>
       ${o.on?'':'<p class="msg">Turn on Show the overlay to move it.</p>'}</div>
     <div class="ovsec"><h5 class="sh3">Nightlord</h5>${ovTgl('ov-nl',o.nl,"Show this run's Nightlord")}
+      <div class="seg" role="group" aria-label="Name on the card"><button data-act="ovname" data-v="boss" aria-pressed="${o.nlName!=='exp'}">Nightlord name</button><button data-act="ovname" data-v="exp" aria-pressed="${o.nlName==='exp'}">Expedition name</button></div>
       <p class="msg">Read from your save as soon as a run starts, so a hidden Nightlord isn't hidden from you. Beside its name: the damage types it takes more of, then the statuses that build up on it, framed green if easily and yellow if slower.</p>
       <p class="msg ovnow" id="ov-runst">${ovlRunStatus()}</p></div>
     ${timerPage(o)}
@@ -3242,6 +3243,7 @@ document.addEventListener('click', async ev=>{
   if(a==='ovmove'){ await ovlLock(ovlMoving); openOverlayDlg(); return; }
   if(a==='ovtest'){ try{ APP.overlay.test(); }catch(e){} return; }
   if(a==='ovstop'){ try{ APP.overlay.stop(); }catch(e){} return; }
+  if(a==='ovname'){ const o=ovlGet(); o.nlName=t.dataset.v==='exp'?'exp':'boss'; ovlSet(o); if(o.on&&APP&&APP.overlay) APP.overlay.config(ovlCfg(ovlGet())); openSettings(); return; }
   if(a==='ovlook'){ const o=ovlGet(); o.simple=t.dataset.v==='simple'; ovlSet(o); if(o.on&&APP&&APP.overlay) APP.overlay.config(ovlCfg(ovlGet())); openSettings(); return; }
   if(a==='prnew'||a==='prupd'){ normBuild(); const ch=build.char; const name=(($('#pr-name')||{}).value||'').trim().slice(0,40)||`${ch} ${build.presets.filter(p=>p.char===ch).length+1}`;
     const data={name,char:ch,vessel:curVessel(),slots:curSlots().slice()}; let p=a==='prupd'?build.presets.find(x=>x.id===build.activePreset[ch]):null;
