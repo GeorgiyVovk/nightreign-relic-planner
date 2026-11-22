@@ -25,10 +25,11 @@
 /* the icon zoomed past the game's own bevel, so the symbol fills the tile */
 .oc-tag b{display:block;width:26px;height:26px;border-radius:4px;overflow:hidden;box-shadow:0 0 0 1px rgba(0,0,0,.5)}
 .oc-tag b img{width:100%;height:100%;display:block;transform:scale(1.22)}
-/* how easily a status builds up on it: a green bar under it if easily, yellow if slower */
-.oc-lv1::after,.oc-lv2::after{content:"";align-self:stretch;height:3px;margin:0 3px;border-radius:2px}
+/* how easily a status builds up on it: a green bar under it if easily, yellow if slower, red if very slowly */
+.oc-lv1::after,.oc-lv2::after,.oc-lv3::after{content:"";align-self:stretch;height:3px;margin:0 3px;border-radius:2px}
 .oc-lv1::after{background:var(--oc-good)}
 .oc-lv2::after{background:var(--oc-mid)}
+.oc-lv3::after{background:var(--oc-bad)}
 .oc-none{font-size:12px;color:var(--oc-muted)}
 .oc-main{display:flex;align-items:baseline;gap:8px}
 .oc-big{font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:38px;font-weight:600;line-height:1;font-variant-numeric:tabular-nums}
@@ -94,9 +95,9 @@
     const dmg = Array.isArray(w) ? w : (w.dmg || []), st = Array.isArray(w) ? [] : (w.st || []);
     if (!dmg.length && !st.length) return '<div class="oc-weak"><span class="oc-none">No weakness</span></div>';
     // icons only; the name stays as the tag's title and for screen readers (a type with no icon shows its name)
-    // a status may carry lv: 1 builds up easily, 2 slower (a green or yellow bar under it)
+    // a status may carry lv: 1 builds up easily, 2 slower, 3 very slowly (a green, yellow or red bar under it)
     const tag = (x, cls) => {
-      const lv = x.lv === 1 || x.lv === 2 ? x.lv : 0, name = esc(x.n + (lv === 1 ? ', builds up easily' : lv === 2 ? ', builds up slower' : ''));
+      const lv = [1, 2, 3].includes(x.lv) ? x.lv : 0, name = esc(x.n + ['', ', builds up easily', ', builds up slower', ', builds up very slowly'][lv]);
       cls += lv ? ' oc-lv' + lv : '';
       return IMG[x.n]
         ? `<span class="oc-tag${cls}" title="${name}" role="img" aria-label="${name}"><b><img src="${IMG[x.n]}" alt=""></b></span>`
