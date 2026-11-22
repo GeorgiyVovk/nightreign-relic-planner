@@ -28,7 +28,7 @@ html,body{margin:0;background:transparent;overflow:hidden;user-select:none;-webk
   if (String(cfg.mk).toLowerCase() === '#ffd43b') cfg.mk = '#2ce0ff';   // the old yellow playhead is cyan now
   if (cfg.tr != null) cfg.bg = 100 - cfg.tr;   // saved settings keep the background as transparency
   try { run = JSON.parse(localStorage.getItem('nr-overlay-run')||'null'); } catch(e) {}
-  let start = 0, moving = false, timer = null, lastH = 0, lastW = 0, lastPress = 0, presses = 0, first = 0;
+  let example = null, start = 0, moving = false, timer = null, lastH = 0, lastW = 0, lastPress = 0, presses = 0, first = 0;
   const MULTI_MS = 400;   // presses this close together count as one double or triple press
   // seconds into the cycle: from the start point at the press, wrapping at the cycle length; null before a press
   const now = () => start ? ((+cfg.start || 0) + (performance.now() - start) / 1000) % Math.max(1, +cfg.cycle || 20) : null;
@@ -38,9 +38,15 @@ html,body{margin:0;background:transparent;overflow:hidden;user-select:none;-webk
     if ((h === lastH && w === lastW) || !T) return; lastH = h; lastW = w;
     T.core.invoke('overlay_fit', {h, w}).catch(() => {});
   }
+  // while you move it, the card looks as it will in a run: the planner's example Nightlord when no run is going on,
+  // and the timer as if running (mid safe zone) instead of Ready
+  function sample(){
+    const C = Math.max(1, +cfg.cycle || 20), z = (cfg.zones || []).find(z => z.c === 'g' && z.a !== z.b);
+    return z ? (z.a + ((z.b - z.a + C) % C) / 2) % C : +cfg.start || 0;
+  }
   function draw(){
     if (cfg.timer === false) start = 0;
-    const r = OC.render(cfg, run, now(), moving);
+    const t = now(), r = OC.render(cfg, run || (moving ? example : null), t == null && moving ? sample() : t, moving);
     card.hidden = r.empty; card.className = r.cls; card.innerHTML = r.html; card.style.setProperty('--oc-bga', r.bga);
     if (moving) card.setAttribute('data-tauri-drag-region', ''); else card.removeAttribute('data-tauri-drag-region');
     card.querySelectorAll('*').forEach(el => moving ? el.setAttribute('data-tauri-drag-region','') : el.removeAttribute('data-tauri-drag-region'));
@@ -66,6 +72,7 @@ html,body{margin:0;background:transparent;overflow:hidden;user-select:none;-webk
     T.event.listen('overlay:stop', stop);
     T.event.listen('overlay:config', e => { Object.assign(cfg, e.payload||{}); draw(); });
     T.event.listen('overlay:run', e => { run = e.payload || null; draw(); });
+    T.event.listen('overlay:example', e => { example = e.payload || null; draw(); });
     T.event.listen('overlay:locked', e => { moving = !e.payload; draw(); });
   }
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => fit());

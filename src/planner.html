@@ -2988,6 +2988,8 @@ async function ovlApply(o){ const O=APP&&APP.overlay; if(!O) return;
   try{ if(o.on){ await O.show(o.x,o.y); await O.hotkey(o.timer?o.key:''); O.config(ovlCfg(o)); O.run(runCard(curRun)); } else { ovlMoving=false; await O.hotkey(''); await O.hide(); } }
   catch(e){ toast(`Overlay: ${e}`,'bad'); } }
 async function ovlLock(lock){ const O=APP&&APP.overlay; if(!O) return; ovlMoving=!lock;
+  // while you move it, the overlay shows the same card as the preview, so you place it at its real size
+  if(!lock){ try{ O.example(runCard(curRun||exampleRun())); }catch(e){} }
   try{ const p=await O.lock(lock); if(lock&&p){ const o=ovlGet(); o.x=p.x; o.y=p.y; ovlSet(o); } }catch(e){} }
 const ovTgl=(id,on,label,dis)=>`<label class="tgl"><input type="checkbox" id="${id}" role="switch" ${on?'checked':''} ${dis?'disabled':''}><span class="knob" aria-hidden="true"></span><span class="tt">${label}</span></label>`;
 function overlayPage(){ const o=ovlGet();
