@@ -2947,7 +2947,7 @@ async function ovlLock(lock){ const O=APP&&APP.overlay; if(!O) return; ovlMoving
 const ovTgl=(id,on,label,dis)=>`<label class="tgl"><input type="checkbox" id="${id}" role="switch" ${on?'checked':''} ${dis?'disabled':''}><span class="knob" aria-hidden="true"></span><span class="tt">${label}</span></label>`;
 function overlayPage(){ const o=ovlGet();
   return `<h4 class="spt">Overlay</h4>
-    <div class="ocprev"><div class="ocstage"><div class="oc" id="ov-prev"></div><p class="msg ocnone" id="ov-prevnone" hidden>Nothing to show: the timer is off and there's no run going on.</p></div><span class="occap">Preview of the card, the timer running on a loop</span></div>
+    <div class="ocprev"><div class="ocstage"><div class="oc" id="ov-prev"></div><p class="msg ocnone" id="ov-prevnone" hidden>Nothing to show: the Nightlord and the timer are both off.</p></div><span class="occap" id="ov-prevcap">Preview of the card, the timer running on a loop</span></div>
     <div class="ovsec">${ovTgl('ov-on',o.on,'Show the overlay')}
       <p class="msg">A small card on top of the game. Works with the game in borderless or windowed mode.</p>
       <div class="btns"><button class="btn" data-act="ovmove" ${o.on?'':'disabled'}>${ovlMoving?'Done moving':'Move'}</button></div>
@@ -2983,11 +2983,15 @@ function timerPage(o){ const full=!o.simple;
       ${testWhy}</div>`; }
 // the live preview on the timer page: the overlay's own card, with these settings, running the cycle on a loop
 let prevTimer=null, prevT0=0;
+// with no run going on, the preview shows your last run's Nightlord (or Fulghor) as an example, so the card isn't half empty
+const exampleRun=()=>{ const r=runs[0]; return r&&NLORD[r.nl%10]?{nl:r.nl%10,mode:r.mode,ev:!!r.u}:{nl:5,mode:2,ev:false}; };
 function ovPreview(){ const el=$('#ov-prev'), OC=window.NROverlayCard; if(!el||!OC){ clearInterval(prevTimer); prevTimer=null; return; }
-  const o=ovlGet(), cfg=ovlCfg(o), t=(o.start+(performance.now()-prevT0)/1000)%o.cycle;
-  const r=OC.render(cfg, cfg.nl?runCard(curRun):null, cfg.timer?t:null, false);
-  el.className=r.cls; el.innerHTML=r.html; el.hidden=r.empty; const none=$('#ov-prevnone'); if(none) none.hidden=!r.empty; }
-function startPreview(){ const OC=window.NROverlayCard; if(!OC) return;
+  const o=ovlGet(), cfg=ovlCfg(o), t=(o.start+(performance.now()-prevT0)/1000)%o.cycle, ex=cfg.nl&&!curRun;
+  const r=OC.render(cfg, cfg.nl?runCard(curRun||exampleRun()):null, cfg.timer?t:null, false);
+  el.className=r.cls; el.innerHTML=r.html; el.hidden=r.empty; const none=$('#ov-prevnone'); if(none) none.hidden=!r.empty;
+  const cap=$('#ov-prevcap'); if(cap) cap.textContent=ex?"Preview of the card. No run is going on, so it shows your last run's Nightlord as an example.":'Preview of the card, the timer running on a loop'; }
+function startPreview(){ const OC=window.NROverlayCard;
+  if(!OC){ const none=$('#ov-prevnone'); if(none){ none.textContent="The preview couldn't load."; none.hidden=false; } return; }
   if(!$('#oc-css')){ const st=document.createElement('style'); st.id='oc-css'; st.textContent=OC.css; document.head.appendChild(st); }
   if(!prevTimer){ prevT0=performance.now(); prevTimer=setInterval(ovPreview,100); } ovPreview(); }
 // updates: the app asks GitHub for the latest release and compares it with its own version
