@@ -3,7 +3,7 @@
 //
 // render(cfg, run, t, moving) -> { html, cls, empty, state }
 //   cfg: the overlay settings (timer, simple, showTime, showZone, showBar, barH, mk, zones, cycle, key, nl)
-//   run: this run's Nightlord as the planner sends it ({name, title, don, ev, weak: [{n, c}]}) or null
+//   run: this run's Nightlord as the planner sends it ({name, title, don, ev, weak: {dmg, st}}) or null
 //   t:   seconds into the Dreglord cycle, or null before the first press
 (function (g) {
   const CSS = `
@@ -18,8 +18,14 @@
 .oc-name{font-family:"EB Garamond",Georgia,serif;font-size:24px;font-weight:600;line-height:1.05}
 .oc-name .oc-ev{color:var(--oc-ev)}
 .oc-sub{font-size:12px;color:var(--oc-muted)}
-.oc-weak{font-size:12px;color:var(--oc-muted);margin-top:4px}
-.oc-weak b{font-weight:600}
+/* what the Nightlord is weak to: damage types, then statuses, as small tinted tags in their own colours */
+.oc-weak{display:grid;grid-template-columns:auto minmax(0,1fr);gap:4px 6px;align-items:start;margin-top:6px}
+.oc-wl{grid-row:1 / span 2;font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--oc-muted);line-height:18px}
+.oc-row{display:flex;flex-wrap:wrap;gap:4px}
+.oc-tag{display:inline-flex;align-items:center;height:18px;padding:0 6px;border-radius:3px;font-size:11px;font-weight:600;line-height:1;
+  color:var(--c);background:color-mix(in srgb,var(--c) 16%,transparent);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--c) 42%,transparent)}
+.oc-tag.oc-st{border-radius:9px}
+.oc-none{font-size:12px;color:var(--oc-muted)}
 .oc-main{display:flex;align-items:baseline;gap:8px}
 .oc-big{font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:38px;font-weight:600;line-height:1;font-variant-numeric:tabular-nums}
 .oc-big small{font-size:16px;color:var(--oc-muted);margin-left:2px}
@@ -52,6 +58,16 @@
 `;
   const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
 
+  // run.weak: {dmg: [{n, c}], st: [{n, c}]} (an older planner sends just the damage list)
+  const col = c => /^#[0-9a-f]{6}$/i.test(c || '') ? c : '#C9D1DC';
+  function weakHtml(w) {
+    if (!w) return '';
+    const dmg = Array.isArray(w) ? w : (w.dmg || []), st = Array.isArray(w) ? [] : (w.st || []);
+    if (!dmg.length && !st.length) return '<div class="oc-weak"><span class="oc-none">No weakness in the game data</span></div>';
+    const tag = (x, cls) => `<span class="oc-tag${cls}" style="--c:${col(x.c)}">${esc(x.n)}</span>`;
+    // damage types on the first line, statuses (rounded) on the next, both after one "Weak" label
+    return `<div class="oc-weak"><span class="oc-wl">Weak</span>${dmg.length ? `<div class="oc-row">${dmg.map(x => tag(x, '')).join('')}</div>` : ''}${st.length ? `<div class="oc-row">${st.map(x => tag(x, ' oc-st')).join('')}</div>` : ''}</div>`;
+  }
   function render(cfg, run, t, moving) {
     cfg = cfg || {};
     // The cycle counts from the start point up to the cycle length, then from 0 again. Zones colour parts of it:
@@ -100,8 +116,7 @@
     }
     let html = '', state = null;
     if (cfg.nl !== false && run) html += `<div class="oc-sec oc-nl"><div class="oc-name">${run.ev ? '<span class="oc-ev">Everdark</span> ' : ''}${esc(run.name)}</div><div class="oc-sub">${esc(run.title)}</div>`
-      // what it's weak to, coloured by damage type
-      + (Array.isArray(run.weak) ? `<div class="oc-weak">${run.weak.length ? 'Weak to ' + run.weak.map(w => `<b style="color:${/^#[0-9a-f]{6}$/i.test(w.c || '') ? w.c : 'inherit'}">${esc(w.n)}</b>`).join(', ') : 'No damage type it is weak to'}</div>` : '') + '</div>';
+      + weakHtml(run.weak) + '</div>';
     if (cfg.timer !== false) { const r = cfg.simple === true ? simple(t) : full(t); html += r.html; state = r.state; }
     if (!html && moving) html = '<div class="oc-sec"><span class="oc-hint">Drag me</span></div>';
     const cls = 'oc' + (state === 'danger' ? ' oc-alert' : state === 'safe' ? ' oc-calm' : '') + (moving ? ' oc-move' : '');
