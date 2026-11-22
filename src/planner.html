@@ -2404,12 +2404,35 @@ function renderBonuses(){
   const isAtk=e=>(e.dmg&&e.dmg.length)||(e.stack&&e.stack.t==='all')||e.startMult||(e.g==='off'&&!e.neg&&!e.res);
   const isDef=e=>!isAtk(e)&&(e.neg||e.res||e.poiseM||e.hpM||e.g==='def');
   const val=e=>describe(e).split(' · ').map(x=>x.replace(/;\s*doesn't stack.*$/,'')).filter(x=>x&&!/^doesn't stack/.test(x)&&!/^\(.*\)$/.test(x)).join(' · ');
-  const item=a=>{ const e=a.eff, bad=e.g==='curse'||(e.dmg||[]).some(d=>d.m<1)||Object.values(e.neg||{}).some(v=>v<0)||Object.values(e.res||{}).some(v=>v<0);
-    return `<li class="${bad?'bneg':''}"><span class="bn">${esc(e.n)}${a.count>1?` <span class="bx">×${a.count}${!e.st?', counts once':''}</span>`:''}</span><span class="bv">${esc(val(e))}</span>${e.cond?`<span class="bc">${esc(CONDSHORT[e.cond]||e.cond)}</span>`:''}</li>`; };
+  const isBad=e=>e.g==='curse'||(e.dmg||[]).some(d=>d.m<1)||Object.values(e.neg||{}).some(v=>v<0)||Object.values(e.res||{}).some(v=>v<0);
+  // Tiers of one effect (Physical Attack Up +1, +3, +4…) share a row: its name, the tiers you have, and what they add
+  // together, worked out the way the stats are (multipliers multiply, resistances and attributes add).
+  const base=e=>e.n.replace(/ \+\d+$/,''), tierOf=e=>{ const m=e.n.match(/ \+(\d+)$/); return m?+m[1]:0; };
+  const groups=arr=>{ const g=new Map(); arr.forEach(a=>{ const k=base(a.eff)+'|'+(a.eff.cond||''); if(!g.has(k)) g.set(k,[]); g.get(k).push(a); });
+    return [...g.values()].map(ms=>ms.sort((x,y)=>tierOf(y.eff)-tierOf(x.eff))); };
+  function total(ms){ const P=[], dm={}, ng={}, rs={}, st={}, MM=[['hpM','max HP'],['fpM','max FP'],['stM','max stamina'],['poiseM','poise damage taken'],['cdM','skill cooldown'],['ultM','ultimate art gauge'],['startMult','starting weapon damage']], mm={};
+    ms.forEach(({eff:e,apply:n})=>{
+      if(e.stack||e.note||(e.dmg||[]).some(d=>d.byCount||d.t==='wt')){ const v=val(e); if(v) P.push(v); return; }   // one of a kind: say it as it is
+      (e.dmg||[]).forEach(d=>{ const k=DLABEL[d.t]||TLABEL[d.t]||d.t; dm[k]=(dm[k]||1)*Math.pow(d.m,n); });
+      if(e.neg) Object.entries(e.neg).forEach(([k,v])=>{ ng[k]=(ng[k]||1)*Math.pow(1-v,n); });
+      if(e.res) Object.entries(e.res).forEach(([k,v])=>{ rs[k]=(rs[k]||0)+v*n; });
+      if(e.stat) Object.entries(statAt(e)).forEach(([k,v])=>{ st[k]=(st[k]||0)+v*n; });
+      MM.forEach(([k])=>{ if(e[k]) mm[k]=(mm[k]||1)*Math.pow(e[k],n); }); });
+    const out=[];
+    Object.entries(st).forEach(([k,v])=>out.push(`${v>0?'+':''}${v} ${ABBR[k]||k}`));
+    MM.forEach(([k,l])=>{ if(mm[k]&&Math.abs(mm[k]-1)>.0005) out.push(`${pct(mm[k])} ${l}`); });
+    Object.entries(dm).forEach(([k,m])=>out.push(`${pct(m)} ${k}`));
+    Object.entries(ng).forEach(([k,m])=>{ const v=1-m; out.push(`${v>0?'+':''}${Math.round(v*1000)/10}% ${k==='phys'?'physical':TLABEL[k]} negation`); });
+    Object.entries(rs).forEach(([k,v])=>out.push(`${v>0?'+':''}${v} ${k==='all'?'all resistances':(STATUS.find(x=>x[0]===k)||[,k])[1]+' resist'}`));
+    return out.concat(P).join(' · '); }
+  const tiers=ms=>ms.length===1&&!tierOf(ms[0].eff)?(ms[0].count>1?`×${ms[0].count}${ms[0].eff.st?'':', counts once'}`:'')
+    : ms.map(a=>`${tierOf(a.eff)?'+'+tierOf(a.eff):'base'}${a.count>1?` ×${a.count}${a.eff.st?'':' (counts once)'}`:''}`).join(', ');
+  const item=ms=>{ const e=ms[0].eff, bad=ms.some(a=>isBad(a.eff)), t=tiers(ms);
+    return `<li class="${bad?'bneg':''}"><span class="bn">${esc(base(e))}${t?` <span class="bx">${esc(t)}</span>`:''}</span><span class="bv">${esc(total(ms))}</span>${e.cond?`<span class="bc">${esc(CONDSHORT[e.cond]||e.cond)}</span>`:''}</li>`; };
   // always-on attack, multiplied per kind
   const tot={}; list.forEach(a=>{ const e=a.eff; if(e.cond) return; (e.dmg||[]).forEach(d=>{ if(d.byCount||d.t==='wt') return; const k=DLABEL[d.t]||d.t; tot[k]=(tot[k]||1)*Math.pow(d.m,a.apply); }); });
   const chips=Object.entries(tot).filter(([,m])=>Math.abs(m-1)>.0005).map(([k,m])=>`<span class="bchip${m<1?' neg':''}"><b>${m>1?'+':'−'}${Math.round(Math.abs(m-1)*1000)/10}%</b> ${esc(k)}</span>`).join('');
-  const atk=list.filter(a=>isAtk(a.eff)), def=list.filter(a=>isDef(a.eff));
+  const atk=groups(list.filter(a=>isAtk(a.eff))), def=groups(list.filter(a=>isDef(a.eff)));
   const col=(t,arr,top)=>`<div class="bcol"><h3 class="sh3">${t}</h3>${top||''}${arr.length?`<ul class="blist">${arr.map(item).join('')}</ul>`:`<p class="msg">None from these relics.</p>`}</div>`;
   el.innerHTML=list.length?`<div class="bgrid">${col('Attack',atk,chips?`<div class="bchips"><span class="msg">Always on:</span>${chips}</div>`:'')}${col('Defense',def)}</div>`:'<p class="msg">Put relics in the slots to see what they add.</p>';
 }
