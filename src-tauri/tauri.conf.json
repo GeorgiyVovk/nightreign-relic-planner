@@ -49,6 +49,18 @@
       "nsis": {
         "installMode": "currentUser"
       }
+    },
+    "createUpdaterArtifacts": true
+  },
+  "plugins": {
+    "updater": {
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEQzOEY4NEVFNkVFMTREMjIKUldRaVRlRnU3b1NQMDM4VG01bjhhT05uK0pmdkY5Q3J0VHdCWWxURTZtcjdMRllEMmkra29hUEMK",
+      "endpoints": [
+        "https://github.com/GeorgiyVovk/nightreign-relic-planner/releases/latest/download/latest.json"
+      ],
+      "windows": {
+        "installMode": "passive"
+      }
     }
   }
 }
