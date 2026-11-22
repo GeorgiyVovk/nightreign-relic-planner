@@ -35,6 +35,7 @@
       hotkey: (key) => invoke('overlay_hotkey', { key }),
       config: (cfg) => T.event.emit('overlay:config', cfg),
       run: (run) => T.event.emit('overlay:run', run),
+      example: (run) => T.event.emit('overlay:example', run),   // what the card shows while you move it with no run going on
       test: () => T.event.emit('overlay:restart'),
       stop: () => T.event.emit('overlay:stop'),
     },
