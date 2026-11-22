@@ -20,10 +20,12 @@
 .oc-sub{font-size:12px;color:var(--oc-muted)}
 /* what the Nightlord is weak to: damage types, then statuses, as bare icons in their own colours */
 .oc-weak{display:grid;grid-template-columns:auto minmax(0,1fr);gap:3px 6px;align-items:start;margin-top:6px}
-.oc-wl{grid-row:1 / span 2;font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--oc-muted);line-height:22px}
+.oc-wl{grid-row:1 / span 2;font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--oc-muted);line-height:24px}
 .oc-row{display:flex;flex-wrap:wrap;gap:5px}
 .oc-tag{display:inline-flex;align-items:center;justify-content:center;width:21px;height:22px;color:var(--c)}
 .oc-tag svg{width:21px;height:21px;flex:none;fill:currentColor}
+.oc-tag.oc-im{width:24px;height:24px}
+.oc-im img{width:24px;height:24px;border-radius:3px;display:block}
 .oc-none{font-size:12px;color:var(--oc-muted)}
 .oc-main{display:flex;align-items:baseline;gap:8px}
 .oc-big{font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:38px;font-weight:600;line-height:1;font-variant-numeric:tabular-nums}
@@ -78,6 +80,8 @@
     Blight: "<path fill-rule=\"evenodd\" d=\"M12 1.8C6.6 1.8 2.9 5.4 2.9 10c0 2.7 1.3 4.8 3.4 6v3.4c0 .9.6 1.5 1.5 1.5h8.4c.9 0 1.5-.6 1.5-1.5V16c2.1-1.2 3.4-3.3 3.4-6 0-4.6-3.7-8.2-9.1-8.2ZM5.8 10.4a2.3 2.3 0 1 0 4.6 0a2.3 2.3 0 1 0 -4.6 0ZM13.6 10.4a2.3 2.3 0 1 0 4.6 0a2.3 2.3 0 1 0 -4.6 0ZM12 13.6 13.3 16H10.7Z\"/>",
   };
   ICON.Standard = ICON.Physical;
+  // the game's own status icons, inlined at build time (tools/status-icons); the drawings above stand in without them
+  const IMG = /*@status-icons*/{};
   // run.weak: {dmg: [{n, c}], st: [{n, c}]} (an older planner sends just the damage list)
   const col = c => /^#[0-9a-f]{6}$/i.test(c || '') ? c : '#C9D1DC';
   function weakHtml(w) {
@@ -85,7 +89,9 @@
     const dmg = Array.isArray(w) ? w : (w.dmg || []), st = Array.isArray(w) ? [] : (w.st || []);
     if (!dmg.length && !st.length) return '<div class="oc-weak"><span class="oc-none">No weakness in the game data</span></div>';
     // icons only; the name stays as the tag's title and for screen readers (a type with no icon shows its name)
-    const tag = (x, cls) => `<span class="oc-tag${cls}" style="--c:${col(x.c)}" title="${esc(x.n)}" role="img" aria-label="${esc(x.n)}">${ICON[x.n] ? `<svg viewBox="0 0 24 24" aria-hidden="true">${ICON[x.n]}</svg>` : esc(x.n)}</span>`;
+    const tag = (x, cls) => IMG[x.n]
+      ? `<span class="oc-tag oc-im" title="${esc(x.n)}" role="img" aria-label="${esc(x.n)}"><img src="${IMG[x.n]}" alt=""></span>`
+      : `<span class="oc-tag${cls}" style="--c:${col(x.c)}" title="${esc(x.n)}" role="img" aria-label="${esc(x.n)}">${ICON[x.n] ? `<svg viewBox="0 0 24 24" aria-hidden="true">${ICON[x.n]}</svg>` : esc(x.n)}</span>`;
     // damage types on the first line, statuses on the next, both after one "Weak" label
     return `<div class="oc-weak"><span class="oc-wl">Weak</span>${dmg.length ? `<div class="oc-row">${dmg.map(x => tag(x, '')).join('')}</div>` : ''}${st.length ? `<div class="oc-row">${st.map(x => tag(x, ' oc-st')).join('')}</div>` : ''}</div>`;
   }

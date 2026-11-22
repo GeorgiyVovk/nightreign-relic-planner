@@ -2,6 +2,9 @@ Nightreign Relic Planner — third-party notices
 
 Not affiliated with FromSoftware or Bandai Namco. ELDEN RING NIGHTREIGN and its game data belong to their owners.
 
+== Status icons ==
+The seven status icons on the overlay (tools/status-icons: poison, scarlet rot, hemorrhage, frostbite, sleep, madness, deathblight) are from ELDEN RING NIGHTREIGN, © Bandai Namco Entertainment Inc. / © FromSoftware, Inc. They are used only to show which status a Nightlord is weak to and are not covered by this project's license.
+
 == Save-file reading ==
 The NR0000.sl2/.co2 reader is ported from Relic Vault (github.com/tonydavis629/nightreign-relic-vault), which builds on the format research and game data of RelicBrowser by Metin Çelik (github.com/metinc/nightreign-relic-browser). Both are MIT licensed:
 
