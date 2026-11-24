@@ -44,6 +44,10 @@ struct SaveList {
 struct AppState {
     picked: Mutex<Vec<PathBuf>>,
     watch_gen: AtomicU64,
+    /// the overlay's hotkeys: the Dreglord timer's and the one that shows or hides the overlay ("" = off)
+    hk_timer: Mutex<String>,
+    hk_toggle: Mutex<String>,
+    toggle_sc: Mutex<Option<Shortcut>>,
 }
 
 /// %APPDATA%\Nightreign
@@ -316,13 +320,43 @@ async fn overlay_fit(app: AppHandle, h: f64, w: Option<f64>) -> Result<(), Strin
 /// One global hotkey (e.g. "F8"); an empty string turns it off.
 #[tauri::command]
 fn overlay_hotkey(app: AppHandle, key: String) -> Result<(), String> {
+    if let Ok(mut g) = app.state::<AppState>().hk_timer.lock() {
+        *g = key;
+    }
+    register_hotkeys(&app)
+}
+
+/// The key that shows or hides the overlay (e.g. "F9"); an empty string turns it off. It stays registered while the
+/// overlay is hidden, so it can bring it back.
+#[tauri::command]
+fn overlay_toggle_key(app: AppHandle, key: String) -> Result<(), String> {
+    if let Ok(mut g) = app.state::<AppState>().hk_toggle.lock() {
+        *g = key;
+    }
+    register_hotkeys(&app)
+}
+
+/// Registers both overlay hotkeys afresh: the show/hide key, and the timer's key unless it is the same key.
+fn register_hotkeys(app: &AppHandle) -> Result<(), String> {
+    let st = app.state::<AppState>();
+    let timer = st.hk_timer.lock().map(|g| g.clone()).unwrap_or_default();
+    let toggle = st.hk_toggle.lock().map(|g| g.clone()).unwrap_or_default();
     let gs = app.global_shortcut();
     gs.unregister_all().map_err(|e| e.to_string())?;
-    if key.is_empty() {
-        return Ok(());
+    let mut toggle_sc = None;
+    if !toggle.is_empty() {
+        let sc: Shortcut = toggle.parse().map_err(|_| format!("Unknown key: {toggle}"))?;
+        gs.register(sc).map_err(|e| e.to_string())?;
+        toggle_sc = Some(sc);
     }
-    let sc: Shortcut = key.parse().map_err(|_| format!("Unknown key: {key}"))?;
-    gs.register(sc).map_err(|e| e.to_string())
+    if let Ok(mut g) = st.toggle_sc.lock() {
+        *g = toggle_sc;
+    }
+    if !timer.is_empty() && timer != toggle {
+        let sc: Shortcut = timer.parse().map_err(|_| format!("Unknown key: {timer}"))?;
+        gs.register(sc).map_err(|e| e.to_string())?;
+    }
+    Ok(())
 }
 
 /// Keeps the planner window inside its screen's usable area, so the taskbar stays visible. A window too big for the
@@ -373,9 +407,11 @@ fn main() {
         .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(
             tauri_plugin_global_shortcut::Builder::new()
-                .with_handler(|app, _shortcut, event| {
+                // the show/hide key goes to the planner (it keeps the overlay's on/off), the timer's to the overlay
+                .with_handler(|app, shortcut, event| {
                     if event.state() == ShortcutState::Pressed {
-                        let _ = app.emit("overlay:hotkey", ());
+                        let toggle = app.state::<AppState>().toggle_sc.lock().map(|g| *g == Some(*shortcut)).unwrap_or(false);
+                        let _ = app.emit(if toggle { "overlay:toggle" } else { "overlay:hotkey" }, ());
                     }
                 })
                 .build(),
@@ -404,7 +440,7 @@ fn main() {
             }
             Ok(())
         })
-        .invoke_handler(tauri::generate_handler![list_saves, read_save, pick_save, watch_save, overlay_show, overlay_hide, overlay_lock, overlay_fit, overlay_hotkey, open_releases, app_installed, update_check, update_install])
+        .invoke_handler(tauri::generate_handler![list_saves, read_save, pick_save, watch_save, overlay_show, overlay_hide, overlay_lock, overlay_fit, overlay_hotkey, overlay_toggle_key, open_releases, app_installed, update_check, update_install])
         .run(tauri::generate_context!())
         .expect("error while running Nightreign Relic Planner");
 }

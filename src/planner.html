@@ -374,7 +374,7 @@ select{-webkit-appearance:none;appearance:none;cursor:pointer;border:1px solid v
 .field{display:flex;flex-direction:column;gap:3px;min-width:0}
 .field label{font-size:12px;color:var(--muted)}
 .field input[type=range]{border:0;background:none;padding:0;height:24px;accent-color:var(--accent);cursor:pointer}
-.ovbg{max-width:320px} .ovbg label{display:flex;justify-content:space-between} .ovbg output{font-family:var(--f-mono);font-variant-numeric:tabular-nums;color:var(--fg)}
+.ovbg{max-width:320px} .ovtk{max-width:220px} .ovbg label{display:flex;justify-content:space-between} .ovbg output{font-family:var(--f-mono);font-variant-numeric:tabular-nums;color:var(--fg)}
 .field input,.field select{border:1px solid var(--line2);background-color:var(--surface2);border-radius:var(--r-md);height:var(--h);padding:0 12px;min-width:0;width:100%}
 .conds{display:flex;flex-wrap:wrap;gap:6px}
 .cond{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line2);border-radius:999px;padding:4px 10px;font-size:12px;background:var(--surface)}
@@ -2940,13 +2940,13 @@ const OVL_BARS=[[8,'Thin'],[12,'Slim'],[16,'Medium'],[28,'Thick'],[44,'Large'],[
 const OVL_CYAN='#2ce0ff', OVL_MK=[['#ffffff','White'],[OVL_CYAN,'Cyan']];   // playhead colours
 const mkAt=o=>o.mk;
 function ovlGet(){ let o={}; try{ o=JSON.parse(localStorage.getItem(OVL_KEY)||'{}')||{}; }catch(e){} if(o.tr==null&&o.bg!=null&&+o.bg!==80) o.tr=100-o.bg; delete o.bg;   // the old 'how solid' setting; its old default gives way to the new one
-  o=Object.assign({on:false,key:'F8',cycle:20,start:0.5,x:null,y:null,nl:true,timer:true,showTime:false,showBar:true,barH:12,mk:'#ffffff',simple:false,showZone:false,nlName:'boss',tr:30},o); delete o.secs; delete o.sq;
+  o=Object.assign({on:false,key:'F8',cycle:20,start:0.5,x:null,y:null,nl:true,timer:true,showTime:false,showBar:true,barH:12,mk:'#ffffff',simple:false,showZone:false,nlName:'boss',tr:30,tkey:'F9'},o); delete o.secs; delete o.sq;
   o.simple=o.simple===true; o.showZone=o.showZone!==false; if(!['boss','exp','both'].includes(o.nlName)) o.nlName='boss';
   o.mk=String(o.mk).toLowerCase(); if(o.mk==='#ffd43b') o.mk=OVL_CYAN;   // the old yellow playhead is cyan now
   if(!OVL_MK.some(m=>m[0]===o.mk)) o.mk='#ffffff';   // 'Cyan in danger' is gone: white
   o.tr=Math.min(100,Math.max(0,Math.round((isNaN(+o.tr)?30:+o.tr)/5)*5));   // how see-through the card's background is, %
   o.showTime=o.showTime!==false; o.showBar=o.showBar!==false; if(!OVL_BARS.some(b=>b[0]===+o.barH)) o.barH=12; o.barH=+o.barH;
-  if(!OVL_KEYS.includes(o.key)) o.key='F8'; o.nl=o.nl!==false; o.timer=o.timer!==false;
+  if(!OVL_KEYS.includes(o.key)) o.key='F8'; if(o.tkey!==''&&!OVL_KEYS.includes(o.tkey)) o.tkey='F9'; if(o.tkey===o.key) o.tkey=''; o.nl=o.nl!==false; o.timer=o.timer!==false;
   o.cycle=Math.min(600,Math.max(1,r1(+o.cycle)||20)); o.start=Math.min(o.cycle,Math.max(0,r1(+o.start)||0));
   // one safe zone (it may wrap past the end, 15 to 2); the rest of the cycle is danger. Older settings with a list
   // of zones keep their first safe one.
@@ -2999,6 +2999,7 @@ function overlayPage(){ const o=ovlGet();
       <p class="msg">A small card on top of the game. Works with the game in borderless or windowed mode.</p>
       <div class="btns"><button class="btn" data-act="ovmove" ${o.on?'':'disabled'}>${ovlMoving?'Done moving':'Move'}</button></div>
       ${o.on?'':'<p class="msg">Turn on Show the overlay to move it.</p>'}
+      ${APP&&APP.overlay&&APP.overlay.toggleKey?`<div class="field ovtk"><label for="ov-tkey">Show/hide hotkey</label><select id="ov-tkey" aria-describedby="ov-tkeyhelp"><option value="" ${o.tkey===''?'selected':''}>Off</option>${OVL_KEYS.filter(k=>k!==o.key).map(k=>`<option ${k===o.tkey?'selected':''}>${k}</option>`).join('')}</select><span class="fhelp" id="ov-tkeyhelp">Shows or hides the overlay from inside the game, while the planner is open</span></div>`:''}
       <div class="field ovbg"><label for="ov-tr">Background transparency <output id="ov-trv" for="ov-tr">${o.tr}%</output></label><input type="range" id="ov-tr" min="0" max="100" step="5" value="${o.tr}" aria-describedby="ov-trh"><span class="fhelp" id="ov-trh">How much of the game shows through the card's dark background.</span></div></div>
     <div class="ovsec"><h5 class="sh3">Nightlord</h5><div class="ovnlrow">${ovTgl('ov-nl',o.nl,"Show this run's Nightlord")}
       <div class="seg" role="group" aria-label="Name on the card"><button data-act="ovname" data-v="boss" aria-pressed="${o.nlName==='boss'}">Nightlord</button><button data-act="ovname" data-v="exp" aria-pressed="${o.nlName==='exp'}">Expedition</button><button data-act="ovname" data-v="both" aria-pressed="${o.nlName==='both'}">Both</button></div></div>
@@ -3013,7 +3014,7 @@ function timerPage(o){ const full=!o.simple;
   const testWhy=!o.on?'<p class="msg">Test shows the timer on the overlay: turn on Show the overlay above first.</p>':!o.timer?'<p class="msg">Turn on Show the timer to test it.</p>':'';
   return `<div class="ovsec"><h5 class="sh3">Dreglord timer</h5>${ovTgl('ov-tm',o.timer,'Show the timer')}
       <p class="msg">Double-press the hotkey when the Dreglord status shows. The card tells you when touching grace is safe.</p>
-      <div class="ovrow3"><div class="field"><label for="ov-key">Hotkey</label><select id="ov-key" aria-describedby="ov-keyhelp">${OVL_KEYS.map(k=>`<option ${k===o.key?'selected':''}>${k}</option>`).join('')}</select><span class="fhelp" id="ov-keyhelp">Twice fast: start or resync · three times: stop · once: nothing</span></div>
+      <div class="ovrow3"><div class="field"><label for="ov-key">Hotkey</label><select id="ov-key" aria-describedby="ov-keyhelp">${OVL_KEYS.filter(k=>k!==o.tkey).map(k=>`<option ${k===o.key?'selected':''}>${k}</option>`).join('')}</select><span class="fhelp" id="ov-keyhelp">Twice fast: start or resync · three times: stop · once: nothing</span></div>
         <div class="field"><label for="ov-cycle">Cycle, seconds</label><input id="ov-cycle" type="number" min="1" max="600" step="0.1" value="${o.cycle}"></div>
         <div class="field"><label for="ov-start">Start at, seconds</label><input id="ov-start" type="number" min="0" max="${o.cycle}" step="0.1" value="${o.start}" aria-describedby="ov-starthelp"><span class="fhelp" id="ov-starthelp">Where the timer begins when you double-press</span></div></div></div>
     <div class="ovsec"><h5 class="sh3">Safe zone</h5>
@@ -3097,10 +3098,16 @@ function openSettings(pg){ const old=document.querySelector('#setdlg .setpanel')
   const np=document.querySelector('#setdlg .setpanel'); if(np) np.scrollTop=keep;
   if(setPage==='overlay') startPreview(); }
 function openOverlayDlg(){ openSettings('overlay'); }
+// the show/hide hotkey: the same as the Show the overlay switch; Settings, if open on that page, follows
+async function ovlToggle(){ const o=ovlGet(); o.on=!o.on; ovlSet(o); await ovlApply(o);
+  if($('#setdlg')&&setPage==='overlay') openSettings('overlay'); }
 async function startApp(){
   if(!APP) return;
   try{ localStorage.removeItem(OVL_RUN); }catch(e){}   // a run remembered from last time is stale until the save is read again
-  if(APP.overlay){ const b=$('#ovbtn'); if(b) b.hidden=false; const o=ovlGet(); if(o.on) ovlApply(o); }
+  if(APP.overlay){ const b=$('#ovbtn'); if(b) b.hidden=false; const o=ovlGet();
+    // the show/hide hotkey works whether the overlay is on or off, so it can bring it back from inside the game
+    if(APP.overlay.toggleKey){ APP.overlay.toggleKey(o.tkey).catch(e=>toast(`Overlay hotkey: ${e}`,'bad')); APP.overlay.onToggle(ovlToggle); }
+    if(o.on) ovlApply(o); }
   APP.onSaveChanged(p=>{ if(p===appSavePath) loadAppSave(p,{quiet:true}); });
   let p=''; try{ p=localStorage.getItem(LS_APP)||''; }catch(e){}
   try{ const r=await APP.listSaves(); appSaves=r.saves||[]; }catch(e){}
@@ -3356,12 +3363,15 @@ document.addEventListener('change', ev=>{
     ovlSet(o); if(t.id==='ov-bar') ['#ov-barh','#ov-mk'].forEach(q=>{ const e=$(q); if(e) e.disabled=!o.showBar; });
     if(t.id==='ov-mk'){ const pv=$('#ov-zprev'); if(pv) pv.innerHTML=zoneTrack(ovlGet()); }
     if(o.on&&APP&&APP.overlay) APP.overlay.config(ovlCfg(ovlGet())); return; }
+  if(t.id==='ov-tkey'){ const o=ovlGet(); o.tkey=t.value; ovlSet(o);
+    if(APP&&APP.overlay&&APP.overlay.toggleKey) APP.overlay.toggleKey(ovlGet().tkey).catch(e=>toast(`Overlay hotkey: ${e}`,'bad'));
+    openSettings('overlay'); return; }
   if(t.id==='ov-on'||t.id==='ov-key'||t.id==='ov-cycle'||t.id==='ov-start'||t.id==='ov-nl'||t.id==='ov-tm'){ const o=ovlGet();
     if(t.id==='ov-on') o.on=t.checked; else if(t.id==='ov-nl') o.nl=t.checked; else if(t.id==='ov-tm') o.timer=t.checked; else if(t.id==='ov-key') o.key=t.value; else if(t.id==='ov-cycle') o.cycle=+t.value; else o.start=+t.value;
     ovlSet(o);
     if(t.id==='ov-cycle'||t.id==='ov-start'){ const n=ovlGet(); ovlSet(n); openSettings(); if(n.on&&APP&&APP.overlay) APP.overlay.config(ovlCfg(n)); return; }
     if(t.id==='ov-on'){ ovlApply(o).then(()=>openOverlayDlg()); return; }
-    if(t.id==='ov-tm') openSettings();
+    if(t.id==='ov-tm'||t.id==='ov-key') openSettings();
     if(o.on&&APP&&APP.overlay){ if(t.id==='ov-key'||t.id==='ov-tm') APP.overlay.hotkey(o.timer?o.key:'').catch(e=>toast(`Overlay: ${e}`,'bad')); APP.overlay.config(ovlCfg(o)); }
     return; }
   if(t.id==='en-pick'||t.id==='en-mode'||t.id==='en-day2'||t.id==='en-aura'){ const st=enemyState();
