@@ -129,7 +129,24 @@ win.eval(`window.__measure = function(c){
     else { const cs2 = curSpell(), sc = spellScaling(cs2.k, a, cs2.rate); out.ss = Math.floor(Math.max(...sc) + 1e-9); }
     return JSON.stringify(out); });
 };`);
+// the game's weapon screens: scaling letters and Attack Affinity (physical types), checked against the data
+const SCREENS = [
+  ['Sword of Night and Flame', { str: 'C', dex: 'C', int: 'C', fth: 'C' }, ['std', 'pierce']],
+  ["Alabaster Lord's Sword", { str: 'B', dex: 'C', int: 'C' }, ['std', 'pierce']],
+  ['Bloody Helice', { str: 'C', dex: 'B', arc: 'C' }, ['std', 'pierce']],
+  ["Morgott's Cursed Sword", { str: 'C', dex: 'C', arc: 'B' }, ['slash', 'slash']],
+  ["Bastard's Stars", { str: 'C', dex: 'B', int: 'D' }, ['strike', 'strike']],
+  ["Revenant's Cursed Claws", { str: 'E', fth: 'S' }, ['strike', 'slash']],
+];
 let bad = 0, todo = 0;
+for (const [name, letters, types] of SCREENS) {
+  const got = JSON.parse(win.eval(`(() => { const w = WEAPONS.find(x => x[0] === ${JSON.stringify(name)}), v = w[5][0], R = WREINF[w[3]];
+    const g = {}; STAT5.forEach((k, i) => { const c = v[2][i] * R[5 + i]; if (c > 0) g[k] = grade(c); }); return JSON.stringify({ g, t: w[4].map(x => PHYS_OF[x]) }); })()`));
+  const want = JSON.stringify({ g: letters, t: types }), have = JSON.stringify({ g: Object.fromEntries(Object.keys(letters).map(k => [k, got.g[k]])), t: got.t });
+  const extra = Object.keys(got.g).filter(k => !(k in letters));
+  if (want !== have || extra.length) { bad++; console.log(`FAIL ${name} screen: ${have}${extra.length ? ' and scales with ' + extra.join(', ') : ''}, game ${want}`); }
+  else console.log(`ok   ${name} screen: ${Object.entries(letters).map(([k, v]) => k + ' ' + v).join(', ')}, ${types.join('/')}`);
+}
 for (const [name, c, want] of CASES) {
   let got;
   try { got = JSON.parse(win.__measure(JSON.parse(JSON.stringify(c)))); }
@@ -140,5 +157,5 @@ for (const [name, c, want] of CASES) {
   if (miss.length) { bad++; console.log(`FAIL ${name}: ${miss.map(k => `${k} ${show(got[k])}, game ${show(want[k])}`).join('; ')}`); }
   else console.log(`ok   ${name}: ${Object.keys(want).filter(k => k !== 'tol').map(k => `${k} ${show(got[k])}`).join(', ')}`);
 }
-console.log(`\n${CASES.length - bad - todo} of ${CASES.length - todo} match the game${todo ? `; ${todo} measured that the calculator doesn't give yet` : ''}`);
+console.log(`\n${CASES.length + SCREENS.length - bad - todo} of ${CASES.length + SCREENS.length - todo} match the game${todo ? `; ${todo} measured that the calculator doesn't give yet` : ''}`);
 process.exit(bad ? 1 : 0);
