@@ -374,7 +374,10 @@ select{-webkit-appearance:none;appearance:none;cursor:pointer;border:1px solid v
 .field{display:flex;flex-direction:column;gap:3px;min-width:0}
 .field label{font-size:12px;color:var(--muted)}
 .field input[type=range]{border:0;background:none;padding:0;height:24px;accent-color:var(--accent);cursor:pointer}
-.ovbg{max-width:320px} .ovtk{max-width:220px} .ovbg label{display:flex;justify-content:space-between} .ovbg output{font-family:var(--f-mono);font-variant-numeric:tabular-nums;color:var(--fg)}
+.ovbg{max-width:320px}
+.hkrow{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.hkbtn{min-width:120px;justify-content:flex-start} .hkbtn kbd{font-family:var(--f-mono);font-size:13px}
+.hkbtn.rec{border-color:var(--accent);color:var(--accent)} .hkwarn{color:var(--warn)} .ovbg label{display:flex;justify-content:space-between} .ovbg output{font-family:var(--f-mono);font-variant-numeric:tabular-nums;color:var(--fg)}
 .field input,.field select{border:1px solid var(--line2);background-color:var(--surface2);border-radius:var(--r-md);height:var(--h);padding:0 12px;min-width:0;width:100%}
 .conds{display:flex;flex-wrap:wrap;gap:6px}
 .cond{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line2);border-radius:999px;padding:4px 10px;font-size:12px;background:var(--surface)}
@@ -2931,7 +2934,13 @@ async function loadAppSave(p, opt={}){
   }
 }
 // overlay (desktop app only): settings live in localStorage, which the overlay window shares
-const OVL_KEY='nr-overlay', OVL_RUN='nr-overlay-run', OVL_KEYS=['F1','F2','F3','F4','F5','F6','F7','F8','F9','F10','F11','F12'];
+const OVL_KEY='nr-overlay', OVL_RUN='nr-overlay-run';
+// Hotkeys are any key, with Ctrl, Alt, Shift or Win if you like, written as the app registers them: "F8", "Ctrl+Shift+KeyO".
+const HK_OK=/^((Ctrl|Alt|Shift|Super)\+)*[A-Za-z][A-Za-z0-9]*$/;
+const keyName=k=>!k?'Off':k.split('+').map(t=>t==='Super'?'Win':t.replace(/^Key(?=[A-Z]$)/,'').replace(/^Digit(?=\d$)/,'').replace(/^Numpad/,'Num ').replace(/^Arrow/,'')).join(' + ');
+// a key with no Ctrl, Alt or Shift that the game may use (letters, digits, Space...): the game won't get it while the planner is open
+const hkPlain=k=>!!k&&!k.includes('+')&&!/^(F\d+|Numpad.*|Insert|Home|End|PageUp|PageDown|Pause|ScrollLock|PrintScreen)$/.test(k);
+let keyRec=null;   // 'key' or 'tkey' while Settings waits for you to press a key
 let ovlMoving=false, curRun=null;
 // Dreglord timer: a cycle (about 20 s) that starts at the user's start point when the hotkey is pressed and repeats
 // until stopped; zones colour parts of the cycle safe (green) or danger (red). A zone may wrap past the end (15 to 2).
@@ -2946,7 +2955,7 @@ function ovlGet(){ let o={}; try{ o=JSON.parse(localStorage.getItem(OVL_KEY)||'{
   if(!OVL_MK.some(m=>m[0]===o.mk)) o.mk='#ffffff';   // 'Cyan in danger' is gone: white
   o.tr=Math.min(100,Math.max(0,Math.round((isNaN(+o.tr)?30:+o.tr)/5)*5));   // how see-through the card's background is, %
   o.showTime=o.showTime!==false; o.showBar=o.showBar!==false; if(!OVL_BARS.some(b=>b[0]===+o.barH)) o.barH=12; o.barH=+o.barH;
-  if(!OVL_KEYS.includes(o.key)) o.key='F8'; if(o.tkey!==''&&!OVL_KEYS.includes(o.tkey)) o.tkey='F9'; if(o.tkey===o.key) o.tkey=''; o.nl=o.nl!==false; o.timer=o.timer!==false;
+  if(!HK_OK.test(o.key||'')) o.key='F8'; if(o.tkey!==''&&!HK_OK.test(o.tkey||'')) o.tkey='F9'; if(o.tkey===o.key) o.tkey=''; o.nl=o.nl!==false; o.timer=o.timer!==false;
   o.cycle=Math.min(600,Math.max(1,r1(+o.cycle)||20)); o.start=Math.min(o.cycle,Math.max(0,r1(+o.start)||0));
   // one safe zone (it may wrap past the end, 15 to 2); the rest of the cycle is danger. Older settings with a list
   // of zones keep their first safe one.
@@ -2999,7 +3008,7 @@ function overlayPage(){ const o=ovlGet();
       <p class="msg">A small card on top of the game. Works with the game in borderless or windowed mode.</p>
       <div class="btns"><button class="btn" data-act="ovmove" ${o.on?'':'disabled'}>${ovlMoving?'Done moving':'Move'}</button></div>
       ${o.on?'':'<p class="msg">Turn on Show the overlay to move it.</p>'}
-      ${APP&&APP.overlay&&APP.overlay.toggleKey?`<div class="field ovtk"><label for="ov-tkey">Show/hide hotkey</label><select id="ov-tkey" aria-describedby="ov-tkeyhelp"><option value="" ${o.tkey===''?'selected':''}>Off</option>${OVL_KEYS.filter(k=>k!==o.key).map(k=>`<option ${k===o.tkey?'selected':''}>${k}</option>`).join('')}</select><span class="fhelp" id="ov-tkeyhelp">Shows or hides the overlay from inside the game, while the planner is open</span></div>`:''}
+      ${APP&&APP.overlay&&APP.overlay.toggleKey?hkField('tkey','Show/hide hotkey',o.tkey,'Shows or hides the overlay from inside the game, while the planner is open',true):''}
       <div class="field ovbg"><label for="ov-tr">Background transparency <output id="ov-trv" for="ov-tr">${o.tr}%</output></label><input type="range" id="ov-tr" min="0" max="100" step="5" value="${o.tr}" aria-describedby="ov-trh"><span class="fhelp" id="ov-trh">How much of the game shows through the card's dark background.</span></div></div>
     <div class="ovsec"><h5 class="sh3">Nightlord</h5><div class="ovnlrow">${ovTgl('ov-nl',o.nl,"Show this run's Nightlord")}
       <div class="seg" role="group" aria-label="Name on the card"><button data-act="ovname" data-v="boss" aria-pressed="${o.nlName==='boss'}">Nightlord</button><button data-act="ovname" data-v="exp" aria-pressed="${o.nlName==='exp'}">Expedition</button><button data-act="ovname" data-v="both" aria-pressed="${o.nlName==='both'}">Both</button></div></div>
@@ -3014,7 +3023,7 @@ function timerPage(o){ const full=!o.simple;
   const testWhy=!o.on?'<p class="msg">Test shows the timer on the overlay: turn on Show the overlay above first.</p>':!o.timer?'<p class="msg">Turn on Show the timer to test it.</p>':'';
   return `<div class="ovsec"><h5 class="sh3">Dreglord timer</h5>${ovTgl('ov-tm',o.timer,'Show the timer')}
       <p class="msg">Double-press the hotkey when the Dreglord status shows. The card tells you when touching grace is safe.</p>
-      <div class="ovrow3"><div class="field"><label for="ov-key">Hotkey</label><select id="ov-key" aria-describedby="ov-keyhelp">${OVL_KEYS.filter(k=>k!==o.tkey).map(k=>`<option ${k===o.key?'selected':''}>${k}</option>`).join('')}</select><span class="fhelp" id="ov-keyhelp">Twice fast: start or resync · three times: stop · once: nothing</span></div>
+      <div class="ovrow3">${hkField('key','Hotkey',o.key,'Twice fast: start or resync · three times: stop · once: nothing',false)}
         <div class="field"><label for="ov-cycle">Cycle, seconds</label><input id="ov-cycle" type="number" min="1" max="600" step="0.1" value="${o.cycle}"></div>
         <div class="field"><label for="ov-start">Start at, seconds</label><input id="ov-start" type="number" min="0" max="${o.cycle}" step="0.1" value="${o.start}" aria-describedby="ov-starthelp"><span class="fhelp" id="ov-starthelp">Where the timer begins when you double-press</span></div></div></div>
     <div class="ovsec"><h5 class="sh3">Safe zone</h5>
@@ -3098,6 +3107,22 @@ function openSettings(pg){ const old=document.querySelector('#setdlg .setpanel')
   const np=document.querySelector('#setdlg .setpanel'); if(np) np.scrollTop=keep;
   if(setPage==='overlay') startPreview(); }
 function openOverlayDlg(){ openSettings('overlay'); }
+// a hotkey: press the button, then the key (with Ctrl, Alt, Shift or Win if you like); Esc cancels
+function hkField(k,label,val,help,canOff){ const rec=keyRec===k, id='hk-'+k;
+  return `<div class="field hk"><span class="flab" id="${id}-l">${label}</span><div class="hkrow"><button class="btn hkbtn${rec?' rec':''}" data-act="hkrec" data-k="${k}" aria-labelledby="${id}-l" aria-describedby="${id}-h">${rec?'Press a key… Esc cancels':`<kbd>${esc(keyName(val))}</kbd>`}</button>${canOff&&val&&!rec?`<button class="btn sm ghost" data-act="hkoff" data-k="${k}">Turn off</button>`:''}</div>
+    <span class="fhelp" id="${id}-h">${help}</span>${!rec&&hkPlain(val)?`<span class="fhelp hkwarn">The game won't get ${esc(keyName(val))} while the planner is open. Add Ctrl, Alt or Shift, or pick a key you don't play with.</span>`:''}</div>`; }
+async function setHotkey(which,combo){ keyRec=null; const o=ovlGet(), other=which==='key'?o.tkey:o.key, prev=o[which];
+  if(combo&&combo===other){ toast(`${keyName(combo)} is already the ${which==='key'?'show/hide':'timer'} hotkey`,'bad'); openSettings('overlay'); return; }
+  const apply=async n=>{ if(which==='tkey') await APP.overlay.toggleKey(n.tkey); else if(n.on) await APP.overlay.hotkey(n.timer?n.key:''); if(n.on) APP.overlay.config(ovlCfg(n)); };
+  o[which]=combo; ovlSet(o);
+  try{ await apply(ovlGet()); }
+  catch(e){ const r=ovlGet(); r[which]=prev; ovlSet(r); try{ await apply(r); }catch(_){} toast(`Couldn't use ${keyName(combo)}: ${e}`,'bad'); }
+  openSettings('overlay'); }
+// while a hotkey button waits, the next key goes to it and nowhere else
+addEventListener('keydown',ev=>{ if(!keyRec) return; ev.preventDefault(); ev.stopImmediatePropagation();
+  if(ev.key==='Escape'&&!ev.ctrlKey&&!ev.altKey&&!ev.shiftKey&&!ev.metaKey){ keyRec=null; openSettings('overlay'); return; }
+  if(!ev.code||/^(Shift|Control|Alt|Meta|OS)(Left|Right)?$/.test(ev.code)) return;   // a modifier alone: wait for the key
+  setHotkey(keyRec,[ev.ctrlKey&&'Ctrl',ev.altKey&&'Alt',ev.shiftKey&&'Shift',ev.metaKey&&'Super'].filter(Boolean).concat(ev.code).join('+')); },true);
 // the show/hide hotkey: the same as the Show the overlay switch; Settings, if open on that page, follows
 async function ovlToggle(){ const o=ovlGet(); o.on=!o.on; ovlSet(o); await ovlApply(o);
   if($('#setdlg')&&setPage==='overlay') openSettings('overlay'); }
@@ -3221,6 +3246,7 @@ async function saveBuild(){
 
 /* ============ EVENTS ============ */
 document.addEventListener('click', async ev=>{
+  if(keyRec&&!ev.target.closest('[data-act=hkrec]')){ keyRec=null; setTimeout(()=>{ if($('#setdlg')&&setPage==='overlay') openSettings('overlay'); }); }
   if(!$('#vlist').hidden && !ev.target.closest('.vsel')) toggleVlist(false);
   const pc=ev.target.closest('[data-place]'); if(pc && !ev.target.closest('button')){ placeRelic(pc.dataset.place); return; }
   const t=ev.target.closest('button'); if(!t) return;
@@ -3256,6 +3282,8 @@ document.addEventListener('click', async ev=>{
   if(a==='updcheck'){ checkUpdates(false); return; }
   if(a==='updget'){ try{ await APP.openReleases(); }catch(e){ toast(`Couldn't open the browser: ${e}`,'bad'); } return; }
   if(a==='updinstall'){ installUpdate(); return; }
+  if(a==='hkrec'){ keyRec=keyRec===t.dataset.k?null:t.dataset.k; openSettings('overlay'); const b=$(`[data-act=hkrec][data-k="${t.dataset.k}"]`); if(b) b.focus(); return; }
+  if(a==='hkoff'){ await setHotkey(t.dataset.k,''); return; }
   if(a==='ovmove'){ await ovlLock(ovlMoving); openOverlayDlg(); return; }
   if(a==='ovtest'){ try{ APP.overlay.test(); }catch(e){} return; }
   if(a==='ovstop'){ try{ APP.overlay.stop(); }catch(e){} return; }
@@ -3363,16 +3391,13 @@ document.addEventListener('change', ev=>{
     ovlSet(o); if(t.id==='ov-bar') ['#ov-barh','#ov-mk'].forEach(q=>{ const e=$(q); if(e) e.disabled=!o.showBar; });
     if(t.id==='ov-mk'){ const pv=$('#ov-zprev'); if(pv) pv.innerHTML=zoneTrack(ovlGet()); }
     if(o.on&&APP&&APP.overlay) APP.overlay.config(ovlCfg(ovlGet())); return; }
-  if(t.id==='ov-tkey'){ const o=ovlGet(); o.tkey=t.value; ovlSet(o);
-    if(APP&&APP.overlay&&APP.overlay.toggleKey) APP.overlay.toggleKey(ovlGet().tkey).catch(e=>toast(`Overlay hotkey: ${e}`,'bad'));
-    openSettings('overlay'); return; }
-  if(t.id==='ov-on'||t.id==='ov-key'||t.id==='ov-cycle'||t.id==='ov-start'||t.id==='ov-nl'||t.id==='ov-tm'){ const o=ovlGet();
-    if(t.id==='ov-on') o.on=t.checked; else if(t.id==='ov-nl') o.nl=t.checked; else if(t.id==='ov-tm') o.timer=t.checked; else if(t.id==='ov-key') o.key=t.value; else if(t.id==='ov-cycle') o.cycle=+t.value; else o.start=+t.value;
+  if(t.id==='ov-on'||t.id==='ov-cycle'||t.id==='ov-start'||t.id==='ov-nl'||t.id==='ov-tm'){ const o=ovlGet();
+    if(t.id==='ov-on') o.on=t.checked; else if(t.id==='ov-nl') o.nl=t.checked; else if(t.id==='ov-tm') o.timer=t.checked; else if(t.id==='ov-cycle') o.cycle=+t.value; else o.start=+t.value;
     ovlSet(o);
     if(t.id==='ov-cycle'||t.id==='ov-start'){ const n=ovlGet(); ovlSet(n); openSettings(); if(n.on&&APP&&APP.overlay) APP.overlay.config(ovlCfg(n)); return; }
     if(t.id==='ov-on'){ ovlApply(o).then(()=>openOverlayDlg()); return; }
-    if(t.id==='ov-tm'||t.id==='ov-key') openSettings();
-    if(o.on&&APP&&APP.overlay){ if(t.id==='ov-key'||t.id==='ov-tm') APP.overlay.hotkey(o.timer?o.key:'').catch(e=>toast(`Overlay: ${e}`,'bad')); APP.overlay.config(ovlCfg(o)); }
+    if(t.id==='ov-tm') openSettings();
+    if(o.on&&APP&&APP.overlay){ if(t.id==='ov-tm') APP.overlay.hotkey(o.timer?o.key:'').catch(e=>toast(`Overlay: ${e}`,'bad')); APP.overlay.config(ovlCfg(o)); }
     return; }
   if(t.id==='en-pick'||t.id==='en-mode'||t.id==='en-day2'||t.id==='en-aura'){ const st=enemyState();
     if(t.id==='en-pick') st.id=+t.value; else if(t.id==='en-mode'){ st.depth=+t.value; calcState().don=st.depth>0; } else if(t.id==='en-day2') st.day2=t.checked; else st.aura=t.checked;
