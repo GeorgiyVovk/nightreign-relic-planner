@@ -33,6 +33,8 @@
       hide: () => invoke('overlay_hide'),
       lock: (locked) => invoke('overlay_lock', { locked }),
       hotkey: (key) => invoke('overlay_hotkey', { key }),
+      toggleKey: (key) => invoke('overlay_toggle_key', { key }),   // the key that shows or hides the overlay
+      onToggle: (cb) => { listen('overlay:toggle', () => cb()); },
       config: (cfg) => T.event.emit('overlay:config', cfg),
       run: (run) => T.event.emit('overlay:run', run),
       example: (run) => T.event.emit('overlay:example', run),   // what the card shows while you move it with no run going on
