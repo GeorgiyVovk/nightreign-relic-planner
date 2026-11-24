@@ -2955,7 +2955,7 @@ function ovlGet(){ let o={}; try{ o=JSON.parse(localStorage.getItem(OVL_KEY)||'{
   if(!OVL_MK.some(m=>m[0]===o.mk)) o.mk='#ffffff';   // 'Cyan in danger' is gone: white
   o.tr=Math.min(100,Math.max(0,Math.round((isNaN(+o.tr)?30:+o.tr)/5)*5));   // how see-through the card's background is, %
   o.showTime=o.showTime!==false; o.showBar=o.showBar!==false; if(!OVL_BARS.some(b=>b[0]===+o.barH)) o.barH=12; o.barH=+o.barH;
-  if(!HK_OK.test(o.key||'')) o.key='F8'; if(o.tkey!==''&&!HK_OK.test(o.tkey||'')) o.tkey='F9'; if(o.tkey===o.key) o.tkey=''; o.nl=o.nl!==false; o.timer=o.timer!==false;
+  if(o.key!==''&&!HK_OK.test(o.key||'')) o.key='F8'; if(o.tkey!==''&&!HK_OK.test(o.tkey||'')) o.tkey='F9'; if(o.tkey&&o.tkey===o.key) o.tkey=''; o.nl=o.nl!==false; o.timer=o.timer!==false;
   o.cycle=Math.min(600,Math.max(1,r1(+o.cycle)||20)); o.start=Math.min(o.cycle,Math.max(0,r1(+o.start)||0));
   // one safe zone (it may wrap past the end, 15 to 2); the rest of the cycle is danger. Older settings with a list
   // of zones keep their first safe one.
@@ -3008,7 +3008,7 @@ function overlayPage(){ const o=ovlGet();
       <p class="msg">A small card on top of the game. Works with the game in borderless or windowed mode.</p>
       <div class="btns"><button class="btn" data-act="ovmove" ${o.on?'':'disabled'}>${ovlMoving?'Done moving':'Move'}</button></div>
       ${o.on?'':'<p class="msg">Turn on Show the overlay to move it.</p>'}
-      ${APP&&APP.overlay&&APP.overlay.toggleKey?hkField('tkey','Show/hide hotkey',o.tkey,'Shows or hides the overlay from inside the game, while the planner is open',true):''}
+      ${APP&&APP.overlay&&APP.overlay.toggleKey?hkField('tkey','Show/hide hotkey',o.tkey,'Shows or hides the overlay from inside the game, while the planner is open'):''}
       <div class="field ovbg"><label for="ov-tr">Background transparency <output id="ov-trv" for="ov-tr">${o.tr}%</output></label><input type="range" id="ov-tr" min="0" max="100" step="5" value="${o.tr}" aria-describedby="ov-trh"><span class="fhelp" id="ov-trh">How much of the game shows through the card's dark background.</span></div></div>
     <div class="ovsec"><h5 class="sh3">Nightlord</h5><div class="ovnlrow">${ovTgl('ov-nl',o.nl,"Show this run's Nightlord")}
       <div class="seg" role="group" aria-label="Name on the card"><button data-act="ovname" data-v="boss" aria-pressed="${o.nlName==='boss'}">Nightlord</button><button data-act="ovname" data-v="exp" aria-pressed="${o.nlName==='exp'}">Expedition</button><button data-act="ovname" data-v="both" aria-pressed="${o.nlName==='both'}">Both</button></div></div>
@@ -3023,7 +3023,7 @@ function timerPage(o){ const full=!o.simple;
   const testWhy=!o.on?'<p class="msg">Test shows the timer on the overlay: turn on Show the overlay above first.</p>':!o.timer?'<p class="msg">Turn on Show the timer to test it.</p>':'';
   return `<div class="ovsec"><h5 class="sh3">Dreglord timer</h5>${ovTgl('ov-tm',o.timer,'Show the timer')}
       <p class="msg">Double-press the hotkey when the Dreglord status shows. The card tells you when touching grace is safe.</p>
-      <div class="ovrow3">${hkField('key','Hotkey',o.key,'Twice fast: start or resync · three times: stop · once: nothing',false)}
+      <div class="ovrow3">${hkField('key','Hotkey',o.key,o.key?'Twice fast: start or resync · three times: stop · once: nothing':'No hotkey: the timer can only start from Test below')}
         <div class="field"><label for="ov-cycle">Cycle, seconds</label><input id="ov-cycle" type="number" min="1" max="600" step="0.1" value="${o.cycle}"></div>
         <div class="field"><label for="ov-start">Start at, seconds</label><input id="ov-start" type="number" min="0" max="${o.cycle}" step="0.1" value="${o.start}" aria-describedby="ov-starthelp"><span class="fhelp" id="ov-starthelp">Where the timer begins when you double-press</span></div></div></div>
     <div class="ovsec"><h5 class="sh3">Safe zone</h5>
@@ -3107,9 +3107,9 @@ function openSettings(pg){ const old=document.querySelector('#setdlg .setpanel')
   const np=document.querySelector('#setdlg .setpanel'); if(np) np.scrollTop=keep;
   if(setPage==='overlay') startPreview(); }
 function openOverlayDlg(){ openSettings('overlay'); }
-// a hotkey: press the button, then the key (with Ctrl, Alt, Shift or Win if you like); Esc cancels
-function hkField(k,label,val,help,canOff){ const rec=keyRec===k, id='hk-'+k;
-  return `<div class="field hk"><span class="flab" id="${id}-l">${label}</span><div class="hkrow"><button class="btn hkbtn${rec?' rec':''}" data-act="hkrec" data-k="${k}" aria-labelledby="${id}-l" aria-describedby="${id}-h">${rec?'Press a key… Esc cancels':`<kbd>${esc(keyName(val))}</kbd>`}</button>${canOff&&val&&!rec?`<button class="btn sm ghost" data-act="hkoff" data-k="${k}">Turn off</button>`:''}</div>
+// a hotkey: press the button, then the key (with Ctrl, Alt, Shift or Win if you like); Esc cancels, Remove clears it
+function hkField(k,label,val,help){ const rec=keyRec===k, id='hk-'+k;
+  return `<div class="field hk"><span class="flab" id="${id}-l">${label}</span><div class="hkrow"><button class="btn hkbtn${rec?' rec':''}" data-act="hkrec" data-k="${k}" aria-labelledby="${id}-l" aria-describedby="${id}-h">${rec?'Press a key… Esc cancels':`<kbd>${esc(keyName(val))}</kbd>`}</button>${val&&!rec?`<button class="btn sm ghost" data-act="hkoff" data-k="${k}" aria-label="Remove the ${k==='key'?'timer':'show/hide'} hotkey">Remove</button>`:''}</div>
     <span class="fhelp" id="${id}-h">${help}</span>${!rec&&hkPlain(val)?`<span class="fhelp hkwarn">The game won't get ${esc(keyName(val))} while the planner is open. Add Ctrl, Alt or Shift, or pick a key you don't play with.</span>`:''}</div>`; }
 async function setHotkey(which,combo){ keyRec=null; const o=ovlGet(), other=which==='key'?o.tkey:o.key, prev=o[which];
   if(combo&&combo===other){ toast(`${keyName(combo)} is already the ${which==='key'?'show/hide':'timer'} hotkey`,'bad'); openSettings('overlay'); return; }
