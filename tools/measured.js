@@ -29,7 +29,7 @@ const CASES = [
   // R2 and charged R2
   ["Raider's Greataxe two-handed R2, Raider 15", W('Raider', 15, "Raider's Greataxe", { two: true, atk: 'r2' }), { hit: 222 }],
   ["Raider's Greataxe two-handed R2, Raider 1", W('Raider', 1, "Raider's Greataxe", { two: true, atk: 'r2' }), { hit: 108 }],
-  ["Raider's Greataxe charged R2, Raider 15", W('Raider', 15, "Raider's Greataxe", { atk: 'ch' }), { hit: 275, tol: 1 }],
+  // charged R2 one-handed was 275 here once; measured again on 24 Nov 2026 it's 260 (below), which the calculator now gives
   ["Raider's Greataxe two-handed charged R2, Raider 15 (lands twice)", W('Raider', 15, "Raider's Greataxe", { two: true, atk: 'ch' }), { hit: 186, landed: 372 }],
   ["Raider's Greataxe two-handed charged R2, Raider 1 (lands twice)", W('Raider', 1, "Raider's Greataxe", { two: true, atk: 'ch' }), { hit: 91, landed: 182 }],
   ['Short Sword two-handed charged R2, Guardian 15', W('Guardian', 15, 'Short Sword', { two: true, atk: 'ch' }), { hit: 159 }],
@@ -80,10 +80,10 @@ const CASES = [
   ["Guardian's Halberd charged R2 chain, Guardian 15", W('Guardian', 15, "Guardian's Halberd", { atk: 'ch' }), { chain: [171, 171] }],
   ["Guardian's Halberd two-handed R1 chain, Guardian 15", W('Guardian', 15, "Guardian's Halberd", { two: true }), { chain: [110, 111, 112, 123] }],
   ["Ironeye's Bow R2, Ironeye 15 (three arrows)", W('Ironeye', 15, "Ironeye's Bow", { atk: 'r2' }), { hit: 39 }],
-  ["Raider's Greataxe R1 chain, Raider 15", W('Raider', 15, "Raider's Greataxe"), { chain: [158, 161, 170, 170], todo: 'the game\'s chain has a fourth attack (170)' }],
-  ["Raider's Greataxe R2 chain, Raider 15", W('Raider', 15, "Raider's Greataxe", { atk: 'r2' }), { chain: [197, 197], todo: 'R2 lands 197, the calculator 205; check the conditions too (charged R2 was 275 before)' }],
-  ["Raider's Greataxe charged R2 chain, Raider 15", W('Raider', 15, "Raider's Greataxe", { atk: 'ch' }), { chain: [260, 260], todo: '260 now, 275 in the earlier measurement and in the calculator' }],
-  ["Raider's Greataxe two-handed R1 chain, Raider 15", W('Raider', 15, "Raider's Greataxe", { two: true }), { chain: [180, 185, 197, 118, 142], todo: 'the game\'s chain has a fourth attack that lands twice (118 + 142)' }],
+  ["Raider's Greataxe R1 chain, Raider 15", W('Raider', 15, "Raider's Greataxe"), { chain: [158, 161, 170, 170] }],
+  ["Raider's Greataxe R2 chain, Raider 15", W('Raider', 15, "Raider's Greataxe", { atk: 'r2' }), { chain: [197, 197] }],
+  ["Raider's Greataxe charged R2 chain, Raider 15", W('Raider', 15, "Raider's Greataxe", { atk: 'ch' }), { chain: [260, 260] }],
+  ["Raider's Greataxe two-handed R1 chain, Raider 15", W('Raider', 15, "Raider's Greataxe", { two: true }), { chain: [180, 185, 197, 118, 142] }],
   ["Revenant's Cursed Claws two-handed R2, Revenant 15 (both hands)", W('Revenant', 15, "Revenant's Cursed Claws", { two: true, atk: 'r2' }), { chain: [75, 75, 75, 75] }],
   ["Revenant's Cursed Claws two-handed charged R2, Revenant 15 (both hands)", W('Revenant', 15, "Revenant's Cursed Claws", { two: true, atk: 'ch' }), { chain: [92, 92, 92, 92], todo: '1 under the game' }],
   ["Revenant's Cursed Claws R1 chain, Revenant 15", W('Revenant', 15, "Revenant's Cursed Claws"), { chain: [79, 79, 80, 86], todo: 'the calculator has six hits 1 under the game\'s four' }],
@@ -93,7 +93,7 @@ const CASES = [
   ["Executor's Blade R2 chain, Executor 15", W('Executor', 15, "Executor's Blade", { atk: 'r2' }), { chain: [118, 118] }],
   ["Executor's Blade two-handed R1 chain, Executor 15", W('Executor', 15, "Executor's Blade", { two: true }), { chain: [97, 98, 99, 100, 107] }],
   ["Executor's Blade two-handed R2 chain, Executor 15", W('Executor', 15, "Executor's Blade", { two: true, atk: 'r2' }), { chain: [123, 146], todo: 'the second R2 is 146 in the game, the same 123 in the calculator' }],
-  ["Executor's Blade two-handed charged R2 chain, Executor 15 (lands twice)", W('Executor', 15, "Executor's Blade", { two: true, atk: 'ch' }), { chain: [94, 99, 94, 99], todo: 'lands twice (94 + 99) in the game, once (156) in the calculator' }],
+  ["Executor's Blade two-handed charged R2 chain, Executor 15 (lands twice)", W('Executor', 15, "Executor's Blade", { two: true, atk: 'ch' }), { chain: [94, 99, 94, 99] }],
   // physical + magic: the game rounds the sum, not each type
   ['Crystal Sword (Uncommon) R1 chain, Guardian 15', W('Guardian', 15, 'Crystal Sword', { rar: 1 }), { menu: 110, chain: [110, 111, 113, 114, 121] }],
   ["Duchess' Dagger, Duchess 15, the whole set", W('Duchess', 15, "Duchess' Dagger", { fx: [...DEEP, 'melee', 'melee', 'skillap', 'skillap', 'addedaff'] }), { menu: 70, hit: 78, tol: 1 }],
