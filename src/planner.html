@@ -939,9 +939,12 @@ const WVAR={"Dagger":"100","Black Knife":"101","Parrying Dagger":"100","Miséric
 // Executor's blade two-handed: the charged R2 lands twice, 94 + 99 at level 15 (100 + 105%), where its row says one hit of 165%.
 const WCH_FIX = {"Raider's Greataxe":{r1:{chain:[{mv:100},{mv:102},{mv:108},{mv:108}]},r2:{chain:[{mv:125},{mv:125}]},ch:{chain:[{mv:165},{mv:165}]},
     r1t:{chain:[{mv:114},{mv:117},{mv:125},{mv:75,sub:[[90,253]]}]},cht:[{mv:118,hits:2}],r2t:[{mv:141,at:253},{mv:141,at:253}]},
-  // two-handed R2: 123 and 123 at level 15 (130%), the second a thrust (pierce), not a slash as the rows say
-  "Executor's Blade":{cht:{chain:[{mv:100,sub:[[105,253]]},{mv:100,sub:[[105,253]]}]},r2t:[null,{mv:130,at:252}]},
-  "Revenant's Cursed Claws":{r1t:{chain:[{mv:68,at:1,hits:2},{mv:69,at:1,hits:2},{mv:73,at:1,hits:2},{mv:77,at:1,hits:2}]}},
+  // two-handed R2: 123 and 123 at level 15 (130%), the second a thrust (pierce), not a slash as the rows say;
+  // two-handed charged R2 lands twice a press (94 + 99): the first press slashes then thrusts, the second thrusts then slashes
+  "Executor's Blade":{cht:{chain:[{mv:100,sub:[[105,252]]},{mv:100,at:252,sub:[[105,253]]}]},r2t:[null,{mv:130,at:252}]},
+  // Revenant's own claws have a moveset of their own: one-handed R1 is four swings in game (79 / 79 / 80 / 86 at level 15), the rows list six
+  "Revenant's Cursed Claws":{r1:{chain:[{mv:88,at:1},{mv:89,at:1},{mv:90,at:1},{mv:97,at:1}]},
+    r1t:{chain:[{mv:68,at:1,hits:2},{mv:69,at:1,hits:2},{mv:73,at:1,hits:2},{mv:77,at:1,hits:2}]}},
   // Duchess' dagger one-handed (level 15): R1 72, 73, 54+54, 55+55, 75, 79; R2 54+54, then 36 three times; charged R2 108, then 79+79.
   // Her variation has no rows of its own, so the plain dagger's (120% R2s, 102/103% R1s) were standing in for it
   "Duchess' Dagger":{r1:{chain:[{mv:100},{mv:101},{mv:75,hits:2},{mv:76,hits:2},{mv:104},{mv:110}]},r2:{chain:[{mv:75,hits:2},{mv:50,hits:3}]},ch:{chain:[{mv:150},{mv:110,hits:2}]}}};
