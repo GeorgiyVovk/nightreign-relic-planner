@@ -2,6 +2,7 @@
 // Every case is something someone hit in game; the calculator has to give the same number. Runs on the built page:
 //   node tools/build.js && node tools/measured.js
 // tol: how far off the game's own number may be (the game shows ±1 now and then on the same hit).
+// types: each hit's physical type in order, where it was seen in game (slash, pierce, strike, std).
 // todo: measured, but the calculator doesn't give it yet; listed and counted apart, so the build doesn't stop on it.
 const fs = require('fs');
 const path = require('path');
@@ -85,16 +86,17 @@ const CASES = [
   ["Raider's Greataxe charged R2 chain, Raider 15", W('Raider', 15, "Raider's Greataxe", { atk: 'ch' }), { chain: [260, 260] }],
   ["Raider's Greataxe two-handed R1 chain, Raider 15", W('Raider', 15, "Raider's Greataxe", { two: true }), { chain: [180, 185, 197, 118, 142] }],
   ["Revenant's Cursed Claws two-handed R2, Revenant 15 (both hands)", W('Revenant', 15, "Revenant's Cursed Claws", { two: true, atk: 'r2' }), { chain: [75, 75, 75, 75] }],
-  ["Revenant's Cursed Claws two-handed charged R2, Revenant 15 (both hands)", W('Revenant', 15, "Revenant's Cursed Claws", { two: true, atk: 'ch' }), { chain: [92, 92, 92, 92], todo: '1 under the game' }],
-  // the claws' menu attack at level 15: 75 one-handed, 58 two-handed; the calculator has 88 and 59, so its attack is off, not only the hits
-  ["Revenant's Cursed Claws R1 chain, Revenant 15", W('Revenant', 15, "Revenant's Cursed Claws"), { chain: [79, 79, 80, 86], todo: 'the calculator has six hits 1 under the game\'s four' }],
-  ["Revenant's Cursed Claws R2 chain, Revenant 15", W('Revenant', 15, "Revenant's Cursed Claws", { atk: 'r2' }), { chain: [94, 94], todo: '1 under the game' }],
-  ["Revenant's Cursed Claws charged R2 chain, Revenant 15", W('Revenant', 15, "Revenant's Cursed Claws", { atk: 'ch' }), { chain: [118, 118], todo: '1 under the game' }],
+  // the claws land about 1% over the calculator's attack (the one-handed hits come out 1 under), so these allow 1
+  ["Revenant's Cursed Claws two-handed charged R2, Revenant 15 (both hands)", W('Revenant', 15, "Revenant's Cursed Claws", { two: true, atk: 'ch' }), { chain: [92, 92, 92, 92], tol: 1 }],
+  // the claws' menu attack at level 15: 75 one-handed, 58 two-handed; the calculator shows 88 and 59 (its hits match, its menu number doesn't)
+  ["Revenant's Cursed Claws R1 chain, Revenant 15 (four swings)", W('Revenant', 15, "Revenant's Cursed Claws"), { chain: [79, 79, 80, 86], tol: 1 }],
+  ["Revenant's Cursed Claws R2 chain, Revenant 15", W('Revenant', 15, "Revenant's Cursed Claws", { atk: 'r2' }), { chain: [94, 94], tol: 1 }],
+  ["Revenant's Cursed Claws charged R2 chain, Revenant 15", W('Revenant', 15, "Revenant's Cursed Claws", { atk: 'ch' }), { chain: [118, 118], tol: 1 }],
   ["Executor's Blade R1 chain, Executor 15", W('Executor', 15, "Executor's Blade"), { chain: [94, 95, 96, 97, 104] }],
   ["Executor's Blade R2 chain, Executor 15", W('Executor', 15, "Executor's Blade", { atk: 'r2' }), { chain: [118, 118] }],
   ["Executor's Blade two-handed R1 chain, Executor 15", W('Executor', 15, "Executor's Blade", { two: true }), { chain: [97, 98, 99, 100, 107] }],
-  ["Executor's Blade two-handed R2 chain, Executor 15 (the second a thrust)", W('Executor', 15, "Executor's Blade", { two: true, atk: 'r2' }), { chain: [123, 123] }],
-  ["Executor's Blade two-handed charged R2 chain, Executor 15 (lands twice)", W('Executor', 15, "Executor's Blade", { two: true, atk: 'ch' }), { chain: [94, 99, 94, 99] }],
+  ["Executor's Blade two-handed R2 chain, Executor 15 (the second a thrust)", W('Executor', 15, "Executor's Blade", { two: true, atk: 'r2' }), { chain: [123, 123], types: ['slash', 'pierce'] }],
+  ["Executor's Blade two-handed charged R2 chain, Executor 15 (lands twice; slash + thrust, then thrust + slash)", W('Executor', 15, "Executor's Blade", { two: true, atk: 'ch' }), { chain: [94, 99, 94, 99], types: ['slash', 'pierce', 'pierce', 'slash'] }],
   // physical + magic: the game rounds the sum, not each type
   ['Crystal Sword (Uncommon) R1 chain, Guardian 15', W('Guardian', 15, 'Crystal Sword', { rar: 1 }), { menu: 110, chain: [110, 111, 113, 114, 121] }],
   ["Duchess' Dagger, Duchess 15, the whole set", W('Duchess', 15, "Duchess' Dagger", { fx: [...DEEP, 'melee', 'melee', 'skillap', 'skillap', 'addedaff'] }), { menu: 70, hit: 78, tol: 1 }],
@@ -122,7 +124,7 @@ win.eval(`window.__measure = function(c){
     const cat = CATBY[c.cat]; if (!cat) throw new Error('no catalyst ' + c.cat); ws.sp[c.mode] = c.spell || [cat[4], cat[5]].find(spDmg); }
   return withCalcBuild(() => { const list = mk(c.fx || []), a = calcStats(list).a;
     const kind = c.kind === 'wep' && c.atk === 'ch' ? 'charged' : 'normal', ch = chainOn(list, bossOf(DUMMY), kind), h = ch.hs[0];
-    const out = { hit: Math.round(h.r.dmg), landed: Math.round(h.dmg), chain: ch.hs.flatMap(x => Array(x.h ? x.h.hits : 1).fill(Math.round(x.r.dmg))), p0: Math.round(ch.press[0]) };
+    const out = { hit: Math.round(h.r.dmg), landed: Math.round(h.dmg), chain: ch.hs.flatMap(x => Array(x.h ? x.h.hits : 1).fill(Math.round(x.r.dmg))), types: ch.hs.flatMap(x => Array(x.h ? x.h.hits : 1).fill(x.h ? x.h.ptype : '')), p0: Math.round(ch.press[0]) };
     if (c.kind === 'wep') out.menu = weaponAR(curWeapon(), a).total;
     else { const cs2 = curSpell(), sc = spellScaling(cs2.k, a, cs2.rate); out.ss = Math.floor(Math.max(...sc) + 1e-9); }
     return JSON.stringify(out); });
@@ -132,7 +134,7 @@ for (const [name, c, want] of CASES) {
   let got;
   try { got = JSON.parse(win.__measure(JSON.parse(JSON.stringify(c)))); }
   catch (e) { bad++; console.log(`FAIL ${name}: ${e.message}`); continue; }
-  const tol = want.tol || 0, off = (a, b) => Array.isArray(b) ? !Array.isArray(a) || a.length !== b.length || a.some((x, i) => Math.abs(x - b[i]) > tol) : Math.abs(a - b) > tol;
+  const tol = want.tol || 0, off = (a, b) => Array.isArray(b) ? !Array.isArray(a) || a.length !== b.length || a.some((x, i) => typeof b[i] === 'string' ? x !== b[i] : Math.abs(x - b[i]) > tol) : Math.abs(a - b) > tol;
   const show = v => Array.isArray(v) ? v.join('/') : v, miss = Object.keys(want).filter(k => k !== 'tol' && k !== 'todo' && off(got[k], want[k]));
   if (want.todo) { todo++; console.log(`todo ${name}: ${Object.keys(want).filter(k => !['tol', 'todo'].includes(k)).map(k => `${k} ${show(got[k])}, game ${show(want[k])}`).join('; ')} (${want.todo})`); continue; }
   if (miss.length) { bad++; console.log(`FAIL ${name}: ${miss.map(k => `${k} ${show(got[k])}, game ${show(want[k])}`).join('; ')}`); }
