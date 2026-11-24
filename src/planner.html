@@ -1019,7 +1019,7 @@ function curveVal(id,x){ const c=WCURVE[id]; if(!c) return 0; const [st,gr,ex]=c
   for(let i=0;i<4;i++){ if(x<=st[i+1]){ const span=st[i+1]-st[i]; let r=span>0?(x-st[i])/span:1; const e=ex[i]; r=e>0?Math.pow(r,e):1-Math.pow(1-r,-e); return gr[i]+(gr[i+1]-gr[i])*r; } }
   return gr[4]; }
 // Scaling letters as Nightreign's menu shows them (lower steps than Elden Ring's 25 / 60 / 90 / 140 / 175). From the game's own
-// weapon screens: 13 E, 29 D, 30-44 C, 45-50 B, 73 S; from wiki pages: 18-28 D, 54-58 B, 61-70 A. Not seen yet: 16 (D or E) and 60 (B or A)
+// weapon screens: 13 E, 16-29 D, 30-44 C, 45-54 B, 60 A, 73 S; from wiki pages: 18-28 D, 58 B, 61-70 A (no weapon has 14-15 or 71-72)
 const grade = c => c>=71?'S':c>=60?'A':c>=45?'B':c>=30?'C':c>=15?'D':'E';
 // Nightreign's attack is 60% of what the Elden Ring-style stat formula gives. The menu shows that number, and a Training Post
 // (defense 100, like every enemy in the game) takes exactly that much. Checked in game, no relics: Guardian's Short Sword shows
