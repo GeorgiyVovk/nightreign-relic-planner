@@ -933,7 +933,13 @@ const WVAR={"Dagger":"100","Black Knife":"101","Parrying Dagger":"100","Miséric
 // measured in game where the Nightfarers' own movesets differ from the rows; {chain:[...]} replaces the whole chain
 // Revenant's claws two-handed R1: four presses, each a hit with each hand (60+60, 61+61, 64+64, 68+68 at level 15); the rows have
 // six presses, two of them one-handed, and a 79% finisher where the game's 68 needs 77%
-const WCH_FIX = {"Raider's Greataxe":{cht:[{mv:118,hits:2}],r2t:[{mv:141,at:253},{mv:141,at:253}]},
+// Raider's Greataxe one-handed, measured again (level 15, attack 158): R1 is four swings, 158, 161, 170, 170 (100, 102, 108, 108%);
+// R2 197 and 197 (125%) and charged R2 260 and 260 (165%), the plain greataxe's values, not its own rows' 130% and 175/170%.
+// Two-handed its R1 has a fourth swing too, which lands twice: 118 + 142 (75 + 90% of the one-handed attack).
+// Executor's blade two-handed: the charged R2 lands twice, 94 + 99 at level 15 (100 + 105%), where its row says one hit of 165%.
+const WCH_FIX = {"Raider's Greataxe":{r1:{chain:[{mv:100},{mv:102},{mv:108},{mv:108}]},r2:{chain:[{mv:125},{mv:125}]},ch:{chain:[{mv:165},{mv:165}]},
+    r1t:{chain:[{mv:114},{mv:117},{mv:125},{mv:75,sub:[[90,253]]}]},cht:[{mv:118,hits:2}],r2t:[{mv:141,at:253},{mv:141,at:253}]},
+  "Executor's Blade":{cht:{chain:[{mv:100,sub:[[105,253]]},{mv:100,sub:[[105,253]]}]}},
   "Revenant's Cursed Claws":{r1t:{chain:[{mv:68,at:1,hits:2},{mv:69,at:1,hits:2},{mv:73,at:1,hits:2},{mv:77,at:1,hits:2}]}},
   // Duchess' dagger one-handed (level 15): R1 72, 73, 54+54, 55+55, 75, 79; R2 54+54, then 36 three times; charged R2 108, then 79+79.
   // Her variation has no rows of its own, so the plain dagger's (120% R2s, 102/103% R1s) were standing in for it
