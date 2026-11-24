@@ -2,6 +2,7 @@
 // Every case is something someone hit in game; the calculator has to give the same number. Runs on the built page:
 //   node tools/build.js && node tools/measured.js
 // tol: how far off the game's own number may be (the game shows ±1 now and then on the same hit).
+// todo: measured, but the calculator doesn't give it yet; listed and counted apart, so the build doesn't stop on it.
 const fs = require('fs');
 const path = require('path');
 const { JSDOM } = require('jsdom');
@@ -78,6 +79,21 @@ const CASES = [
   ["Guardian's Halberd R2 chain, Guardian 15", W('Guardian', 15, "Guardian's Halberd", { atk: 'r2' }), { chain: [134, 134] }],
   ["Guardian's Halberd charged R2 chain, Guardian 15", W('Guardian', 15, "Guardian's Halberd", { atk: 'ch' }), { chain: [171, 171] }],
   ["Guardian's Halberd two-handed R1 chain, Guardian 15", W('Guardian', 15, "Guardian's Halberd", { two: true }), { chain: [110, 111, 112, 123] }],
+  ["Ironeye's Bow R2, Ironeye 15 (three arrows)", W('Ironeye', 15, "Ironeye's Bow", { atk: 'r2' }), { hit: 39 }],
+  ["Raider's Greataxe R1 chain, Raider 15", W('Raider', 15, "Raider's Greataxe"), { chain: [158, 161, 170, 170], todo: 'the game\'s chain has a fourth attack (170)' }],
+  ["Raider's Greataxe R2 chain, Raider 15", W('Raider', 15, "Raider's Greataxe", { atk: 'r2' }), { chain: [197, 197], todo: 'R2 lands 197, the calculator 205; check the conditions too (charged R2 was 275 before)' }],
+  ["Raider's Greataxe charged R2 chain, Raider 15", W('Raider', 15, "Raider's Greataxe", { atk: 'ch' }), { chain: [260, 260], todo: '260 now, 275 in the earlier measurement and in the calculator' }],
+  ["Raider's Greataxe two-handed R1 chain, Raider 15", W('Raider', 15, "Raider's Greataxe", { two: true }), { chain: [180, 185, 197, 118, 142], todo: 'the game\'s chain has a fourth attack that lands twice (118 + 142)' }],
+  ["Revenant's Cursed Claws two-handed R2, Revenant 15 (both hands)", W('Revenant', 15, "Revenant's Cursed Claws", { two: true, atk: 'r2' }), { chain: [75, 75, 75, 75] }],
+  ["Revenant's Cursed Claws two-handed charged R2, Revenant 15 (both hands)", W('Revenant', 15, "Revenant's Cursed Claws", { two: true, atk: 'ch' }), { chain: [92, 92, 92, 92], todo: '1 under the game' }],
+  ["Revenant's Cursed Claws R1 chain, Revenant 15", W('Revenant', 15, "Revenant's Cursed Claws"), { chain: [79, 79, 80, 86], todo: 'the calculator has six hits 1 under the game\'s four' }],
+  ["Revenant's Cursed Claws R2 chain, Revenant 15", W('Revenant', 15, "Revenant's Cursed Claws", { atk: 'r2' }), { chain: [94, 94], todo: '1 under the game' }],
+  ["Revenant's Cursed Claws charged R2 chain, Revenant 15", W('Revenant', 15, "Revenant's Cursed Claws", { atk: 'ch' }), { chain: [118, 118], todo: '1 under the game' }],
+  ["Executor's Blade R1 chain, Executor 15", W('Executor', 15, "Executor's Blade"), { chain: [94, 95, 96, 97, 104] }],
+  ["Executor's Blade R2 chain, Executor 15", W('Executor', 15, "Executor's Blade", { atk: 'r2' }), { chain: [118, 118] }],
+  ["Executor's Blade two-handed R1 chain, Executor 15", W('Executor', 15, "Executor's Blade", { two: true }), { chain: [97, 98, 99, 100, 107] }],
+  ["Executor's Blade two-handed R2 chain, Executor 15", W('Executor', 15, "Executor's Blade", { two: true, atk: 'r2' }), { chain: [123, 146], todo: 'the second R2 is 146 in the game, the same 123 in the calculator' }],
+  ["Executor's Blade two-handed charged R2 chain, Executor 15 (lands twice)", W('Executor', 15, "Executor's Blade", { two: true, atk: 'ch' }), { chain: [94, 99, 94, 99], todo: 'lands twice (94 + 99) in the game, once (156) in the calculator' }],
   // physical + magic: the game rounds the sum, not each type
   ['Crystal Sword (Uncommon) R1 chain, Guardian 15', W('Guardian', 15, 'Crystal Sword', { rar: 1 }), { menu: 110, chain: [110, 111, 113, 114, 121] }],
   ["Duchess' Dagger, Duchess 15, the whole set", W('Duchess', 15, "Duchess' Dagger", { fx: [...DEEP, 'melee', 'melee', 'skillap', 'skillap', 'addedaff'] }), { menu: 70, hit: 78, tol: 1 }],
@@ -110,15 +126,16 @@ win.eval(`window.__measure = function(c){
     else { const cs2 = curSpell(), sc = spellScaling(cs2.k, a, cs2.rate); out.ss = Math.floor(Math.max(...sc) + 1e-9); }
     return JSON.stringify(out); });
 };`);
-let bad = 0;
+let bad = 0, todo = 0;
 for (const [name, c, want] of CASES) {
   let got;
   try { got = JSON.parse(win.__measure(JSON.parse(JSON.stringify(c)))); }
   catch (e) { bad++; console.log(`FAIL ${name}: ${e.message}`); continue; }
   const tol = want.tol || 0, off = (a, b) => Array.isArray(b) ? !Array.isArray(a) || a.length !== b.length || a.some((x, i) => Math.abs(x - b[i]) > tol) : Math.abs(a - b) > tol;
-  const show = v => Array.isArray(v) ? v.join('/') : v, miss = Object.keys(want).filter(k => k !== 'tol' && off(got[k], want[k]));
+  const show = v => Array.isArray(v) ? v.join('/') : v, miss = Object.keys(want).filter(k => k !== 'tol' && k !== 'todo' && off(got[k], want[k]));
+  if (want.todo) { todo++; console.log(`todo ${name}: ${Object.keys(want).filter(k => !['tol', 'todo'].includes(k)).map(k => `${k} ${show(got[k])}, game ${show(want[k])}`).join('; ')} (${want.todo})`); continue; }
   if (miss.length) { bad++; console.log(`FAIL ${name}: ${miss.map(k => `${k} ${show(got[k])}, game ${show(want[k])}`).join('; ')}`); }
   else console.log(`ok   ${name}: ${Object.keys(want).filter(k => k !== 'tol').map(k => `${k} ${show(got[k])}`).join(', ')}`);
 }
-console.log(`\n${CASES.length - bad} of ${CASES.length} match the game`);
+console.log(`\n${CASES.length - bad - todo} of ${CASES.length - todo} match the game${todo ? `; ${todo} measured that the calculator doesn't give yet` : ''}`);
 process.exit(bad ? 1 : 0);
