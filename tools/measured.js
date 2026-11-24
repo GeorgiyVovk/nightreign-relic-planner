@@ -68,6 +68,16 @@ const CASES = [
   // twinblade: two-handing shows half the attack in the menu (its two-handed R1 opens at 50%), the press then lands 50% + 103%
   ['Twinblade, Wylder 15', W('Wylder', 15, 'Twinblade'), { menu: 108, hit: 108 }],
   ['Twinblade two-handed R1, Wylder 15 (54 + 111)', W('Wylder', 15, 'Twinblade', { two: true }), { menu: 54, hit: 54, p0: 165 }],
+  // Nightfarers' own weapons by grip, level 15, no relics (the game adds up hits in a row; these are the single hits)
+  ["Wylder's Greatsword R2 chain, Wylder 15", W('Wylder', 15, "Wylder's Greatsword", { atk: 'r2' }), { chain: [152, 152] }],
+  ["Wylder's Greatsword charged R2 chain, Wylder 15", W('Wylder', 15, "Wylder's Greatsword", { atk: 'ch' }), { chain: [195, 195] }],
+  ["Wylder's Greatsword two-handed R1 chain, Wylder 15", W('Wylder', 15, "Wylder's Greatsword", { two: true }), { chain: [125, 126, 128, 140] }],
+  ["Wylder's Greatsword two-handed R2 chain, Wylder 15", W('Wylder', 15, "Wylder's Greatsword", { two: true, atk: 'r2' }), { chain: [158, 158] }],
+  ["Wylder's Greatsword two-handed charged R2 chain, Wylder 15", W('Wylder', 15, "Wylder's Greatsword", { two: true, atk: 'ch' }), { chain: [201, 201] }],
+  ["Guardian's Halberd R1 chain, Guardian 15", W('Guardian', 15, "Guardian's Halberd"), { chain: [107, 108, 109, 118] }],
+  ["Guardian's Halberd R2 chain, Guardian 15", W('Guardian', 15, "Guardian's Halberd", { atk: 'r2' }), { chain: [134, 134] }],
+  ["Guardian's Halberd charged R2 chain, Guardian 15", W('Guardian', 15, "Guardian's Halberd", { atk: 'ch' }), { chain: [171, 171] }],
+  ["Guardian's Halberd two-handed R1 chain, Guardian 15", W('Guardian', 15, "Guardian's Halberd", { two: true }), { chain: [110, 111, 112, 123] }],
   // physical + magic: the game rounds the sum, not each type
   ['Crystal Sword (Uncommon) R1 chain, Guardian 15', W('Guardian', 15, 'Crystal Sword', { rar: 1 }), { menu: 110, chain: [110, 111, 113, 114, 121] }],
   ["Duchess' Dagger, Duchess 15, the whole set", W('Duchess', 15, "Duchess' Dagger", { fx: [...DEEP, 'melee', 'melee', 'skillap', 'skillap', 'addedaff'] }), { menu: 70, hit: 78, tol: 1 }],
