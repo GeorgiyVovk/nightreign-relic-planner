@@ -63,6 +63,8 @@
 .oc-simple .oc-main{min-height:38px;align-items:center}
 .oc-simple.oc-idle .oc-zbig{color:var(--oc-muted);font-weight:500;letter-spacing:0;text-transform:none;font-size:22px}
 `;
+  // "Ctrl+Shift+KeyO" as people say it: Ctrl + Shift + O
+  const keyName = k => String(k || '').split('+').filter(Boolean).map(t => t === 'Super' ? 'Win' : t.replace(/^Key(?=[A-Z]$)/, '').replace(/^Digit(?=\d$)/, '').replace(/^Numpad/, 'Num ').replace(/^Arrow/, '')).join(' + ');
   const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
 
   // Our own icons for each damage type and status, drawn for the planner on a 24-unit grid in the type's colour.
@@ -138,7 +140,7 @@
       return `<div class="oc-trackw" style="--mk:${mk}px;--mkc:${mkc}"><div class="oc-track" style="height:${h}px">${segs.join('')}${at == null ? '' : `<s style="width:${at}%"></s>`}</div>${at == null ? '' : `<b style="left:${at}%"></b>`}</div>`;
     }
     // before the timer starts it says Ready and names the hotkey; after that there are no labels at all
-    const ready = simple => `<div class="oc-sec oc-tm ${simple ? 'oc-simple ' : ''}oc-idle"><div class="oc-main"><span class="${simple ? 'oc-zbig' : 'oc-big'}">Ready</span></div><span class="oc-hint">Double-press ${esc(cfg.key || 'the hotkey')} when the status shows</span>`;
+    const ready = simple => `<div class="oc-sec oc-tm ${simple ? 'oc-simple ' : ''}oc-idle"><div class="oc-main"><span class="${simple ? 'oc-zbig' : 'oc-big'}">Ready</span></div><span class="oc-hint">Double-press ${esc(keyName(cfg.key) || 'the hotkey')} when the status shows</span>`;
     function full(x) {
       const bar = cfg.showBar !== false, nums = cfg.showTime !== false, names = cfg.showZone !== false;
       if (x == null) return { state: 'idle', html: ready(false) + (bar ? track(null) : '') + '</div>' };
