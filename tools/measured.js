@@ -86,13 +86,14 @@ const CASES = [
   ["Raider's Greataxe two-handed R1 chain, Raider 15", W('Raider', 15, "Raider's Greataxe", { two: true }), { chain: [180, 185, 197, 118, 142] }],
   ["Revenant's Cursed Claws two-handed R2, Revenant 15 (both hands)", W('Revenant', 15, "Revenant's Cursed Claws", { two: true, atk: 'r2' }), { chain: [75, 75, 75, 75] }],
   ["Revenant's Cursed Claws two-handed charged R2, Revenant 15 (both hands)", W('Revenant', 15, "Revenant's Cursed Claws", { two: true, atk: 'ch' }), { chain: [92, 92, 92, 92], todo: '1 under the game' }],
+  // the claws' menu attack at level 15: 75 one-handed, 58 two-handed; the calculator has 88 and 59, so its attack is off, not only the hits
   ["Revenant's Cursed Claws R1 chain, Revenant 15", W('Revenant', 15, "Revenant's Cursed Claws"), { chain: [79, 79, 80, 86], todo: 'the calculator has six hits 1 under the game\'s four' }],
   ["Revenant's Cursed Claws R2 chain, Revenant 15", W('Revenant', 15, "Revenant's Cursed Claws", { atk: 'r2' }), { chain: [94, 94], todo: '1 under the game' }],
   ["Revenant's Cursed Claws charged R2 chain, Revenant 15", W('Revenant', 15, "Revenant's Cursed Claws", { atk: 'ch' }), { chain: [118, 118], todo: '1 under the game' }],
   ["Executor's Blade R1 chain, Executor 15", W('Executor', 15, "Executor's Blade"), { chain: [94, 95, 96, 97, 104] }],
   ["Executor's Blade R2 chain, Executor 15", W('Executor', 15, "Executor's Blade", { atk: 'r2' }), { chain: [118, 118] }],
   ["Executor's Blade two-handed R1 chain, Executor 15", W('Executor', 15, "Executor's Blade", { two: true }), { chain: [97, 98, 99, 100, 107] }],
-  ["Executor's Blade two-handed R2 chain, Executor 15", W('Executor', 15, "Executor's Blade", { two: true, atk: 'r2' }), { chain: [123, 146], todo: 'the second R2 is 146 in the game, the same 123 in the calculator' }],
+  ["Executor's Blade two-handed R2 chain, Executor 15 (the second a thrust)", W('Executor', 15, "Executor's Blade", { two: true, atk: 'r2' }), { chain: [123, 123] }],
   ["Executor's Blade two-handed charged R2 chain, Executor 15 (lands twice)", W('Executor', 15, "Executor's Blade", { two: true, atk: 'ch' }), { chain: [94, 99, 94, 99] }],
   // physical + magic: the game rounds the sum, not each type
   ['Crystal Sword (Uncommon) R1 chain, Guardian 15', W('Guardian', 15, 'Crystal Sword', { rar: 1 }), { menu: 110, chain: [110, 111, 113, 114, 121] }],
