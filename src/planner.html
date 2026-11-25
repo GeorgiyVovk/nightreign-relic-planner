@@ -1783,7 +1783,11 @@ const RARN=['Common','Uncommon','Rare','Legendary'];
 // a spell's name; 2000000 + id is the same spell, and a few ids are variants of the one ending in 0
 const spName = v => { if(!v) return ''; const x=v>=2000000?v-2000000:v; return SPN[x]||SPN[Math.floor(x/10)*10]||''; };
 const skName = s => s&&s!==10 ? ((WSKILL[s]&&WSKILL[s][0])||WSKILLX[s]||'') : '';
-function histRuns(){ return runs.filter(r=>(hist.mode==='all'||(hist.mode==='don')===(r.mode===2))&&(!hist.team||r.pl.length===hist.team)); }
+// Day 1's boss comes about 14 minutes in; a defeat before that (a disconnect, a teammate quitting, an early wipe) can be left out of History
+// and Stats with Settings → History. Runs read by a version without the run time stay in.
+const EARLY_S=14*60, earlyLoss=r=>!r.win&&r.dur>0&&r.dur<EARLY_S;
+const histBase=()=>runs.filter(r=>(hist.mode==='all'||(hist.mode==='don')===(r.mode===2))&&(!hist.team||r.pl.length===hist.team));
+function histRuns(){ const hide=!!setGet().hideEarly; return histBase().filter(r=>!(hide&&earlyLoss(r))); }
 // a relic from the run's record, as one line: its name if it has one, else its effects (short), then its curses
 // a relic from the run's record, as one line: its name if it has one, else its effects (short), then its curses
 function histRelic(x,nf){
@@ -1894,7 +1898,8 @@ function histHead(title,list){
   const seg=[['all','All'],['don','Deep of Night'],['exp','Normal']].map(([k,l])=>`<button data-hmode="${k}" aria-pressed="${hist.mode===k}">${l}</button>`).join('');
   const tseg=[[0,'Any'],[1,'Solo'],[2,'Duo'],[3,'Trio']].map(([k,l])=>`<button data-hteam="${k}" aria-pressed="${hist.team===k}">${l}</button>`).join('');
   return `<div class="ph"><h2>${title}</h2><div class="phr"><div class="seg" role="group" aria-label="Mode">${seg}</div><div class="seg" role="group" aria-label="Team">${tseg}</div></div></div>`
-    +(list.length?'':`<p class="msg">No ${hist.team?['','solo','duo','trio'][hist.team]+' ':''}${hist.mode==='don'?'Deep of Night':hist.mode==='exp'?'normal':''} runs in the last ${runs.length}.</p>`);
+    +(list.length?'':`<p class="msg">No ${hist.team?['','solo','duo','trio'][hist.team]+' ':''}${hist.mode==='don'?'Deep of Night':hist.mode==='exp'?'normal':''} runs in the last ${runs.length}.</p>`)
+    +(()=>{ const n=setGet().hideEarly?histBase().filter(earlyLoss).length:0; return n?`<p class="hhint">${n} ${n===1?'defeat':'defeats'} before 14:00 left out (Settings → History).</p>`:''; })();
 }
 // the Deep of Night rating chart above the runs (only when there are Deep of Night runs and the filter allows them)
 function ratingChart(){
@@ -3199,7 +3204,9 @@ if(!APP){ const b=document.getElementById('ovbtn'); if(b) b.hidden=false; }
 function historySetPage(){ const s=setGet();
   return `<h4 class="spt">History</h4>
     <div class="ovsec">${ovTgl('set-preclose',!!s.preClose,'Count a run for a preset when one relic differs')}
-      <p class="msg">Presets change. With this on, a run where one of your six relics wasn't the preset's (as it's saved now) still counts for it in Stats, and History marks it ≈.</p></div>`; }
+      <p class="msg">Presets change. With this on, a run where one of your six relics wasn't the preset's (as it's saved now) still counts for it in Stats, and History marks it ≈.</p></div>
+    <div class="ovsec">${ovTgl('set-hideearly',!!s.hideEarly,'Leave out defeats before 14:00')}
+      <p class="msg">Day 1's boss comes about 14 minutes in. With this on, a run lost before that (a disconnect, a teammate quitting, an early wipe) leaves History and Stats, so it doesn't count against your win rate or streaks. The rating chart keeps every run.</p></div>`; }
 function openSettings(pg){ const old=document.querySelector('#setdlg .setpanel'), same=!pg||pg===setPage, keep=old&&same?old.scrollTop:0; if(pg) setPage=pg;
   if(!setPages().some(([k])=>k===setPage)) setPage=setPages()[0][0];
   openOv(`<div class="dlg setdlg" id="setdlg" role="dialog" aria-modal="true" aria-label="Settings"><div class="dh"><h3>Settings</h3><button class="btn sm ghost" data-act="close">Close</button></div>
@@ -3479,6 +3486,7 @@ document.addEventListener('change', ev=>{
     if(t.id==='w-pick'){ ws.name=t.value; const w=WBYN[ws.name]; if(!w[5].some(x=>x[0]===ws.aff)) ws.aff=w[5][0][0]; ws.rar=Math.max(ws.rar,w[2]); delete ws.skill; } else if(t.id==='w-aff') ws.aff=+t.value; else ws.two=t.checked;
     saveBuildSoon(); renderCombat(); renderResults(); return; }
   if(t.id==='w-skill'){ weaponState().skill=+t.value; saveBuildSoon(); renderCombat(); return; }
+  if(t.id==='set-hideearly'){ const o=setGet(); o.hideEarly=t.checked; setSave(o); renderHistory(); return; }
   if(t.id==='set-preclose'){ const o=setGet(); o.preClose=t.checked; setSave(o); renderHistory(); return; }
   if(t.id==='set-updstart'){ const o=setGet(); o.updStart=t.checked; setSave(o); if(t.checked&&!updTimer) scheduleUpdateChecks(); return; }
   if(t.id==='ov-sa'||t.id==='ov-sb'){ const o=ovlGet(); o.safe[t.id==='ov-sa'?'a':'b']=+t.value; delete o.zones;
