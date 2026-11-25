@@ -185,9 +185,9 @@
     const ev = run && run.ev ? '<span class="oc-ev">Everdark</span> ' : '';
     if (cfg.nl !== false && run) html += `<div class="oc-sec oc-nl"><div class="oc-id"><div class="oc-name">${ev}${esc(cfg.nlName === 'exp' ? run.title : run.name)}</div>${cfg.nlName === 'both' ? `<div class="oc-sub">${esc(run.title)}</div>` : ''}</div>`
       + weakHtml(run.weak) + '</div>';
-    // Nightlord only (both timers off) and no run yet: the empty frame at the size the Nightlord will take (a name, the second
-    // name line if shown, a row of icons with a status bar), so the overlay doesn't vanish and nothing jumps when the run starts
-    else if (cfg.nl !== false && cfg.timer === false && cfg.day === false) html += `<div class="oc-sec oc-nl oc-wait" aria-hidden="true"><div class="oc-id"><div class="oc-name">&nbsp;</div>${cfg.nlName === 'both' ? '<div class="oc-sub">&nbsp;</div>' : ''}</div><div class="oc-weak"><span class="oc-tag oc-st oc-lv1"><b></b></span></div></div>`;
+    // no run yet: the Nightlord's place stays, an empty frame at the size it will take (a name, the second name line if shown,
+    // a row of icons with a status bar), so the card is its real size before the run too and nothing jumps when it starts
+    else if (cfg.nl !== false) html += `<div class="oc-sec oc-nl oc-wait" aria-hidden="true"><div class="oc-id"><div class="oc-name">&nbsp;</div>${cfg.nlName === 'both' ? '<div class="oc-sub">&nbsp;</div>' : ''}</div><div class="oc-weak"><span class="oc-tag oc-st oc-lv1"><b></b></span></div></div>`;
     if (cfg.day !== false) html += dayHtml(cfg, day);
     if (cfg.timer !== false) { const r = cfg.simple === true ? simple(t) : full(t); html += r.html; state = r.state; }
     if (!html && moving) html = '<div class="oc-sec"><span class="oc-hint">Drag me</span></div>';
