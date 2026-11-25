@@ -1,10 +1,11 @@
 // The overlay card: what it shows and how it looks. Shared by the overlay window (tools/overlay.html) and the
 // live preview in the planner's Settings, so the two can't drift apart. Every class starts with "oc".
 //
-// render(cfg, run, t, moving) -> { html, cls, empty, state, bga }
+// render(cfg, run, t, moving, day) -> { html, cls, empty, state, bga }
 //   cfg: the overlay settings (timer, simple, showTime, showZone, showBar, barH, mk, zones, cycle, key, nl, nlName, bg)
 //   run: this run's Nightlord as the planner sends it ({name, title, don, ev, weak: {dmg, st}}) or null
 //   t:   seconds into the Dreglord cycle, or null before the first press
+//   day: the day timer, {s: seconds since the day's title showed, n: 1 or 2}, or null before the first press
 (function (g) {
   const CSS = `
 .oc{--oc-fg:#DDE3EC;--oc-muted:#8E9AB0;--oc-accent:#AFC3E3;--oc-good:#6CC48C;--oc-mid:#E8C04A;--oc-bad:#E2685A;--oc-ev:#B48AE8;--oc-line:rgba(175,195,227,.22);
@@ -33,6 +34,16 @@
 .oc-lv2::after{background:var(--oc-mid)}
 .oc-lv3::after{background:var(--oc-bad)}
 .oc-none{font-size:12px;color:var(--oc-muted)}
+/* the day timer: one line (which day, the next event and how long until it) over a thin bar of the 14 minutes */
+.oc-day{gap:6px}
+.oc-dl{display:flex;align-items:baseline;gap:8px;font-size:14px;white-space:nowrap}
+.oc-dn{font-size:12px;color:var(--oc-muted)}
+.oc-dt b{font-weight:600;font-variant-numeric:tabular-nums}
+.oc-day.oc-idle .oc-dt{color:var(--oc-muted)}
+.oc-dtrack{position:relative;height:6px;border-radius:3px;background:rgba(175,195,227,.18);overflow:hidden}
+.oc-dtrack i{position:absolute;top:0;bottom:0;background:var(--oc-bad);opacity:.75}
+.oc-dtrack s{position:absolute;left:0;top:0;bottom:0;background:rgba(0,0,0,.45)}
+.oc-dtrack b{position:absolute;top:0;bottom:0;width:2px;margin-left:-1px;background:var(--mkc,#fff)}
 .oc-wait{visibility:hidden}
 .oc-main{display:flex;align-items:baseline;gap:8px}
 .oc-big{font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:38px;font-weight:600;line-height:1;font-variant-numeric:tabular-nums}
@@ -111,7 +122,19 @@
     // damage types, a divider, then statuses, all in one row
     return `<div class="oc-weak">${dmg.map(x => tag(x, '')).join('')}${dmg.length && st.length ? '<i class="oc-sep"></i>' : ''}${st.map(x => tag(x, ' oc-st')).join('')}</div>`;
   }
-  function render(cfg, run, t, moving) {
+  // A day (Day I, Day II) runs 14 minutes from its title: the first circle starts closing at 4:30 and is closed at 7:30,
+  // the second starts at 11:00, and when it closes at 14:00 the night boss comes (players' measurements).
+  const DAY_CLOSE = [[270, 450], [660, 840]], DAY_END = 840;
+  const mmss = x => { x = Math.max(0, Math.ceil(x)); return Math.floor(x / 60) + ':' + String(x % 60).padStart(2, '0'); };
+  function dayHtml(cfg, day) {
+    const mkc = /^#[0-9a-f]{6}$/i.test(cfg.mk || '') ? cfg.mk : '#ffffff';
+    const bar = s => `<div class="oc-dtrack" style="--mkc:${mkc}">${DAY_CLOSE.map(([a, b]) => `<i style="left:${(a / DAY_END * 100).toFixed(2)}%;width:${((b - a) / DAY_END * 100).toFixed(2)}%"></i>`).join('')}${s == null ? '' : `<s style="width:${(Math.min(s, DAY_END) / DAY_END * 100).toFixed(2)}%"></s><b style="left:${(Math.min(s, DAY_END) / DAY_END * 100).toFixed(2)}%"></b>`}</div>`;
+    if (!day) return `<div class="oc-sec oc-day oc-idle"><div class="oc-dl"><span class="oc-dn">Day</span><span class="oc-dt">${cfg.dkey === '' ? 'Set a day timer hotkey in Settings' : `Double-press ${esc(keyName(cfg.dkey) || 'the hotkey')} at DAY I`}</span></div>${bar(null)}</div>`;
+    const s = day.s, n = day.n === 2 ? 'Day II' : 'Day I';
+    const txt = s < 270 ? `Circle in <b>${mmss(270 - s)}</b>` : s < 450 ? `Circle closing <b>${mmss(450 - s)}</b>` : s < 660 ? `Next circle in <b>${mmss(660 - s)}</b>` : s < DAY_END ? `Boss in <b>${mmss(DAY_END - s)}</b>` : 'Night boss';
+    return `<div class="oc-sec oc-day"><div class="oc-dl"><span class="oc-dn">${n}</span><span class="oc-dt">${txt}</span></div>${bar(s)}</div>`;
+  }
+  function render(cfg, run, t, moving, day) {
     cfg = cfg || {};
     // The cycle counts from the start point up to the cycle length, then from 0 again. Zones colour parts of it:
     // green safe, red danger, white where no zone is set. A zone may wrap past the end (15 to 2).
@@ -162,9 +185,10 @@
     const ev = run && run.ev ? '<span class="oc-ev">Everdark</span> ' : '';
     if (cfg.nl !== false && run) html += `<div class="oc-sec oc-nl"><div class="oc-id"><div class="oc-name">${ev}${esc(cfg.nlName === 'exp' ? run.title : run.name)}</div>${cfg.nlName === 'both' ? `<div class="oc-sub">${esc(run.title)}</div>` : ''}</div>`
       + weakHtml(run.weak) + '</div>';
-    // Nightlord only (timer off) and no run yet: the empty frame at the size the Nightlord will take (a name, the second name
-    // line if shown, a row of icons with a status bar), so the overlay doesn't vanish and nothing jumps when the run starts
-    else if (cfg.nl !== false && cfg.timer === false) html += `<div class="oc-sec oc-nl oc-wait" aria-hidden="true"><div class="oc-id"><div class="oc-name">&nbsp;</div>${cfg.nlName === 'both' ? '<div class="oc-sub">&nbsp;</div>' : ''}</div><div class="oc-weak"><span class="oc-tag oc-st oc-lv1"><b></b></span></div></div>`;
+    // Nightlord only (both timers off) and no run yet: the empty frame at the size the Nightlord will take (a name, the second
+    // name line if shown, a row of icons with a status bar), so the overlay doesn't vanish and nothing jumps when the run starts
+    else if (cfg.nl !== false && cfg.timer === false && cfg.day === false) html += `<div class="oc-sec oc-nl oc-wait" aria-hidden="true"><div class="oc-id"><div class="oc-name">&nbsp;</div>${cfg.nlName === 'both' ? '<div class="oc-sub">&nbsp;</div>' : ''}</div><div class="oc-weak"><span class="oc-tag oc-st oc-lv1"><b></b></span></div></div>`;
+    if (cfg.day !== false) html += dayHtml(cfg, day);
     if (cfg.timer !== false) { const r = cfg.simple === true ? simple(t) : full(t); html += r.html; state = r.state; }
     if (!html && moving) html = '<div class="oc-sec"><span class="oc-hint">Drag me</span></div>';
     const cls = 'oc' + (state === 'danger' ? ' oc-alert' : state === 'safe' ? ' oc-calm' : '') + (moving ? ' oc-move' : '');
@@ -177,5 +201,7 @@
     const C = Math.max(1, +(cfg || {}).cycle || 20), z = ((cfg || {}).zones || []).find(z => z.c === 'g' && z.a !== z.b);
     return z ? (z.a + ((z.b - z.a + C) % C) / 2) % C : +(cfg || {}).start || 0;
   }
-  g.NROverlayCard = { css: CSS, render, sample, icon: n => ICON[n] || '' };
+  // the day timer while you move the overlay: Day I, first circle closing, so the bar shows
+  const daySample = () => ({ s: 330, n: 1 });
+  g.NROverlayCard = { css: CSS, render, sample, daySample, icon: n => ICON[n] || '' };
 })(window);

@@ -34,6 +34,7 @@
       lock: (locked) => invoke('overlay_lock', { locked }),
       hotkey: (key) => invoke('overlay_hotkey', { key }),
       toggleKey: (key) => invoke('overlay_toggle_key', { key }),   // the key that shows or hides the overlay
+      dayKey: (key) => invoke('overlay_day_key', { key }),   // the day timer's key ('' = off)
       onToggle: (cb) => { listen('overlay:toggle', () => cb()); },
       config: (cfg) => T.event.emit('overlay:config', cfg),
       run: (run) => T.event.emit('overlay:run', run),

@@ -23,12 +23,14 @@ html,body{margin:0;background:transparent;overflow:hidden;user-select:none;-webk
   const T = window.__TAURI__, OC = window.NROverlayCard;
   const css = document.createElement('style'); css.textContent = OC.css; document.head.appendChild(css);
   const card = document.getElementById('card');
-  let cfg = {key:'F8', cycle:20, start:0.5, zones:[{c:'g',a:1,b:17},{c:'r',a:17,b:1}], nl:true, timer:true, showTime:false, showBar:true, barH:12, mk:'#ffffff', simple:false, showZone:false, nlName:'boss', bg:70}, run = null;
+  let cfg = {key:'F8', cycle:20, start:0.5, zones:[{c:'g',a:1,b:17},{c:'r',a:17,b:1}], nl:true, timer:true, day:true, dkey:'F7', showTime:false, showBar:true, barH:12, mk:'#ffffff', simple:false, showZone:false, nlName:'boss', bg:70}, run = null;
   try { Object.assign(cfg, JSON.parse(localStorage.getItem('nr-overlay')||'{}')); } catch(e) {}
   if (String(cfg.mk).toLowerCase() === '#ffd43b') cfg.mk = '#2ce0ff';   // the old yellow playhead is cyan now
   if (cfg.tr != null) cfg.bg = 100 - cfg.tr;   // saved settings keep the background as transparency
   try { run = JSON.parse(localStorage.getItem('nr-overlay-run')||'null'); } catch(e) {}
   let example = null, start = 0, moving = false, timer = null, lastH = 0, lastW = 0, lastPress = 0, presses = 0, first = 0;
+  // the day timer: when the day's title showed (performance clock, 0 = not running), which day (1 or 2), its presses
+  let dStart = 0, dN = 0, dLast = 0, dPresses = 0, dFirst = 0;
   const MULTI_MS = 400;   // presses this close together count as one double or triple press
   // seconds into the cycle: from the start point at the press, wrapping at the cycle length; null before a press
   const now = () => start ? ((+cfg.start || 0) + (performance.now() - start) / 1000) % Math.max(1, +cfg.cycle || 20) : null;
@@ -41,21 +43,25 @@ html,body{margin:0;background:transparent;overflow:hidden;user-select:none;-webk
   // while you move it, the card looks as it will in a run: the planner's example Nightlord when no run is going on,
   // and the timer as if running (mid safe zone) instead of Ready
   // the planner's preview shows this same card: it hears when the cycle started (wall clock) or that it isn't running
-  let sent = -1;
-  function tell(force){ if (!T || (!force && start === sent)) return; sent = start;
-    T.event.emit('overlay:timer', { epoch: start ? Date.now() - (performance.now() - start) : null }).catch(() => {}); }
+  let sent = '';
+  const wall = p => p ? Date.now() - (performance.now() - p) : null;
+  function tell(force){ const sig = start + '|' + dStart + '|' + dN; if (!T || (!force && sig === sent)) return; sent = sig;
+    T.event.emit('overlay:timer', { epoch: wall(start), dayEpoch: wall(dStart), day: dN }).catch(() => {}); }
   function draw(){
     if (cfg.timer === false) start = 0;
-    const t = now(), r = OC.render(cfg, run || (moving ? example : null), t == null && moving ? OC.sample(cfg) : t, moving);
+    if (cfg.day === false) { dStart = 0; dN = 0; }
+    const t = now(), day = dStart ? { s: (performance.now() - dStart) / 1000, n: dN } : moving ? OC.daySample() : null;
+    const r = OC.render(cfg, run || (moving ? example : null), t == null && moving ? OC.sample(cfg) : t, moving, day);
     card.hidden = r.empty; card.className = r.cls; card.innerHTML = r.html; card.style.setProperty('--oc-bga', r.bga);
     if (moving) card.setAttribute('data-tauri-drag-region', ''); else card.removeAttribute('data-tauri-drag-region');
     card.querySelectorAll('*').forEach(el => moving ? el.setAttribute('data-tauri-drag-region','') : el.removeAttribute('data-tauri-drag-region'));
     fit(); tell(false);
   }
-  function tick(){ draw(); if (!start && timer){ clearInterval(timer); timer = null; } }
+  function tick(){ draw(); if (!start && !dStart && timer){ clearInterval(timer); timer = null; } }
+  const ticking = () => { if (!timer) timer = setInterval(tick, 100); };
   function stop(){ start = 0; lastPress = 0; presses = 0; tick(); }
   // (re)start the cycle from the start point, counted from the moment at
-  function restart(at){ if (cfg.timer === false) return; start = at; if (!timer) timer = setInterval(tick, 100); draw(); }
+  function restart(at){ if (cfg.timer === false) return; start = at; ticking(); draw(); }
   // one press does nothing; a double press (re)starts the cycle, counted from its first press, when you reacted;
   // a triple press stops it
   function go(){
@@ -66,12 +72,26 @@ html,body{margin:0;background:transparent;overflow:hidden;user-select:none;-webk
     if (presses === 2) restart(first);
     else if (presses >= 3) stop();
   }
+  // the day timer's key: a double press starts the day from its first press (Day I, or Day II when a day has been running
+  // for 2 minutes or more; sooner, it resyncs the same day); a triple press stops it; the run's end resets it
+  function dayGo(){
+    if (cfg.day === false) return;
+    const t = performance.now();
+    if (dPresses && t - dLast < MULTI_MS) dPresses++; else { dPresses = 1; dFirst = t; }
+    dLast = t;
+    if (dPresses === 2){ dN = !dStart ? 1 : (dFirst - dStart) / 1000 < 120 ? dN : Math.min(2, dN + 1); dStart = dFirst; ticking(); draw(); }
+    else if (dPresses >= 3){ dStart = 0; dN = 0; draw(); }
+  }
+  const runKey = r => r ? (r.stamp || r.name || 1) : null;
   if (T){
     T.event.listen('overlay:hotkey', go);
+    T.event.listen('overlay:day', dayGo);
     T.event.listen('overlay:restart', () => restart(performance.now()));   // Test in Settings
     T.event.listen('overlay:stop', stop);
     T.event.listen('overlay:config', e => { Object.assign(cfg, e.payload||{}); draw(); });
-    T.event.listen('overlay:run', e => { run = e.payload || null; draw(); });
+    // the run ending, or another run in its place, resets the day timer; a run showing up doesn't (the save may be written
+    // after you've already started Day I)
+    T.event.listen('overlay:run', e => { const r = e.payload || null; if (!r || (run && runKey(r) !== runKey(run))) { dStart = 0; dN = 0; } run = r; draw(); });
     T.event.listen('overlay:example', e => { example = e.payload || null; draw(); });
     T.event.listen('overlay:locked', e => { moving = !e.payload; draw(); });
     T.event.listen('overlay:timer?', () => tell(true));
