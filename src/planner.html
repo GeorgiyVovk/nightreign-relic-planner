@@ -614,6 +614,7 @@ select:hover{background-image:linear-gradient(to top right,transparent 50%,var(-
 .run.win .res{color:var(--good)}
 .run .meta{font-size:12px;color:var(--muted);min-width:0}
 .run .meta .rpre{color:var(--fg);font-weight:500}
+.rpre .old,.htab .old{color:var(--muted);font-weight:400}
 .htab tr.faintrow td{color:var(--muted)}
 .run .rt{grid-column:2;grid-row:1 / span 2;display:flex;flex-direction:column;align-items:flex-end;gap:2px;font-family:var(--f-mono);font-variant-numeric:tabular-nums;font-size:13px;white-space:nowrap}
 @media (max-width:560px){
@@ -1792,19 +1793,43 @@ function histRelic(x,nf){
   return `<li class="rrelf c-${r.color}${r.deep?' dp':''}" title="${esc([...(r.name?[r.name]:[]),...r.effects.map(nm),...r.curses.map(nm)].join('\n'))}">${label||'Relic'}${curses.length?`<span class="rcur">${curses.join(', ')}</span>`:''}</li>`;
 }
 // The preset you took on a run: the run keeps your six relics, so a preset of that Nightfarer (the game's or yours here) with
-// exactly the same relics matches; one relic different matches nothing. Ties go to the game's own presets, then the list's order.
+// exactly the same relics matches. The planner remembers that match by run number (build.runPre), so after you change the preset
+// the run still counts for it, shown "(old)"; a run is only remembered from an exact match, made when the planner first sees it
+// (normally right after the run, when the game saves). With Settings → History → "one relic differs" on, a preset with all but
+// one of a run's relics counts too, marked ≈ (fewer than four in common never). Exact beats close; ties go to the game's
+// presets, then list order. Game presets are known by Nightfarer and name (their place in the game's list can move), the
+// planner's own by id.
 let _pm=null;
+const runSig=r=>{ const me=r.pl[0]; return me&&me.rel&&me.rel.length?me.rel.map(x=>relSig(x[0],x.slice(1,4),x.slice(4,7))).sort().join(';'):''; };
+const presetFind=st=>build.presets.find(p=>st.game?p.game&&p.char===st.char&&p.name===st.name:p.id===st.id)||null;
+function presetCache(){
+  if(_pm) return _pm;
+  _pm=new Map(); _pm.close=!!setGet().preClose;
+  _pm.C=build.presets.map((p,i)=>{ const sigs=p.slots.filter(Boolean).map(id=>{ const x=saveMap.get(id); return x&&x.gs||null; });
+    return {p,i,sigs,sig:sigs.some(x=>!x)?'':sigs.slice().sort().join(';')}; }).filter(c=>c.sig);
+  // remember the exact matches of runs seen for the first time; forget runs no longer in the history
+  if(!build.runPre||typeof build.runPre!=='object'||Array.isArray(build.runPre)) build.runPre={};
+  const RP=build.runPre, have=new Set(runs.map(r=>String(r.n))); let changed=false;
+  Object.keys(RP).forEach(k=>{ if(runs.length&&!have.has(k)){ delete RP[k]; changed=true; } });
+  runs.forEach(r=>{ if(RP[r.n]) return; const sg=runSig(r), ch=r.pl[0]&&SV_CHARS[r.pl[0].ch-1]; if(!sg) return;
+    const c=_pm.C.filter(c=>c.p.char===ch&&c.sig===sg).sort((a,b)=>(b.p.game?1:0)-(a.p.game?1:0)||a.i-b.i)[0];
+    if(c){ RP[r.n]={id:c.p.id,name:c.p.name,char:c.p.char,game:!!c.p.game,sig:sg}; changed=true; } });
+  if(changed) saveBuildSoon();
+  return _pm; }
 function runPreset(r){
-  if(!_pm){ _pm=new Map(); const C=build.presets.map((p,i)=>({p,i,sigs:p.slots.filter(Boolean).map(id=>{ const x=saveMap.get(id); return x&&x.gs||null; })})).filter(c=>c.sigs.some(Boolean));
-    _pm.C=C; }
-  if(_pm.has(r.n)) return _pm.get(r.n);
-  const me=r.pl[0], ch=me&&SV_CHARS[me.ch-1]; let best=null;
-  if(me&&me.rel&&me.rel.length){ const rs=me.rel.map(x=>relSig(x[0],x.slice(1,4),x.slice(4,7)));
-    for(const c of _pm.C){ if(c.p.char!==ch) continue; const a=rs.slice(); let k=0; c.sigs.forEach(g=>{ const j=g?a.indexOf(g):-1; if(j>=0){ a.splice(j,1); k++; } });
-      if(k!==rs.length||k!==c.sigs.length) continue;
-      const sc=[c.p.game?1:0,-c.i]; if(!best||sc[0]>best.sc[0]||(sc[0]===best.sc[0]&&sc[1]>best.sc[1])) best={p:c.p,sc}; } }
-  const out=best?{p:best.p}:null; _pm.set(r.n,out); return out; }
-const presetChip=m=>m?`<span class="rpre" title="Your relics on this run were this preset's">${esc(m.p.name)}</span>`:'';
+  const P=presetCache(); if(P.has(r.n)) return P.get(r.n);
+  let out=null; const st=build.runPre[r.n];
+  if(st){ const p=presetFind(st), c=p&&P.C.find(c=>c.p===p);
+    out={p:p||{id:'old:'+st.char+'|'+st.name,name:st.name,char:st.char,game:st.game},old:!p||!c||c.sig!==st.sig}; }
+  else if(P.close){ const me=r.pl[0], ch=me&&SV_CHARS[me.ch-1], sg=runSig(r);
+    if(sg){ const rs=sg.split(';'); let best=null;
+      for(const c of P.C){ if(c.p.char!==ch) continue; const a=rs.slice(); let k=0; c.sig.split(';').forEach(g=>{ const j=a.indexOf(g); if(j>=0){ a.splice(j,1); k++; } });
+        const n=c.sig.split(';').length, off=Math.max(rs.length,n)-k; if(off>1||(off===1&&k<4)) continue;
+        const sc=[-off,c.p.game?1:0,-c.i], j=best?sc.findIndex((x,q)=>x!==best.sc[q]):0;
+        if(!best||(j>=0&&sc[j]>best.sc[j])) best={p:c.p,close:off===1,sc}; }
+      if(best) out={p:best.p,close:best.close}; } }
+  P.set(r.n,out); return out; }
+const presetChip=m=>m?`<span class="rpre" title="${m.old?'Your relics on this run were this preset\'s before you changed it':m.close?'Your relics on this run: all but one of this preset\'s, as it is saved now':'Your relics on this run were this preset\'s'}">${m.close?'≈ ':''}${esc(m.p.name)}${m.old?' <span class="old">(old)</span>':''}</span>`:'';
 function histGroup(list,keys){
   const m=new Map();
   list.forEach(r=>keys(r).forEach(([k,extra])=>{ const e=m.get(k)||{k,n:0,w:0,kills:0,chars:new Map()}; e.n++; if(r.win) e.w++;
@@ -1909,12 +1934,12 @@ function renderStats(){
   const stop=hist.all.s?smap:smap.slice(0,12);
   // presets: the ones you took, most runs first, then the runs that match none
   const pre=new Map(); let none={n:0,w:0};
-  list.forEach(r=>{ const m=runPreset(r); if(!m){ none.n++; if(r.win) none.w++; return; } const e=pre.get(m.p.id)||{p:m.p,n:0,w:0}; e.n++; if(r.win) e.w++; pre.set(m.p.id,e); });
+  list.forEach(r=>{ const m=runPreset(r); if(!m){ none.n++; if(r.win) none.w++; return; } const e=pre.get(m.p.id)||{p:m.p,n:0,w:0,close:0,old:0}; e.n++; if(r.win) e.w++; if(m.close) e.close++; if(m.old) e.old++; pre.set(m.p.id,e); });
   const pall=[...pre.values()].sort((a,b)=>b.n-a.n||b.w-a.w||a.p.name.localeCompare(b.p.name)), ptop=hist.all.p?pall:pall.slice(0,10);
   const presetPanel=`<section class="panel"><div class="ph"><h2>Your presets</h2></div>${pall.length?`<table class="htab"><thead><tr><th>Preset</th><th>Runs</th><th>Won</th><th>Win rate</th></tr></thead><tbody>
-      ${ptop.map(e=>`<tr><td>${esc(e.p.name)}<span class="s2">${esc(nfName(SV_CHARS.indexOf(e.p.char)+1))}${e.p.game?'':' · saved here'}</span></td><td>${e.n}</td><td>${e.w}</td><td>${wrCell(e)}</td></tr>`).join('')}
+      ${ptop.map(e=>`<tr><td>${esc(e.p.name)}${!build.presets.includes(e.p)?' <span class="old">(old)</span>':''}<span class="s2">${esc(nfName(SV_CHARS.indexOf(e.p.char)+1))}${e.p.game?'':' · saved here'}${!build.presets.includes(e.p)?' · no longer saved':e.old?` · ${e.old===e.n?'all':e.old} on an older version`:''}${e.close?` · ${e.close===e.n?'one relic different on each run':e.close+' with one relic different'}`:''}</span></td><td>${e.n}</td><td>${e.w}</td><td>${wrCell(e)}</td></tr>`).join('')}
       ${none.n?`<tr class="faintrow"><td>No preset<span class="s2">Relics that match none of your presets</span></td><td>${none.n}</td><td>${none.w}</td><td>${wrCell(none)}</td></tr>`:''}</tbody></table>
-      <div class="hmore"><span>Runs where your relics were exactly a preset's, as it's saved now.</span>${more('p',pall.length,ptop.length)}</div>`
+      <div class="hmore"><span>Runs where your relics were exactly a preset's; ones you've changed since show as older versions (the planner remembers from the first time it sees a run).${setGet().preClose?' Also counted: runs with all but one of a preset\'s relics (≈ in History).':' Settings → History can count one relic different too.'}</span>${more('p',pall.length,ptop.length)}</div>`
       :`<p class="msg">${build.presets.some(p=>p.slots.some(id=>id&&saveMap.has(id)))?'None of these runs match your presets.':'Load your save to match runs to your presets.'}</p>`}</section>`;
   h+=`<div class="hgrid">`+presetPanel+`
     <section class="panel"><div class="ph"><h2>Nightlords</h2></div><table class="htab hnl"><thead><tr><th>Nightlord</th><th>Runs</th><th>Won</th><th>Win rate</th></tr></thead><tbody>
@@ -3162,11 +3187,18 @@ function updatesPage(){ const s=setGet();
       ${ovTgl('set-updstart',s.updStart,'Check for updates when the app starts and every 30 minutes')}
       <div class="btns"><button class="btn" data-act="updcheck" ${upd.st==='checking'||upd.st==='installing'?'disabled':''}>Check for updates</button></div>
       <div role="status">${st}</div></div>`; }
-const SET_PAGES=[['overlay','Overlay'],['updates','Updates']];
+const SET_PAGES=[['overlay','Overlay'],['updates','Updates'],['history','History']];
+const setPages=()=>SET_PAGES.filter(([k])=>APP||k==='history');   // the website has only History
+if(!APP){ const b=document.getElementById('ovbtn'); if(b) b.hidden=false; }
+function historySetPage(){ const s=setGet();
+  return `<h4 class="spt">History</h4>
+    <div class="ovsec">${ovTgl('set-preclose',!!s.preClose,'Count a run for a preset when one relic differs')}
+      <p class="msg">Presets change. With this on, a run where one of your six relics wasn't the preset's (as it's saved now) still counts for it in Stats, and History marks it ≈.</p></div>`; }
 function openSettings(pg){ const old=document.querySelector('#setdlg .setpanel'), same=!pg||pg===setPage, keep=old&&same?old.scrollTop:0; if(pg) setPage=pg;
+  if(!setPages().some(([k])=>k===setPage)) setPage=setPages()[0][0];
   openOv(`<div class="dlg setdlg" id="setdlg" role="dialog" aria-modal="true" aria-label="Settings"><div class="dh"><h3>Settings</h3><button class="btn sm ghost" data-act="close">Close</button></div>
-    <div class="setwrap"><nav class="stabs" aria-label="Settings pages">${SET_PAGES.map(([k,n])=>`<button data-act="setpage" data-p="${k}"${k===setPage?' aria-current="page"':''}>${n}${k==='updates'&&upd.st==='new'?'<i class="sdot" title="Update available" aria-label="update available"></i>':''}</button>`).join('')}</nav>
-    <div class="setpanel" data-p="${setPage}">${setPage==='updates'?updatesPage():overlayPage()}</div></div></div>`);
+    <div class="setwrap"><nav class="stabs" aria-label="Settings pages">${setPages().map(([k,n])=>`<button data-act="setpage" data-p="${k}"${k===setPage?' aria-current="page"':''}>${n}${k==='updates'&&upd.st==='new'?'<i class="sdot" title="Update available" aria-label="update available"></i>':''}</button>`).join('')}</nav>
+    <div class="setpanel" data-p="${setPage}">${setPage==='updates'?updatesPage():setPage==='history'?historySetPage():overlayPage()}</div></div></div>`);
   const np=document.querySelector('#setdlg .setpanel'); if(np) np.scrollTop=keep;
   if(setPage==='overlay') startPreview(); }
 function openOverlayDlg(){ openSettings('overlay'); }
@@ -3441,6 +3473,7 @@ document.addEventListener('change', ev=>{
     if(t.id==='w-pick'){ ws.name=t.value; const w=WBYN[ws.name]; if(!w[5].some(x=>x[0]===ws.aff)) ws.aff=w[5][0][0]; ws.rar=Math.max(ws.rar,w[2]); delete ws.skill; } else if(t.id==='w-aff') ws.aff=+t.value; else ws.two=t.checked;
     saveBuildSoon(); renderCombat(); renderResults(); return; }
   if(t.id==='w-skill'){ weaponState().skill=+t.value; saveBuildSoon(); renderCombat(); return; }
+  if(t.id==='set-preclose'){ const o=setGet(); o.preClose=t.checked; setSave(o); renderHistory(); return; }
   if(t.id==='set-updstart'){ const o=setGet(); o.updStart=t.checked; setSave(o); if(t.checked&&!updTimer) scheduleUpdateChecks(); return; }
   if(t.id==='ov-sa'||t.id==='ov-sb'){ const o=ovlGet(); o.safe[t.id==='ov-sa'?'a':'b']=+t.value; delete o.zones;
     ovlSet(o); const n=ovlGet(); ovlSet(n); t.value=n.safe[t.id==='ov-sa'?'a':'b'];
