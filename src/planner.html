@@ -613,8 +613,9 @@ select:hover{background-image:linear-gradient(to top right,transparent 50%,var(-
 .run .res{font-size:12px;font-weight:600;color:var(--bad);white-space:nowrap}
 .run.win .res{color:var(--good)}
 .run .meta{font-size:12px;color:var(--muted);min-width:0}
-.run .meta .you{white-space:nowrap}
-.htab .old{color:var(--muted)}
+/* your part of the line (Nightfarer and preset) a step lighter than the rest, same weight */
+.run .meta .you{color:var(--fg);white-space:nowrap}
+.run .meta .old,.htab .old{color:var(--muted)}
 .htab tr.faintrow td{color:var(--muted)}
 .run .rt{grid-column:2;grid-row:1 / span 2;display:flex;flex-direction:column;align-items:flex-end;gap:2px;font-family:var(--f-mono);font-variant-numeric:tabular-nums;font-size:13px;white-space:nowrap}
 @media (max-width:560px){
@@ -1845,7 +1846,7 @@ function mateRating(r){
 function histRunHtml(r){
   // you first (your Nightfarer and the preset you took), then who you played with
   const don=r.mode===2, d=rAfter(r)-r.rb, pm=runPreset(r), others=r.pl.slice(1).map(p=>nfName(p.ch)).join(', ');
-  const team=`<span class="you">${esc(nfName(r.pl[0].ch))}${pm?': '+presetChip(pm):''}</span> · ${others?'with '+esc(others):'solo'}`;
+  const team=`<span class="you">${esc(nfName(r.pl[0].ch))}${pm?' · '+presetChip(pm):''}</span> · ${others?'with '+esc(others):'solo'}`;
   const res=r.win?'Victory':'Defeat · '+dayName(r.day);
   const rt=don?`<span>Depth ${r.db}</span><span>${int(r.rb)} → ${int(rAfter(r))} <span class="${d>0?'up':d<0?'down':''}">${d>0?'+':''}${d?int(d):'±0'}</span></span>`:'<span>Normal</span>';
   const counts=[['enemies felled',r.c[0]],['great enemies felled',r.c[1]],['treasure found',r.c[2]],['allies rescued',r.c[4]]];
