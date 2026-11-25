@@ -161,6 +161,8 @@
     const ev = run && run.ev ? '<span class="oc-ev">Everdark</span> ' : '';
     if (cfg.nl !== false && run) html += `<div class="oc-sec oc-nl"><div class="oc-id"><div class="oc-name">${ev}${esc(cfg.nlName === 'exp' ? run.title : run.name)}</div>${cfg.nlName === 'both' ? `<div class="oc-sub">${esc(run.title)}</div>` : ''}</div>`
       + weakHtml(run.weak) + '</div>';
+    // with no run yet the Nightlord part still shows, so you can see the overlay is on and where it sits
+    else if (cfg.nl !== false) html += `<div class="oc-sec oc-nl oc-wait"><span class="oc-hint">${cfg.nlName === 'exp' ? 'The expedition' : 'The Nightlord'} shows when the run starts</span></div>`;
     if (cfg.timer !== false) { const r = cfg.simple === true ? simple(t) : full(t); html += r.html; state = r.state; }
     if (!html && moving) html = '<div class="oc-sec"><span class="oc-hint">Drag me</span></div>';
     const cls = 'oc' + (state === 'danger' ? ' oc-alert' : state === 'safe' ? ' oc-calm' : '') + (moving ? ' oc-move' : '');
