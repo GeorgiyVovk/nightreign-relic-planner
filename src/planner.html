@@ -613,7 +613,7 @@ select:hover{background-image:linear-gradient(to top right,transparent 50%,var(-
 .run .res{font-size:12px;font-weight:600;color:var(--bad);white-space:nowrap}
 .run.win .res{color:var(--good)}
 .run .meta{font-size:12px;color:var(--muted);min-width:0}
-.run .meta .rpre{color:var(--fg);font-weight:500}
+.run .meta .you{color:var(--fg);white-space:nowrap} .run .meta .rpre{font-weight:600}
 .rpre .old,.htab .old{color:var(--muted);font-weight:400}
 .htab tr.faintrow td{color:var(--muted)}
 .run .rt{grid-column:2;grid-row:1 / span 2;display:flex;flex-direction:column;align-items:flex-end;gap:2px;font-family:var(--f-mono);font-variant-numeric:tabular-nums;font-size:13px;white-space:nowrap}
@@ -1843,7 +1843,9 @@ function mateRating(r){
   const other=Math.ceil(r.ta*k/50)*50-r.rb; return other>=0?other/(k-1):null;
 }
 function histRunHtml(r){
-  const don=r.mode===2, d=rAfter(r)-r.rb, team=r.pl.map(p=>nfName(p.ch)).join(', ');
+  // you first (your Nightfarer and the preset you took), then who you played with
+  const don=r.mode===2, d=rAfter(r)-r.rb, pm=runPreset(r), others=r.pl.slice(1).map(p=>nfName(p.ch)).join(', ');
+  const team=`<span class="you">${esc(nfName(r.pl[0].ch))}${pm?': '+presetChip(pm):''}</span> · ${others?'with '+esc(others):'solo'}`;
   const res=r.win?'Victory':'Defeat · '+dayName(r.day);
   const rt=don?`<span>Depth ${r.db}</span><span>${int(r.rb)} → ${int(rAfter(r))} <span class="${d>0?'up':d<0?'down':''}">${d>0?'+':''}${d?int(d):'±0'}</span></span>`:'<span>Normal</span>';
   const counts=[['enemies felled',r.c[0]],['great enemies felled',r.c[1]],['treasure found',r.c[2]],['allies rescued',r.c[4]]];
@@ -1852,7 +1854,7 @@ function histRunHtml(r){
       <span class="st"><span class="num">${p.kills}</span> kills · <span class="num">${int(p.runes)}</span> runes</span><span class="gearln">Weapons, talismans and relics<i class="caret" aria-hidden="true"></i></span></button>`).join('');
   return `<details class="run${r.win?' win':''}"><summary>
     <span class="nl">${esc(nlName(r.nl))}<small>${esc(NLORD[r.nl%10]?NLORD[r.nl%10][1]:'')}</small>${r.u?'<span class="nlunk" title="Everdark Sovereign: the stronger version of this Nightlord">Everdark</span>':''}</span>
-    <span class="meta"><span class="res">${res}</span> · ${runDate(r.t)} · ${esc(team)}${runPreset(r)?' · '+presetChip(runPreset(r)):''}</span><span class="rt">${rt}</span></summary>
+    <span class="meta"><span class="res">${res}</span> · ${runDate(r.t)} · ${team}</span><span class="rt">${rt}</span></summary>
     <div class="rbody"><div class="rcount">${counts.map(([k,v])=>`<span><b>${int(v)}</b> ${k}</span>`).join('')}${mates}</div><div class="rplayers">${players}</div></div></details>`;
 }
 // a player's weapons (left), talismans and relics (right), for the gear window
