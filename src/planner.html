@@ -615,6 +615,7 @@ select:hover{background-image:linear-gradient(to top right,transparent 50%,var(-
 .run .meta{font-size:12px;color:var(--muted);min-width:0}
 /* your part of the line (Nightfarer and preset) a step lighter than the rest, same weight */
 .run .meta .you{color:var(--fg);white-space:nowrap}
+.redit{color:var(--bad)} .rpl .st.redit,.ptabs .pnick.redit{color:var(--bad)} .rpl .st.redit{font-weight:600}
 .run .meta .old,.htab .old{color:var(--muted)}
 .htab tr.faintrow td{color:var(--muted)}
 .run .rt{grid-column:2;grid-row:1 / span 2;display:flex;flex-direction:column;align-items:flex-end;gap:2px;font-family:var(--f-mono);font-variant-numeric:tabular-nums;font-size:13px;white-space:nowrap}
@@ -713,7 +714,7 @@ select:hover{background-image:linear-gradient(to top right,transparent 50%,var(-
 <header class="top">
   <div class="wrap">
     <div class="tleft"><h1>Nightreign Relic Planner</h1></div>
-    <div class="tright"><span class="savepill" id="savepill" hidden></span><button class="btn sm pri" id="updbtn" data-act="settings" hidden></button><button class="btn sm ibtn" id="ovbtn" data-act="settings" title="Settings" aria-label="Settings" hidden><i class="gear" aria-hidden="true"></i></button></div>
+    <div class="tright"><span class="savepill" id="savepill" hidden></span><button class="btn sm pri" id="updbtn" data-act="updnow" hidden></button><button class="btn sm ibtn" id="ovbtn" data-act="settings" title="Settings" aria-label="Settings" hidden><i class="gear" aria-hidden="true"></i></button></div>
   </div>
 </header>
 
@@ -1790,12 +1791,17 @@ const histBase=()=>runs.filter(r=>(hist.mode==='all'||(hist.mode==='don')===(r.m
 function histRuns(){ const hide=!!setGet().hideEarly; return histBase().filter(r=>!(hide&&earlyLoss(r))); }
 // a relic from the run's record, as one line: its name if it has one, else its effects (short), then its curses
 // a relic from the run's record, as one line: its name if it has one, else its effects (short), then its curses
+// A relic in a run's record checked like your own (relicIssues): a relic the game can't make means an edited save.
+// Every player's relics are in your save, so teammates' get checked too.
+const runRelRow=x=>{ const [item,...f]=x, ef=[], cu=[]; for(let k=0;k<3;k++) if(f[k]!==-1){ ef.push(f[k]); cu.push(f[3+k]); } return [0,item,0,ef,cu,1]; };
+const runRelIssues=x=>relicIssues(runRelRow(x));
+const playerEdited=p=>(p.rel||[]).filter(x=>runRelIssues(x).length).length;
 function histRelic(x,nf){
   const [item,...f]=x, ef=[], cu=[]; for(let k=0;k<3;k++) if(f[k]!==-1){ ef.push(f[k]); cu.push(f[3+k]); }
-  const r=relicFromRow([0,item,0,ef,cu,1]), nm=e=>EBY[e]?EBY[e].n:String(e);
+  const r=relicFromRow([0,item,0,ef,cu,1]), nm=e=>EBY[e]?EBY[e].n:String(e), bad=relicIssues([0,item,0,ef,cu,1]);
   const label=r.name?esc(r.name):r.effects.map(e=>esc(shortName(nm(e),nf))).join(', ');
   const curses=r.curses.map(e=>`<span class="curse">${esc(shortName(nm(e),nf))}</span>`);
-  return `<li class="rrelf c-${r.color}${r.deep?' dp':''}" title="${esc([...(r.name?[r.name]:[]),...r.effects.map(nm),...r.curses.map(nm)].join('\n'))}">${label||'Relic'}${curses.length?`<span class="rcur">${curses.join(', ')}</span>`:''}</li>`;
+  return `<li class="rrelf c-${r.color}${r.deep?' dp':''}" title="${esc([...(r.name?[r.name]:[]),...r.effects.map(nm),...r.curses.map(nm),...bad.map(b=>'Looks edited: '+b)].join('\n'))}">${label||'Relic'}${curses.length?`<span class="rcur">${curses.join(', ')}</span>`:''}${bad.length?`<span class="susnote">Looks edited: ${esc(bad.join('; '))}</span>`:''}</li>`;
 }
 // The preset you took on a run: the run keeps your six relics, so a preset of that Nightfarer (the game's or yours here) with
 // exactly the same relics matches. The planner remembers that match by run number (build.runPre), so after you change the preset
@@ -1865,16 +1871,17 @@ function histRunHtml(r){
   // you first (your Nightfarer and the preset you took), then who you played with
   const don=r.mode===2, d=rAfter(r)-r.rb, pm=runPreset(r), others=r.pl.slice(1).map(p=>nfName(p.ch)).join(', ');
   const team=`<span class="you">${esc(nfName(r.pl[0].ch))}${pm?' · '+presetChip(pm):''}</span> · ${others?'with '+esc(others):'solo'}`;
+  const edited=r.pl.slice(1).filter(p=>playerEdited(p)).map(p=>p.name), flag=edited.length?` · <span class="redit" title="Relics the game can't make: an edited save">Edited relics: ${esc(edited.join(', '))}</span>`:'';
   const res=r.win?'Victory':'Defeat · '+dayName(r.day);
   const dur=r.dur?`<span class="dur" title="Run time">${runTime(r.dur)}</span> · `:'';
   const rt=don?`<span>${dur}Depth ${r.db}</span><span>${int(r.rb)} → ${int(rAfter(r))} <span class="${d>0?'up':d<0?'down':''}">${d>0?'+':''}${d?int(d):'±0'}</span></span>`:`<span>${dur}Normal</span>`;
   const counts=[['enemies felled',r.c[0]],['great enemies felled',r.c[1]],['treasure found',r.c[2]],['allies rescued',r.c[4]]];
   const mr=mateRating(r), mates=mr==null?'':`<span title="The game keeps the team's average rating; this is it without yours"><b>${int(mr)}</b> ${r.pl.length>2?'teammates\' average rating':'teammate\'s rating'}</span>`;
   const players=r.pl.map((p,i)=>`<button class="rpl rplb" data-act="hplayer" data-run="${r.n}" data-p="${i}"><span class="who"><b>${esc(p.name)}</b><span class="st">${nfName(p.ch)} · Lv <span class="num">${p.lv}</span></span></span>
-      <span class="st"><span class="num">${p.kills}</span> kills · <span class="num">${int(p.runes)}</span> runes</span><span class="gearln">Weapons, talismans and relics<i class="caret" aria-hidden="true"></i></span></button>`).join('');
+      <span class="st"><span class="num">${p.kills}</span> kills · <span class="num">${int(p.runes)}</span> runes</span>${playerEdited(p)?`<span class="st redit">${playerEdited(p)} ${playerEdited(p)===1?'relic looks':'relics look'} edited</span>`:''}<span class="gearln">Weapons, talismans and relics<i class="caret" aria-hidden="true"></i></span></button>`).join('');
   return `<details class="run${r.win?' win':''}"><summary>
     <span class="nl">${esc(nlName(r.nl))}<small>${esc(NLORD[r.nl%10]?NLORD[r.nl%10][1]:'')}</small>${r.u?'<span class="nlunk" title="Everdark Sovereign: the stronger version of this Nightlord">Everdark</span>':''}</span>
-    <span class="meta"><span class="res">${res}</span> · ${runDate(r.t)} · ${team}</span><span class="rt">${rt}</span></summary>
+    <span class="meta"><span class="res">${res}</span> · ${runDate(r.t)} · ${team}${flag}</span><span class="rt">${rt}</span></summary>
     <div class="rbody"><div class="rcount">${counts.map(([k,v])=>`<span><b>${int(v)}</b> ${k}</span>`).join('')}${mates}</div><div class="rplayers">${players}</div></div></details>`;
 }
 // a player's weapons (left), talismans and relics (right), for the gear window
@@ -1896,7 +1903,7 @@ function histGear(p){
 // The gear window: the run up top (Nightlord, result, date), the players as tabs, then the picked player's numbers and gear
 function openPlayerDlg(n,i){
   const r=runs.find(x=>x.n===n), p=r&&r.pl[i]; if(!p) return;
-  const tabs=r.pl.length>1?`<div class="tabs ptabs" role="tablist" aria-label="Player">${r.pl.map((q,j)=>`<button role="tab" data-act="hplayer" data-run="${r.n}" data-p="${j}" aria-pressed="${j===i}" aria-selected="${j===i}"${j===i?' data-focusnow':''}><span class="pnf">${nfName(q.ch)}</span><span class="pnick">${esc(q.name)}</span></button>`).join('')}</div>`:'';
+  const tabs=r.pl.length>1?`<div class="tabs ptabs" role="tablist" aria-label="Player">${r.pl.map((q,j)=>`<button role="tab" data-act="hplayer" data-run="${r.n}" data-p="${j}" aria-pressed="${j===i}" aria-selected="${j===i}"${j===i?' data-focusnow':''}><span class="pnf">${nfName(q.ch)}</span><span class="pnick">${esc(q.name)}</span>${j&&playerEdited(q)?'<span class="pnick redit">Edited relics</span>':''}</button>`).join('')}</div>`:'';
   const res=r.win?'Victory':'Defeat · '+dayName(r.day);
   openOv(`<div class="dlg pdlg" role="dialog" aria-modal="true" aria-label="${esc(p.name)}: gear"><div class="dh"><div class="pdh"><h3>${esc(runNl(r))}<small>${esc(NLORD[r.nl%10]?NLORD[r.nl%10][1]:'')}</small></h3><span class="msg"><span class="${r.win?'pwin':'ploss'}">${res}</span> · ${runDate(r.t)}</span></div><button class="btn sm ghost" data-act="close"${tabs?'':' data-autofocus'}>Close</button></div>${tabs}
     <div class="pstat">${tabs?'':`<span><b>${esc(p.name)}</b> ${nfName(p.ch)}</span>`}<span>Lv <b>${p.lv}</b></span><span><b>${p.kills}</b> kills</span><span><b>${int(p.runes)}</b> runes</span></div><div class="rpl pgear">${histGear(p)}</div></div>`);
@@ -1949,6 +1956,7 @@ function renderStats(){
     return `<tr${ev?' class="hasev"':''}><td>${e.k>=10?'<span class="unkl">Everdark</span> ':''}${esc(N[0])}<span class="s2">${esc(N[1])}</span></td>${nums}</tr>`; };
   const byNf=histGroup(list,r=>[[r.pl[0].ch,{kills:r.pl[0].kills}]]).sort((a,b)=>b.n-a.n||a.k-b.k);
   const mates=histGroup(list,r=>r.pl.slice(1).map(p=>[p.name,{ch:p.ch}])).sort((a,b)=>b.n-a.n||b.w-a.w||a.k.localeCompare(b.k));
+  const editedRuns=new Map(); list.forEach(r=>r.pl.slice(1).forEach(p=>{ if(playerEdited(p)) editedRuns.set(p.name,(editedRuns.get(p.name)||0)+1); }));
   const top=hist.all.m?mates:mates.slice(0,10);
   const more=(k,n,shown)=>n>shown?`<button class="btn sm ghost" data-act="hall" data-k="${k}">Show all ${n}</button>`:hist.all[k]&&n>(k==='m'||k==='p'?10:12)?`<button class="btn sm ghost" data-act="hall" data-k="${k}">Show fewer</button>`:'';
   const wmap=histGroup(list,r=>[...new Set(r.pl[0].w.filter(w=>w[0]!==110000).map(w=>wName(w[0],w[5],1)).filter(Boolean))].map(n=>[n])).sort((a,b)=>b.n-a.n||b.w-a.w||a.k.localeCompare(b.k));
@@ -1972,7 +1980,7 @@ function renderStats(){
       ${byNf.map(e=>`<tr><td>${nfName(e.k)}</td><td>${e.n}</td><td>${e.w}</td><td>${wrCell(e)}</td><td title="Average per run">${Math.round(e.kills/e.n)}</td></tr>`).join('')}</tbody></table>
       <p class="hmore">Kills: average per run.</p></section>
     <section class="panel"><div class="ph"><h2>Teammates</h2></div>${top.length?`<table class="htab"><thead><tr><th>Player</th><th>Runs</th><th>Won</th><th>Win rate</th></tr></thead><tbody>
-      ${top.map(e=>`<tr><td>${esc(e.k)}<span class="s2">${[...e.chars.entries()].sort((a,b)=>b[1]-a[1]).slice(0,3).map(([c])=>nfName(c)).join(', ')}</span></td><td>${e.n}</td><td>${e.w}</td><td>${wrCell(e)}</td></tr>`).join('')}</tbody></table><div class="hmore">${more('m',mates.length,top.length)}</div>`:`<p class="msg">Only solo runs here.</p>`}</section>
+      ${top.map(e=>`<tr><td>${esc(e.k)}<span class="s2">${[...e.chars.entries()].sort((a,b)=>b[1]-a[1]).slice(0,3).map(([c])=>nfName(c)).join(', ')}${editedRuns.get(e.k)?` · <span class="redit">edited relics in ${editedRuns.get(e.k)===1?'1 run':editedRuns.get(e.k)+' runs'}</span>`:''}</span></td><td>${e.n}</td><td>${e.w}</td><td>${wrCell(e)}</td></tr>`).join('')}</tbody></table><div class="hmore">${editedRuns.size?`<span class="redit">Edited relics seen on: ${esc([...editedRuns.keys()].join(', '))}</span>`:''}${more('m',mates.length,top.length)}</div>`:`<p class="msg">Only solo runs here.</p>`}</section>
     <section class="panel"><div class="ph"><h2>Your weapons</h2></div>${wtop.length?`<table class="htab"><thead><tr><th>Weapon</th><th>Runs</th><th>Won</th><th>Win rate</th></tr></thead><tbody>
       ${wtop.map(e=>`<tr><td>${esc(e.k)}</td><td>${e.n}</td><td>${e.w}</td><td>${wrCell(e)}</td></tr>`).join('')}</tbody></table><div class="hmore"><span>Runs you finished with it, any affinity.</span>${more('w',wmap.length,wtop.length)}</div>`:`<p class="msg">No weapons recorded.</p>`}</section>
     <section class="panel"><div class="ph"><h2>Your spells</h2></div>${stop.length?`<table class="htab"><thead><tr><th>Spell</th><th>Runs</th><th>Won</th><th>Win rate</th></tr></thead><tbody>
@@ -3188,7 +3196,10 @@ async function checkUpdates(quiet){
 // a new version stays on screen until it's installed: a button at the top, and a dot on Settings
 function showUpdate(){ const n=upd.st==='new'||(upd.st==='installing'&&upd.v);
   const b=$('#ovbtn'); if(b){ b.classList.toggle('has-upd',!!n); b.title=n?`Settings: version ${upd.v} is out`:'Settings'; }
-  const u=$('#updbtn'); if(u){ u.hidden=!n; if(n){ u.textContent=`Update to ${upd.v}`; u.title=`Version ${upd.v} is out: open Settings, Updates`; } } }
+  // one click updates: the installed app downloads, installs and reopens itself (progress on the button); the portable
+  // exe can't replace itself, so it opens the release page
+  const u=$('#updbtn'); if(u){ u.hidden=!n; const busy=upd.st==='installing'; u.disabled=busy;
+    if(n){ u.textContent=busy?(upd.prog||'Updating…'):`Update to ${upd.v}`; u.title=busy?'Updating: the app closes and opens again':appInstalled&&!upd.noSelf?`Install version ${upd.v} now: the app closes and opens again`:`Version ${upd.v} is out: opens the release page`; } } }
 // when the app starts (a retry a minute later if GitHub can't be reached) and every 30 minutes while it's open
 let updTimer=null;
 function scheduleUpdateChecks(){
@@ -3198,13 +3209,13 @@ function scheduleUpdateChecks(){
 async function installUpdate(){
   if(!APP||!APP.updateInstall||upd.st!=='new') return;
   upd.st='installing'; upd.err=''; upd.prog='Downloading…'; showUpdate(); if($('#setdlg')) openSettings();
-  const stop=APP.onUpdateProgress(([got,total])=>{ upd.prog=total?`Downloading… ${Math.min(100,Math.round(got/total*100))}%`:`Downloading… ${(got/1048576).toFixed(1)} MB`; if(got&&total&&got>=total) upd.prog='Installing: the app closes and opens again'; const el=$('#upd-prog'); if(el) el.textContent=upd.prog; });
+  const stop=APP.onUpdateProgress(([got,total])=>{ upd.prog=total?`Downloading… ${Math.min(100,Math.round(got/total*100))}%`:`Downloading… ${(got/1048576).toFixed(1)} MB`; if(got&&total&&got>=total) upd.prog='Installing…'; const el=$('#upd-prog'); if(el) el.textContent=upd.prog; showUpdate(); });
   try{ await APP.updateInstall(); }
   catch(e){ stop(); upd.st='new'; const m=String(e||'');
     // a release built without the update files can't install itself: send people to the release page
     if(/No update|latest\.json|404|signature/i.test(m)) upd.noSelf=true;
     upd.err=upd.noSelf?"This update can't install itself. Download it from the release page instead.":`Couldn't install the update: ${m}. Try again, or download it from the release page.`;
-    if($('#setdlg')) openSettings(); } }
+    showUpdate(); if($('#setdlg')) openSettings(); else toast(upd.err,'bad'); } }
 function updatesPage(){ const s=setGet();
   let st='';
   if(upd.st==='checking') st=`<p class="msg updst"><i class="spin" aria-hidden="true"></i>Checking for updates…</p>`;
@@ -3272,7 +3283,7 @@ async function startApp(){
   try{ const r=await APP.listSaves(); appSaves=r.saves||[]; }catch(e){}
   const known=!!p && appSaves.some(x=>x.path===p), first=known?loadAppSave(p,{quiet:true}):null;
   if(p && !known){ try{ localStorage.removeItem(LS_APP); }catch(e){} }
-  if(APP.installed) APP.installed().then(v=>{ appInstalled=!!v; }).catch(()=>{});
+  if(APP.installed) APP.installed().then(v=>{ appInstalled=!!v; showUpdate(); }).catch(()=>{});
   if(setGet().updStart) scheduleUpdateChecks();
   renderStore();
 }
@@ -3416,6 +3427,8 @@ document.addEventListener('click', async ev=>{
   if(a==='updcheck'){ checkUpdates(false); return; }
   if(a==='updget'){ try{ await APP.openReleases(); }catch(e){ toast(`Couldn't open the browser: ${e}`,'bad'); } return; }
   if(a==='updinstall'){ installUpdate(); return; }
+  if(a==='updnow'){ if(upd.st!=='new') return; if(appInstalled&&!upd.noSelf&&APP.updateInstall) installUpdate();
+    else{ try{ await APP.openReleases(); }catch(e){ toast(`Couldn't open the browser: ${e}`,'bad'); } } return; }
   if(a==='hkrec'){ keyRec=keyRec===t.dataset.k?null:t.dataset.k; openSettings('overlay'); const b=$(`[data-act=hkrec][data-k="${t.dataset.k}"]`); if(b) b.focus(); return; }
   if(a==='hkoff'){ await setHotkey(t.dataset.k,''); return; }
   if(a==='ovmove'){ await ovlLock(ovlMoving); openOverlayDlg(); return; }
