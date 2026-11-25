@@ -709,7 +709,7 @@ select:hover{background-image:linear-gradient(to top right,transparent 50%,var(-
 <header class="top">
   <div class="wrap">
     <div class="tleft"><h1>Nightreign Relic Planner</h1></div>
-    <div class="tright"><span class="savepill" id="savepill" hidden></span><button class="btn sm ibtn" id="ovbtn" data-act="settings" title="Settings" aria-label="Settings" hidden><i class="gear" aria-hidden="true"></i></button></div>
+    <div class="tright"><span class="savepill" id="savepill" hidden></span><button class="btn sm pri" id="updbtn" data-act="settings" hidden></button><button class="btn sm ibtn" id="ovbtn" data-act="settings" title="Settings" aria-label="Settings" hidden><i class="gear" aria-hidden="true"></i></button></div>
   </div>
 </header>
 
@@ -1258,7 +1258,9 @@ DP({id:'dcons2',n:'Improved Throwing Pot / Knife / Stone Damage +2',g:'off',note
 DP({id:'dguardart1',n:'Art gauge charged from successful guarding +1',g:'regen',st:false,note:'+1.5 ult per block'});
 DP({id:'dcritart1',n:'Art gauge fills moderately upon critical hit +1',g:'regen',st:false,note:'+6.5 ult per crit'});
 DP({id:'dkillart1',n:'Defeating enemies fills more of the Art gauge +1',g:'regen',st:false,note:'+6.5 ult per kill'});
-[[0,'',1.05,.92],[1,' +1',1.085,.87],[2,' +2',1.1,.84]].forEach(([i,s,m,f])=>{ DP({id:'dspell'+i,n:'Improved Sorceries / Incantations'+s,g:'off',dmg:[D('spell',m)]}); DP({id:'dfp'+i,n:'Reduced FP Consumption'+s,g:'regen',note:`FP cost ×${f}`}); });
+// the game has these as two effects, one per school (6611200-2 sorceries, 6611300-2 incantations); dspell is the sorcery one
+[[0,'',1.05,.92],[1,' +1',1.085,.87],[2,' +2',1.1,.84]].forEach(([i,s,m,f])=>{ DP({id:'dspell'+i,n:'Improved Sorceries'+s,g:'off',dmg:[D('spell',m)],sk:'s'});
+  DP({id:'dinc'+i,n:'Improved Incantations'+s,g:'off',dmg:[D('spell',m)],sk:'i'}); DP({id:'dfp'+i,n:'Reduced FP Consumption'+s,g:'regen',note:`FP cost ×${f}`}); });
 DP({id:'dnegphys1',n:'Improved Physical Damage Negation +1',g:'def',neg:{phys:.105}});
 DP({id:'dnegphys2',n:'Improved Physical Damage Negation +2',g:'def',neg:{phys:.12}});
 [['mag','Magic'],['fire','Fire'],['ltng','Lightning'],['holy','Holy']].forEach(([k,N])=>{ DP({id:'dneg'+k+'1',n:`Improved ${N} Damage Negation +1`,g:'def',neg:{[k]:.15}}); DP({id:'dneg'+k+'2',n:`Improved ${N} Damage Negation +2`,g:'def',neg:{[k]:.16}}); });
@@ -1394,7 +1396,8 @@ const AKA = {
   r_poise:['Improved Poise Near Totem Stela'], r_totem:['Defeating enemies near Totem Stela restores HP'], e_skill:['[Executor] Character Skill Boosts Attack but Attacking Drains HP'],
   s_slow:['[Scholar] Prevent slowing of Character Skill progress'], u_chain:['[Undertaker] Attack power increased by landing the final blow of a chain attack'],
   greaseap:['Physical attack power increases after using grease items'], meathp:['HP restored when using medicinal boluses, etc.'], allystam:['Raised stamina recovery for nearby allies but, but not for self'], roar:['Improved Roar & Breath Attacks'],
-  dspell0:['Improved Sorceries','Improved Incantations'], dspell1:['Improved Sorceries +1','Improved Incantations +1'], dspell2:['Improved Sorceries +2','Improved Incantations +2'],
+  dspell0:['Improved Sorceries'], dspell1:['Improved Sorceries +1'], dspell2:['Improved Sorceries +2'],
+  dinc0:['Improved Incantations'], dinc1:['Improved Incantations +1'], dinc2:['Improved Incantations +2'],
   c_dexint:['Reduced Intelligence and Dexterity'], c_strfth:['Reduced Faith and Strength'],
   dv_fp:['[Revenant] Increased Max FP upon Ability Activation'], start_frost:['Starting armament inflicts frost'], hp3shield:['Max HP Up with 3+ Small Shields Equipped','Max HP Up with 3+ Medium Shields Equipped','Max HP Up with 3+ Greatshields Equipped'],
   res_rot:['Improved Rot Resistance'], dres_rot1:['Improved Rot Resistance +1'], dres_rot2:['Improved Rot Resistance +2'], res_frost:['Improved Frostbite Resistance'], dres_frost1:['Improved Frostbite Resistance +1'], dres_frost2:['Improved Frostbite Resistance +2']
@@ -3072,20 +3075,41 @@ function setGet(){ let o={}; try{ o=JSON.parse(localStorage.getItem(SET_KEY)||'{
 function setSave(o){ try{ localStorage.setItem(SET_KEY,JSON.stringify(o)); }catch(e){} }
 const verNum=v=>String(v||'').replace(/^v/,'').split('.').map(x=>parseInt(x,10)||0);
 const verNewer=(a,b)=>{ const x=verNum(a), y=verNum(b); for(let i=0;i<3;i++){ if((x[i]||0)!==(y[i]||0)) return (x[i]||0)>(y[i]||0); } return false; };
+// Two ways to ask: the app's own updater reads the release's latest.json (no GitHub API limit, no browser rules in the way),
+// and GitHub's API, which also gives the release date. Either one answering is enough; quiet checks say nothing when nothing's new.
+async function latestVersion(){
+  const viaApp=APP.updateCheck?APP.updateCheck().then(u=>u&&u.version?String(u.version):''):Promise.reject(new Error('no updater'));
+  const viaApi=fetch(REL_API,{headers:{Accept:'application/vnd.github+json'},cache:'no-store'}).then(async r=>{ if(!r.ok) throw new Error('HTTP '+r.status);
+    const j=await r.json(), v=String(j.tag_name||'').replace(/^v/,''); if(!/^\d+\.\d+\.\d+$/.test(v)) throw new Error('No version'); return {v,date:j.published_at||''}; });
+  const [a,b]=await Promise.allSettled([viaApp,viaApi]);
+  if(a.status==='rejected'&&b.status==='rejected') throw b.reason;
+  const api=b.status==='fulfilled'?b.value:null, app=a.status==='fulfilled'?a.value:null;
+  // the updater answers only when it has something newer; the API always names the latest release
+  const v=app||(api&&verNewer(api.v,APP_VER)?api.v:'');
+  return {v,date:api&&api.v===v?api.date:''};
+}
 async function checkUpdates(quiet){
   if(!APP||upd.st==='checking'||upd.st==='installing') return;
-  upd={st:'checking'}; if($('#setdlg')) openSettings();
-  try{ const r=await fetch(REL_API,{headers:{Accept:'application/vnd.github+json'},cache:'no-store'}); if(!r.ok) throw new Error('HTTP '+r.status);
-    const j=await r.json(), v=String(j.tag_name||'').replace(/^v/,''); if(!/^\d+\.\d+\.\d+$/.test(v)) throw new Error('No version');
-    upd=verNewer(v,APP_VER)?{st:'new',v,date:j.published_at||''}:{st:'latest'}; }
-  catch(e){ upd={st:quiet?'idle':'error'}; }
-  const b=$('#ovbtn'); if(b){ b.classList.toggle('has-upd',upd.st==='new'); b.title=upd.st==='new'?`Settings: version ${upd.v} is out`:'Settings'; }
+  const was=upd; upd={st:'checking'}; if($('#setdlg')) openSettings();
+  try{ const r=await latestVersion(), at=Date.now(); upd=r.v&&verNewer(r.v,APP_VER)?{st:'new',v:r.v,date:r.date,at}:{st:'latest',at}; }
+  catch(e){ upd=quiet?(was.st==='new'?was:{st:'idle'}):{st:'error'}; }
+  showUpdate();
   if($('#setdlg')) openSettings();
-  else if(quiet&&upd.st==='new') toast(`Version ${upd.v} is out. Get it in Settings, under Updates.`); }
+  else if(quiet&&upd.st==='new'&&was.v!==upd.v) toast(`Version ${upd.v} is out. Update it from the button at the top.`);
+  return upd.st; }
+// a new version stays on screen until it's installed: a button at the top, and a dot on Settings
+function showUpdate(){ const n=upd.st==='new'||(upd.st==='installing'&&upd.v);
+  const b=$('#ovbtn'); if(b){ b.classList.toggle('has-upd',!!n); b.title=n?`Settings: version ${upd.v} is out`:'Settings'; }
+  const u=$('#updbtn'); if(u){ u.hidden=!n; if(n){ u.textContent=`Update to ${upd.v}`; u.title=`Version ${upd.v} is out: open Settings, Updates`; } } }
+// when the app starts (a retry a minute later if GitHub can't be reached) and every 30 minutes while it's open
+let updTimer=null;
+function scheduleUpdateChecks(){
+  setTimeout(async()=>{ const st=await checkUpdates(true); if(st==='idle') setTimeout(()=>checkUpdates(true),60000); },3000);
+  clearInterval(updTimer); updTimer=setInterval(()=>{ if(setGet().updStart) checkUpdates(true); },30*60000); }
 // the installed app installs the update itself: download (with progress), signature check, installer, reopen
 async function installUpdate(){
   if(!APP||!APP.updateInstall||upd.st!=='new') return;
-  upd.st='installing'; upd.err=''; upd.prog='Downloading…'; if($('#setdlg')) openSettings();
+  upd.st='installing'; upd.err=''; upd.prog='Downloading…'; showUpdate(); if($('#setdlg')) openSettings();
   const stop=APP.onUpdateProgress(([got,total])=>{ upd.prog=total?`Downloading… ${Math.min(100,Math.round(got/total*100))}%`:`Downloading… ${(got/1048576).toFixed(1)} MB`; if(got&&total&&got>=total) upd.prog='Installing: the app closes and opens again'; const el=$('#upd-prog'); if(el) el.textContent=upd.prog; });
   try{ await APP.updateInstall(); }
   catch(e){ stop(); upd.st='new'; const m=String(e||'');
@@ -3096,7 +3120,7 @@ async function installUpdate(){
 function updatesPage(){ const s=setGet();
   let st='';
   if(upd.st==='checking') st=`<p class="msg updst"><i class="spin" aria-hidden="true"></i>Checking for updates…</p>`;
-  else if(upd.st==='latest') st=`<p class="msg good updst">You're on the latest version.</p>`;
+  else if(upd.st==='latest') st=`<p class="msg good updst">You're on the latest version. Checked at ${new Date(upd.at||Date.now()).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})}.</p>`;
   else if(upd.st==='error') st=`<p class="msg bad updst">Couldn't reach GitHub. Check your internet connection and try again.</p>`;
   else if(upd.st==='new'||upd.st==='installing'){ const busy=upd.st==='installing';
     // the installed app updates itself; the portable exe (or an update that can't install itself) goes to the release page
@@ -3108,7 +3132,7 @@ function updatesPage(){ const s=setGet();
       :`<p class="msg">${appInstalled?'':'This copy runs without installing, so it can\'t update itself. '}On the page that opens, download NightreignRelicPlanner-Setup.exe and run it. Your relics, builds and settings stay.</p>`); }
   return `<h4 class="spt">Updates</h4>
     <div class="ovsec"><p class="msg">Installed: <b>version <span class="mono">${esc(APP_VER)}</span></b></p>
-      ${ovTgl('set-updstart',s.updStart,'Check for updates when the app starts')}
+      ${ovTgl('set-updstart',s.updStart,'Check for updates when the app starts and every 30 minutes')}
       <div class="btns"><button class="btn" data-act="updcheck" ${upd.st==='checking'||upd.st==='installing'?'disabled':''}>Check for updates</button></div>
       <div role="status">${st}</div></div>`; }
 const SET_PAGES=[['overlay','Overlay'],['updates','Updates']];
@@ -3151,7 +3175,7 @@ async function startApp(){
   const known=!!p && appSaves.some(x=>x.path===p), first=known?loadAppSave(p,{quiet:true}):null;
   if(p && !known){ try{ localStorage.removeItem(LS_APP); }catch(e){} }
   if(APP.installed) APP.installed().then(v=>{ appInstalled=!!v; }).catch(()=>{});
-  if(setGet().updStart) Promise.resolve(first).finally(()=>setTimeout(()=>checkUpdates(true),2500));   // after the save's own toast
+  if(setGet().updStart) scheduleUpdateChecks();
   renderStore();
 }
 async function clearManualRelics(){
@@ -3390,7 +3414,7 @@ document.addEventListener('change', ev=>{
     if(t.id==='w-pick'){ ws.name=t.value; const w=WBYN[ws.name]; if(!w[5].some(x=>x[0]===ws.aff)) ws.aff=w[5][0][0]; ws.rar=Math.max(ws.rar,w[2]); delete ws.skill; } else if(t.id==='w-aff') ws.aff=+t.value; else ws.two=t.checked;
     saveBuildSoon(); renderCombat(); renderResults(); return; }
   if(t.id==='w-skill'){ weaponState().skill=+t.value; saveBuildSoon(); renderCombat(); return; }
-  if(t.id==='set-updstart'){ const o=setGet(); o.updStart=t.checked; setSave(o); return; }
+  if(t.id==='set-updstart'){ const o=setGet(); o.updStart=t.checked; setSave(o); if(t.checked&&!updTimer) scheduleUpdateChecks(); return; }
   if(t.id==='ov-sa'||t.id==='ov-sb'){ const o=ovlGet(); o.safe[t.id==='ov-sa'?'a':'b']=+t.value; delete o.zones;
     ovlSet(o); const n=ovlGet(); ovlSet(n); t.value=n.safe[t.id==='ov-sa'?'a':'b'];
     const pv=$('#ov-zprev'); if(pv) pv.innerHTML=zoneTrack(n); const zw=$('#ov-zwarn'); if(zw) zw.innerHTML=zoneWarn(n);

@@ -47,7 +47,7 @@ The numbers come from the game's regulation; the formulas that join them are mea
 - **Scaling letters** follow Nightreign's menu, which grades lower than Elden Ring: E under 15, D from 15, C from 30, B from 45, A from 60, S from 71 (checked on the game's weapon screens and wiki pages).
 - **Rounding**: a hit's damage types (physical, magic, ...) are added up and the sum is rounded down once, not each type on its own.
 - **Bows** shoot the ammo's arrows; Ironeye's R2 and charged shot loose three arrows a press, each a hit.
-- **Buffs** use the regulation's values. Checked in game so far: Improved Melee Attack Power gives ×1.05 for one and ×1.12 for two (the data says ×1.06 each), Improved Affinity Attack Power +2 counts on spells (×1.1 each, multiplied), Melee and Added Affinity don't.
+- **Buffs** use the regulation's values. Deep relics' Improved Sorceries and Improved Incantations are two effects, each for its own school. Checked in game so far: Improved Melee Attack Power gives ×1.05 for one and ×1.12 for two (the data says ×1.06 each), Improved Affinity Attack Power +2 counts on spells (×1.1 each, multiplied), Melee and Added Affinity don't.
 
 Other buffs, boss HP and negation, and status buildup come from the data and aren't checked in game yet. Every number measured in game is a case in `tools/measured.js`, and each build checks the calculator still gives it.
 
@@ -56,7 +56,7 @@ Other buffs, boss HP and negation, and status buildup come from the data and are
 The gear button in the header opens Settings, with its pages down the left:
 
 - **Overlay**: a live preview of the card, showing it on top of the game and moving it, this run's Nightlord, and the Dreglord timer's hotkey, cycle, start point, zones and look (below).
-- **Updates**: the installed version, "Check for updates when the app starts" (on by default) and a Check for updates button. The app asks GitHub for the latest release; when a newer one is out, the gear gets a dot. The installed app updates itself: Update now downloads the new installer, checks its signature against the key built into the app, installs it and opens the app again. The portable exe can't replace itself, so it opens the release page instead.
+- **Updates**: the installed version, "Check for updates when the app starts and every 30 minutes" (on by default, with a retry a minute later if GitHub can't be reached) and a Check for updates button, which also says when it last checked. The app asks the release's latest.json through its own updater and GitHub's API; when a newer version is out, an "Update to …" button stays at the top until it's installed, and the gear gets a dot. The installed app updates itself: Update now downloads the new installer, checks its signature against the key built into the app, installs it and opens the app again. The portable exe can't replace itself, so it opens the release page instead.
 
 ## Overlay (desktop app)
 
