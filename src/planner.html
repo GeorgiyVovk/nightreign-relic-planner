@@ -2994,12 +2994,16 @@ async function importSaveSlot(slot, opt={}){
     const old=!fresh&&hs.length&&runs.length&&runs[0].v!==HIST_V;   // kept by an older version, with less in it
     if(fresh||old){ setRuns(hs,Date.now()); await storeRuns(); if(old) renderHistory(); }
     const sig=JSON.stringify([rows,slot.presets||[]]);
-    if(sig===lastRowsSig){ if(fresh){ renderHistory(); toast(fresh===1?`New run in History: ${hs[0].win?'Victory':'Defeat'} against ${runNl(hs[0])}`:`${fresh} new runs in History`); } return; }
+    // a run that just ended with a teammate whose relics the game can't make: say so right away (the save has teammates'
+    // relics only once the run is over)
+    const edited=fresh?[...new Set(hs.slice(0,fresh).flatMap(r=>r.pl.slice(1).filter(p=>playerEdited(p)).map(p=>p.name)))]:[];
+    const warnEdited=()=>{ if(edited.length) toast(`Edited relics on ${edited.join(', ')} in your last run. See History.`,'bad'); };
+    if(sig===lastRowsSig){ if(fresh){ renderHistory(); toast(fresh===1?`New run in History: ${hs[0].win?'Victory':'Defeat'} against ${runNl(hs[0])}`:`${fresh} new runs in History`); warnEdited(); } return; }
     lastRowsSig=sig;
     const before=new Set(saveMap.keys());
     await storeSaveRows(rows,info); setSaveRows(rows,info); setGamePresets(slot.presets); renderAll();
     const added=saveRelics.filter(r=>!before.has(r.id)).length, gone=[...before].filter(id=>!saveMap.has(id)).length;
-    toast(`Relics updated from ${lastFile}`+(added||gone?`: ${added} new${gone?`, ${gone} gone`:''}`:''));
+    toast(`Relics updated from ${lastFile}`+(added||gone?`: ${added} new${gone?`, ${gone} gone`:''}`:'')); warnEdited();
     return;
   }
   const hs=slot.hist||[]; lastRowsSig=JSON.stringify([rows,slot.presets||[]]);
