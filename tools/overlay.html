@@ -40,17 +40,17 @@ html,body{margin:0;background:transparent;overflow:hidden;user-select:none;-webk
   }
   // while you move it, the card looks as it will in a run: the planner's example Nightlord when no run is going on,
   // and the timer as if running (mid safe zone) instead of Ready
-  function sample(){
-    const C = Math.max(1, +cfg.cycle || 20), z = (cfg.zones || []).find(z => z.c === 'g' && z.a !== z.b);
-    return z ? (z.a + ((z.b - z.a + C) % C) / 2) % C : +cfg.start || 0;
-  }
+  // the planner's preview shows this same card: it hears when the cycle started (wall clock) or that it isn't running
+  let sent = -1;
+  function tell(force){ if (!T || (!force && start === sent)) return; sent = start;
+    T.event.emit('overlay:timer', { epoch: start ? Date.now() - (performance.now() - start) : null }).catch(() => {}); }
   function draw(){
     if (cfg.timer === false) start = 0;
-    const t = now(), r = OC.render(cfg, run || (moving ? example : null), t == null && moving ? sample() : t, moving);
+    const t = now(), r = OC.render(cfg, run || (moving ? example : null), t == null && moving ? OC.sample(cfg) : t, moving);
     card.hidden = r.empty; card.className = r.cls; card.innerHTML = r.html; card.style.setProperty('--oc-bga', r.bga);
     if (moving) card.setAttribute('data-tauri-drag-region', ''); else card.removeAttribute('data-tauri-drag-region');
     card.querySelectorAll('*').forEach(el => moving ? el.setAttribute('data-tauri-drag-region','') : el.removeAttribute('data-tauri-drag-region'));
-    fit();
+    fit(); tell(false);
   }
   function tick(){ draw(); if (!start && timer){ clearInterval(timer); timer = null; } }
   function stop(){ start = 0; lastPress = 0; presses = 0; tick(); }
@@ -74,6 +74,7 @@ html,body{margin:0;background:transparent;overflow:hidden;user-select:none;-webk
     T.event.listen('overlay:run', e => { run = e.payload || null; draw(); });
     T.event.listen('overlay:example', e => { example = e.payload || null; draw(); });
     T.event.listen('overlay:locked', e => { moving = !e.payload; draw(); });
+    T.event.listen('overlay:timer?', () => tell(true));
   }
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => fit());
   draw();

@@ -3118,19 +3118,23 @@ function timerPage(o){ const full=!o.simple;
     <div class="ovsec"><h5 class="sh3">Test the timer</h5>
       <div class="btns"><button class="btn" data-act="ovtest" ${o.on&&o.timer?'':'disabled'}>Test</button><button class="btn" data-act="ovstop" ${o.on&&o.timer?'':'disabled'}>Stop</button></div>
       ${testWhy}</div>`; }
-// the live preview on the timer page: the overlay's own card, with these settings, running the cycle on a loop
-let prevTimer=null, prevT0=0;
-// with no run going on, the preview shows your last run's Nightlord (or Fulghor) as an example, so the card isn't half empty
+// the live preview: the overlay's own card, the same one it shows right now (same size), redrawn 10 times a second
+let prevTimer=null, ovTimerEpoch=null;   // when the overlay's cycle started (wall clock, from the overlay), null when it isn't running
+// while you move the overlay it shows your last run's Nightlord (or Fulghor) as an example, so you place the full card
 const exampleRun=()=>{ const r=runs[0]; return r&&NLORD[r.nl%10]?{nl:r.nl%10,mode:r.mode,ev:!!r.u}:{nl:5,mode:2,ev:false}; };
 function ovPreview(){ const el=$('#ov-prev'), OC=window.NROverlayCard; if(!el||!OC){ clearInterval(prevTimer); prevTimer=null; return; }
-  const o=ovlGet(), cfg=ovlCfg(o), t=(o.start+(performance.now()-prevT0)/1000)%o.cycle, ex=cfg.nl&&!curRun;
-  const r=OC.render(cfg, cfg.nl?runCard(curRun||exampleRun()):null, cfg.timer?t:null, false);
+  // the preview is the card the overlay shows right now, same size: this run's Nightlord (the example only while you move it,
+  // as the overlay does), and the timer where the overlay's is (Ready until it runs; mid safe zone while you move it)
+  const o=ovlGet(), cfg=ovlCfg(o), ex=cfg.nl&&!curRun&&ovlMoving;
+  const tRun=cfg.timer&&ovTimerEpoch?((+o.start||0)+(Date.now()-ovTimerEpoch)/1000)%Math.max(1,+o.cycle||20):null;
+  const t=!cfg.timer?null:tRun!=null?tRun:ovlMoving?OC.sample(cfg):null;
+  const r=OC.render(cfg, cfg.nl?(curRun?runCard(curRun):ovlMoving?runCard(exampleRun()):null):null, t, ovlMoving);
   el.className=r.cls; el.innerHTML=r.html; el.hidden=r.empty; el.style.setProperty('--oc-bga',r.bga); const none=$('#ov-prevnone'); if(none) none.hidden=!r.empty;
-  const cap=$('#ov-prevcap'); if(cap) cap.textContent=ex?"Preview of the card. No run is going on, so it shows your last run's Nightlord as an example.":'Preview of the card, the timer running on a loop'; }
+  const cap=$('#ov-prevcap'); if(cap) cap.textContent=ovlMoving?'The card as the overlay shows it while you move it'+(ex?": your last run's Nightlord as an example":'')+'.':'The card as the overlay shows it now'+(cfg.nl&&!curRun?', no run yet':'')+(cfg.timer&&tRun==null?'. Test runs the timer':'')+'.'; }
 function startPreview(){ const OC=window.NROverlayCard;
   if(!OC){ const none=$('#ov-prevnone'); if(none){ none.textContent="The preview couldn't load."; none.hidden=false; } return; }
   if(!$('#oc-css')){ const st=document.createElement('style'); st.id='oc-css'; st.textContent=OC.css; document.head.appendChild(st); }
-  if(!prevTimer){ prevT0=performance.now(); prevTimer=setInterval(ovPreview,100); } ovPreview(); }
+  if(!prevTimer){ prevTimer=setInterval(ovPreview,100); try{ APP&&APP.overlay&&APP.overlay.askTimer&&APP.overlay.askTimer(); }catch(e){} } ovPreview(); }
 // updates: the app asks GitHub for the latest release and compares it with its own version
 const SET_KEY='nrp.settings', APP_VER='__APP_VERSION__', REL_API='https://api.github.com/repos/GeorgiyVovk/nightreign-relic-planner/releases/latest';
 let setPage='overlay', upd={st:'idle'}, appInstalled=false;
@@ -3239,6 +3243,7 @@ async function startApp(){
   try{ localStorage.removeItem(OVL_RUN); }catch(e){}   // a run remembered from last time is stale until the save is read again
   if(APP.overlay){ const b=$('#ovbtn'); if(b) b.hidden=false; const o=ovlGet();
     // the show/hide hotkey works whether the overlay is on or off, so it can bring it back from inside the game
+    if(APP.overlay.onTimer) APP.overlay.onTimer(p=>{ ovTimerEpoch=p&&p.epoch?+p.epoch:null; });
     if(APP.overlay.toggleKey){ APP.overlay.toggleKey(o.tkey).catch(e=>toast(`Overlay hotkey: ${e}`,'bad')); APP.overlay.onToggle(ovlToggle); }
     if(o.on) ovlApply(o); }
   APP.onSaveChanged(p=>{ if(p===appSavePath) loadAppSave(p,{quiet:true}); });

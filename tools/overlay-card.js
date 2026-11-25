@@ -161,8 +161,8 @@
     const ev = run && run.ev ? '<span class="oc-ev">Everdark</span> ' : '';
     if (cfg.nl !== false && run) html += `<div class="oc-sec oc-nl"><div class="oc-id"><div class="oc-name">${ev}${esc(cfg.nlName === 'exp' ? run.title : run.name)}</div>${cfg.nlName === 'both' ? `<div class="oc-sub">${esc(run.title)}</div>` : ''}</div>`
       + weakHtml(run.weak) + '</div>';
-    // with no run yet the Nightlord part still shows, so you can see the overlay is on and where it sits
-    else if (cfg.nl !== false) html += `<div class="oc-sec oc-nl oc-wait"><span class="oc-hint">${cfg.nlName === 'exp' ? 'The expedition' : 'The Nightlord'} shows when the run starts</span></div>`;
+    // Nightlord only (timer off) and no run yet: a line in its place, so the overlay doesn't vanish and you see where it sits
+    else if (cfg.nl !== false && cfg.timer === false) html += `<div class="oc-sec oc-nl oc-wait"><span class="oc-hint">${cfg.nlName === 'exp' ? 'The expedition' : 'The Nightlord'} shows when the run starts</span></div>`;
     if (cfg.timer !== false) { const r = cfg.simple === true ? simple(t) : full(t); html += r.html; state = r.state; }
     if (!html && moving) html = '<div class="oc-sec"><span class="oc-hint">Drag me</span></div>';
     const cls = 'oc' + (state === 'danger' ? ' oc-alert' : state === 'safe' ? ' oc-calm' : '') + (moving ? ' oc-move' : '');
@@ -170,5 +170,10 @@
     const bga = Math.min(100, Math.max(0, cfg.bg == null || isNaN(+cfg.bg) ? 70 : +cfg.bg)) / 100;
     return { html, cls, empty: !html, state, bga };
   }
-  g.NROverlayCard = { css: CSS, render, icon: n => ICON[n] || '' };
+  // the timer's place while you move the overlay: mid safe zone, so the card shows as it does in a run, not Ready
+  function sample(cfg) {
+    const C = Math.max(1, +(cfg || {}).cycle || 20), z = ((cfg || {}).zones || []).find(z => z.c === 'g' && z.a !== z.b);
+    return z ? (z.a + ((z.b - z.a + C) % C) / 2) % C : +(cfg || {}).start || 0;
+  }
+  g.NROverlayCard = { css: CSS, render, sample, icon: n => ICON[n] || '' };
 })(window);

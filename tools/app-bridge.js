@@ -38,6 +38,9 @@
       config: (cfg) => T.event.emit('overlay:config', cfg),
       run: (run) => T.event.emit('overlay:run', run),
       example: (run) => T.event.emit('overlay:example', run),   // what the card shows while you move it with no run going on
+      // the overlay's timer: when its cycle started (wall clock, ms) or null when it isn't running; askTimer has it say now
+      onTimer: (cb) => { listen('overlay:timer', (e) => cb(e.payload || {})); },
+      askTimer: () => T.event.emit('overlay:timer?', null),
       test: () => T.event.emit('overlay:restart'),
       stop: () => T.event.emit('overlay:stop'),
     },
