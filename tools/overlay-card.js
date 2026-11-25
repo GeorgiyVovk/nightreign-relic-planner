@@ -33,6 +33,7 @@
 .oc-lv2::after{background:var(--oc-mid)}
 .oc-lv3::after{background:var(--oc-bad)}
 .oc-none{font-size:12px;color:var(--oc-muted)}
+.oc-wait{visibility:hidden}
 .oc-main{display:flex;align-items:baseline;gap:8px}
 .oc-big{font-family:"IBM Plex Mono",ui-monospace,monospace;font-size:38px;font-weight:600;line-height:1;font-variant-numeric:tabular-nums}
 .oc-big small{font-size:16px;color:var(--oc-muted);margin-left:2px}
@@ -161,8 +162,9 @@
     const ev = run && run.ev ? '<span class="oc-ev">Everdark</span> ' : '';
     if (cfg.nl !== false && run) html += `<div class="oc-sec oc-nl"><div class="oc-id"><div class="oc-name">${ev}${esc(cfg.nlName === 'exp' ? run.title : run.name)}</div>${cfg.nlName === 'both' ? `<div class="oc-sub">${esc(run.title)}</div>` : ''}</div>`
       + weakHtml(run.weak) + '</div>';
-    // Nightlord only (timer off) and no run yet: a line in its place, so the overlay doesn't vanish and you see where it sits
-    else if (cfg.nl !== false && cfg.timer === false) html += `<div class="oc-sec oc-nl oc-wait"><span class="oc-hint">${cfg.nlName === 'exp' ? 'The expedition' : 'The Nightlord'} shows when the run starts</span></div>`;
+    // Nightlord only (timer off) and no run yet: the empty frame at the size the Nightlord will take (a name, the second name
+    // line if shown, a row of icons with a status bar), so the overlay doesn't vanish and nothing jumps when the run starts
+    else if (cfg.nl !== false && cfg.timer === false) html += `<div class="oc-sec oc-nl oc-wait" aria-hidden="true"><div class="oc-id"><div class="oc-name">&nbsp;</div>${cfg.nlName === 'both' ? '<div class="oc-sub">&nbsp;</div>' : ''}</div><div class="oc-weak"><span class="oc-tag oc-st oc-lv1"><b></b></span></div></div>`;
     if (cfg.timer !== false) { const r = cfg.simple === true ? simple(t) : full(t); html += r.html; state = r.state; }
     if (!html && moving) html = '<div class="oc-sec"><span class="oc-hint">Drag me</span></div>';
     const cls = 'oc' + (state === 'danger' ? ' oc-alert' : state === 'safe' ? ' oc-calm' : '') + (moving ? ' oc-move' : '');
