@@ -623,7 +623,7 @@ select:hover{background-image:linear-gradient(to top right,transparent 50%,var(-
   .run > summary{grid-template-columns:minmax(0,1fr)}
   .run .rt{grid-column:1;grid-row:auto;flex-direction:row;flex-wrap:wrap;gap:2px 12px;align-items:baseline}
 }
-.run .up{color:var(--good)} .run .down{color:var(--bad)}
+.run .up{color:var(--good)} .run .down{color:var(--bad)} .run .rt .dur{color:var(--muted)}
 .rbody{border-top:1px solid var(--line);padding:10px 12px 12px}
 .rcount{display:flex;flex-wrap:wrap;gap:4px 18px;font-size:12px;color:var(--muted);margin-bottom:10px}
 .rcount b{font-family:var(--f-mono);font-variant-numeric:tabular-nums;color:var(--fg);font-weight:600}
@@ -1843,12 +1843,14 @@ function mateRating(r){
   const k=r.pl.length; if(r.mode!==2||k<2||!('ta' in r)) return null;
   const other=Math.ceil(r.ta*k/50)*50-r.rb; return other>=0?other/(k-1):null;
 }
+const runTime=s=>{ const h=Math.floor(s/3600), m=Math.floor(s/60)%60, x=String(s%60).padStart(2,'0'); return h?`${h}:${String(m).padStart(2,'0')}:${x}`:`${m}:${x}`; };
 function histRunHtml(r){
   // you first (your Nightfarer and the preset you took), then who you played with
   const don=r.mode===2, d=rAfter(r)-r.rb, pm=runPreset(r), others=r.pl.slice(1).map(p=>nfName(p.ch)).join(', ');
   const team=`<span class="you">${esc(nfName(r.pl[0].ch))}${pm?' · '+presetChip(pm):''}</span> · ${others?'with '+esc(others):'solo'}`;
   const res=r.win?'Victory':'Defeat · '+dayName(r.day);
-  const rt=don?`<span>Depth ${r.db}</span><span>${int(r.rb)} → ${int(rAfter(r))} <span class="${d>0?'up':d<0?'down':''}">${d>0?'+':''}${d?int(d):'±0'}</span></span>`:'<span>Normal</span>';
+  const dur=r.dur?`<span class="dur" title="Run time">${runTime(r.dur)}</span> · `:'';
+  const rt=don?`<span>${dur}Depth ${r.db}</span><span>${int(r.rb)} → ${int(rAfter(r))} <span class="${d>0?'up':d<0?'down':''}">${d>0?'+':''}${d?int(d):'±0'}</span></span>`:`<span>${dur}Normal</span>`;
   const counts=[['enemies felled',r.c[0]],['great enemies felled',r.c[1]],['treasure found',r.c[2]],['allies rescued',r.c[4]]];
   const mr=mateRating(r), mates=mr==null?'':`<span title="The game keeps the team's average rating; this is it without yours"><b>${int(mr)}</b> ${r.pl.length>2?'teammates\' average rating':'teammate\'s rating'}</span>`;
   const players=r.pl.map((p,i)=>`<button class="rpl rplb" data-act="hplayer" data-run="${r.n}" data-p="${i}"><span class="who"><b>${esc(p.name)}</b><span class="st">${nfName(p.ch)} · Lv <span class="num">${p.lv}</span></span></span>
@@ -2831,7 +2833,8 @@ function svCharacter(nameBytes, data){
   return {name,relics,presets};
 }
 // Result History (the last 100 expeditions): a 'RSCL' block, in the profile part (an older save keeps one per character slot too),
-// a 28-byte header, then 1872-byte runs. Run: +4 number, +8 date (FILETIME, the clock the game shows), +40 day reached (4 Final Day,
+// a 28-byte header, then 1872-byte runs. Run: +4 number, +8 date (FILETIME, the clock the game shows; when the run began),
+// +16 run time in milliseconds (a First Day loss runs minutes, a full run 30 to 50), +40 day reached (4 Final Day,
 // 3 Second Day), +44 [won, mode (2 Deep of Night), Nightlord 0-9, 1 when the Nightlord was unknown (the game's purple mark)], +48 enemies felled, great enemies, treasure, ?, rescued allies,
 // +68 the team's Deep of Night rating when matched (everyone's average, rounded down, × 256 + depth),
 // +92 / +684 / +1276 the three players (you first), +1864 / +1868 Deep of Night rating before / after (rating × 256 + depth).
@@ -2839,7 +2842,7 @@ function svCharacter(nameBytes, data){
 // [weapon id, skill, three passives, …, +44 the item it came from: a Nightfarer weapon dropped by an invader is 1XXXX500N there,
 // XXXX its base; +20 / +24 a catalyst's two spells], +548 / +552 the two talismans (0x20000000 | id). Checked against the game's
 // Result History screens.
-const HIST_V=4;
+const HIST_V=5;
 // The players' relics are in another part of the save, 'RSLT': one zlib-compressed (DCX, DFLT) block per run, numbered like the
 // history. Near the end of each are the players' relics, in the history's order of players: 28-byte entries
 // [0x80000000 | relic item, three effects, each effect's curse], six to a player.
@@ -2885,7 +2888,7 @@ function svHistory(entries){
       return {name,ch:d[q+34],lv:u(q+36),fl:u(q+40),runes:u(q+44),kills:u(q+48),w,t}; }).filter(Boolean);
     if(!pl.length) continue;
     const b=u(R+44), rb=u(R+1864), ra=u(R+1868), tr=u(R+68);
-    out.push({v:HIST_V,n,t,day:d[R+40],win:b&255,mode:(b>>8)&255,nl:(b>>16)&255,u:b>>>24?1:0,c:[0,1,2,3,4].map(i=>u(R+48+4*i)),rb:rb>>>8,ra:ra>>>8,db:rb&255,da:ra&255,ta:tr>>>8,pl});
+    out.push({v:HIST_V,n,t,dur:Math.round(u(R+16)/1000),day:d[R+40],win:b&255,mode:(b>>8)&255,nl:(b>>16)&255,u:b>>>24?1:0,c:[0,1,2,3,4].map(i=>u(R+48+4*i)),rb:rb>>>8,ra:ra>>>8,db:rb&255,da:ra&255,ta:tr>>>8,pl});
   }
   return out.sort((a,b)=>b.n-a.n);
 }
