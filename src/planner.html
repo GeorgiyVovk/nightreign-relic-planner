@@ -623,7 +623,7 @@ select:hover{background-image:linear-gradient(to top right,transparent 50%,var(-
   .run > summary{grid-template-columns:minmax(0,1fr)}
   .run .rt{grid-column:1;grid-row:auto;flex-direction:row;flex-wrap:wrap;gap:2px 12px;align-items:baseline}
 }
-.run .up{color:var(--good)} .run .down{color:var(--bad)} .run .rt .dur{color:var(--muted)}
+.run .up{color:var(--good)} .run .down{color:var(--bad)} .run .rt .dur{color:var(--muted)} .run .dur .sec{display:none} .run[open] .dur .sec{display:inline}
 .rbody{border-top:1px solid var(--line);padding:10px 12px 12px}
 .rcount{display:flex;flex-wrap:wrap;gap:4px 18px;font-size:12px;color:var(--muted);margin-bottom:10px}
 .rcount b{font-family:var(--f-mono);font-variant-numeric:tabular-nums;color:var(--fg);font-weight:600}
@@ -1847,7 +1847,9 @@ function mateRating(r){
   const k=r.pl.length; if(r.mode!==2||k<2||!('ta' in r)) return null;
   const other=Math.ceil(r.ta*k/50)*50-r.rb; return other>=0?other/(k-1):null;
 }
-const runTime=s=>{ const h=Math.floor(s/3600), m=Math.floor(s/60)%60, x=String(s%60).padStart(2,'0'); return h?`${h}:${String(m).padStart(2,'0')}:${x}`:`${m}:${x}`; };
+// run time in words so it doesn't read as a clock time: "34 min", "1 h 05 min"; the seconds show once the run is opened
+const runTime=s=>{ const h=Math.floor(s/3600), m=Math.floor(s/60)%60, x=s%60, main=h?`${h} h ${String(m).padStart(2,'0')} min`:s>=60?`${m} min`:'';
+  return main?`${main}<span class="sec"> ${x} s</span>`:`${x} s`; };
 function histRunHtml(r){
   // you first (your Nightfarer and the preset you took), then who you played with
   const don=r.mode===2, d=rAfter(r)-r.rb, pm=runPreset(r), others=r.pl.slice(1).map(p=>nfName(p.ch)).join(', ');
