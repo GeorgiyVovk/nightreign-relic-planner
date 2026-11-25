@@ -1791,9 +1791,8 @@ function histRelic(x,nf){
   const curses=r.curses.map(e=>`<span class="curse">${esc(shortName(nm(e),nf))}</span>`);
   return `<li class="rrelf c-${r.color}${r.deep?' dp':''}" title="${esc([...(r.name?[r.name]:[]),...r.effects.map(nm),...r.curses.map(nm)].join('\n'))}">${label||'Relic'}${curses.length?`<span class="rcur">${curses.join(', ')}</span>`:''}</li>`;
 }
-// The preset you took on a run: the run keeps your six relics, so a preset of that Nightfarer (the game's or yours here) with the
-// same relics matches. Presets change, so one with all but one of them still counts, marked close; a set with fewer than four
-// relics in common matches nothing. Ties go to the game's own presets, then the list's order.
+// The preset you took on a run: the run keeps your six relics, so a preset of that Nightfarer (the game's or yours here) with
+// exactly the same relics matches; one relic different matches nothing. Ties go to the game's own presets, then the list's order.
 let _pm=null;
 function runPreset(r){
   if(!_pm){ _pm=new Map(); const C=build.presets.map((p,i)=>({p,i,sigs:p.slots.filter(Boolean).map(id=>{ const x=saveMap.get(id); return x&&x.gs||null; })})).filter(c=>c.sigs.some(Boolean));
@@ -1802,10 +1801,10 @@ function runPreset(r){
   const me=r.pl[0], ch=me&&SV_CHARS[me.ch-1]; let best=null;
   if(me&&me.rel&&me.rel.length){ const rs=me.rel.map(x=>relSig(x[0],x.slice(1,4),x.slice(4,7)));
     for(const c of _pm.C){ if(c.p.char!==ch) continue; const a=rs.slice(); let k=0; c.sigs.forEach(g=>{ const j=g?a.indexOf(g):-1; if(j>=0){ a.splice(j,1); k++; } });
-      const off=Math.max(rs.length,c.sigs.length)-k; if(off>1||(off===1&&k<4)) continue;
-      const sc=[-off,c.p.game?1:0,-c.i]; if(!best||sc[0]>best.sc[0]||(sc[0]===best.sc[0]&&(sc[1]>best.sc[1]||(sc[1]===best.sc[1]&&sc[2]>best.sc[2])))) best={p:c.p,close:off===1,sc}; } }
-  const out=best?{p:best.p,close:best.close}:null; _pm.set(r.n,out); return out; }
-const presetChip=m=>m?`<span class="rpre" title="${m.close?'Your relics on this run: all but one of this preset\'s, as it is saved now':'Your relics on this run: this preset\'s'}">${m.close?'≈ ':''}${esc(m.p.name)}</span>`:'';
+      if(k!==rs.length||k!==c.sigs.length) continue;
+      const sc=[c.p.game?1:0,-c.i]; if(!best||sc[0]>best.sc[0]||(sc[0]===best.sc[0]&&sc[1]>best.sc[1])) best={p:c.p,sc}; } }
+  const out=best?{p:best.p}:null; _pm.set(r.n,out); return out; }
+const presetChip=m=>m?`<span class="rpre" title="Your relics on this run were this preset's">${esc(m.p.name)}</span>`:'';
 function histGroup(list,keys){
   const m=new Map();
   list.forEach(r=>keys(r).forEach(([k,extra])=>{ const e=m.get(k)||{k,n:0,w:0,kills:0,chars:new Map()}; e.n++; if(r.win) e.w++;
@@ -1910,12 +1909,12 @@ function renderStats(){
   const stop=hist.all.s?smap:smap.slice(0,12);
   // presets: the ones you took, most runs first, then the runs that match none
   const pre=new Map(); let none={n:0,w:0};
-  list.forEach(r=>{ const m=runPreset(r); if(!m){ none.n++; if(r.win) none.w++; return; } const e=pre.get(m.p.id)||{p:m.p,n:0,w:0,close:0}; e.n++; if(r.win) e.w++; if(m.close) e.close++; pre.set(m.p.id,e); });
+  list.forEach(r=>{ const m=runPreset(r); if(!m){ none.n++; if(r.win) none.w++; return; } const e=pre.get(m.p.id)||{p:m.p,n:0,w:0}; e.n++; if(r.win) e.w++; pre.set(m.p.id,e); });
   const pall=[...pre.values()].sort((a,b)=>b.n-a.n||b.w-a.w||a.p.name.localeCompare(b.p.name)), ptop=hist.all.p?pall:pall.slice(0,10);
   const presetPanel=`<section class="panel"><div class="ph"><h2>Your presets</h2></div>${pall.length?`<table class="htab"><thead><tr><th>Preset</th><th>Runs</th><th>Won</th><th>Win rate</th></tr></thead><tbody>
-      ${ptop.map(e=>`<tr><td>${esc(e.p.name)}<span class="s2">${esc(nfName(SV_CHARS.indexOf(e.p.char)+1))}${e.p.game?'':' · saved here'}${e.close?` · ${e.close===e.n?'one relic different on each run':e.close+' with one relic different'}`:''}</span></td><td>${e.n}</td><td>${e.w}</td><td>${wrCell(e)}</td></tr>`).join('')}
+      ${ptop.map(e=>`<tr><td>${esc(e.p.name)}<span class="s2">${esc(nfName(SV_CHARS.indexOf(e.p.char)+1))}${e.p.game?'':' · saved here'}</span></td><td>${e.n}</td><td>${e.w}</td><td>${wrCell(e)}</td></tr>`).join('')}
       ${none.n?`<tr class="faintrow"><td>No preset<span class="s2">Relics that match none of your presets</span></td><td>${none.n}</td><td>${none.w}</td><td>${wrCell(none)}</td></tr>`:''}</tbody></table>
-      <div class="hmore"><span>Your relics on each run against your presets as they're saved now; one relic changed since still counts.</span>${more('p',pall.length,ptop.length)}</div>`
+      <div class="hmore"><span>Runs where your relics were exactly a preset's, as it's saved now.</span>${more('p',pall.length,ptop.length)}</div>`
       :`<p class="msg">${build.presets.some(p=>p.slots.some(id=>id&&saveMap.has(id)))?'None of these runs match your presets.':'Load your save to match runs to your presets.'}</p>`}</section>`;
   h+=`<div class="hgrid">`+presetPanel+`
     <section class="panel"><div class="ph"><h2>Nightlords</h2></div><table class="htab hnl"><thead><tr><th>Nightlord</th><th>Runs</th><th>Won</th><th>Win rate</th></tr></thead><tbody>
