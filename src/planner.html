@@ -3196,10 +3196,10 @@ async function checkUpdates(quiet){
 // a new version stays on screen until it's installed: a button at the top, and a dot on Settings
 function showUpdate(){ const n=upd.st==='new'||(upd.st==='installing'&&upd.v);
   const b=$('#ovbtn'); if(b){ b.classList.toggle('has-upd',!!n); b.title=n?`Settings: version ${upd.v} is out`:'Settings'; }
-  // one click updates: the installed app downloads, installs and reopens itself (progress on the button); the portable
-  // exe can't replace itself, so it opens the release page
+  // one click updates: the installed app downloads, installs and reopens itself (progress in the notification at the top);
+  // the portable exe can't replace itself, so it opens the release page
   const u=$('#updbtn'); if(u){ u.hidden=!n; const busy=upd.st==='installing'; u.disabled=busy;
-    if(n){ u.textContent=busy?(upd.prog||'Updating…'):`Update to ${upd.v}`; u.title=busy?'Updating: the app closes and opens again':appInstalled&&!upd.noSelf?`Install version ${upd.v} now: the app closes and opens again`:`Version ${upd.v} is out: opens the release page`; } } }
+    if(n){ u.textContent=busy?'Updating…':`Update to ${upd.v}`; u.title=busy?'Updating: the app closes and opens again':appInstalled&&!upd.noSelf?`Install version ${upd.v} now: the app closes and opens again`:`Version ${upd.v} is out: opens the release page`; } } }
 // when the app starts (a retry a minute later if GitHub can't be reached) and every 30 minutes while it's open
 let updTimer=null;
 function scheduleUpdateChecks(){
@@ -3209,13 +3209,14 @@ function scheduleUpdateChecks(){
 async function installUpdate(){
   if(!APP||!APP.updateInstall||upd.st!=='new') return;
   upd.st='installing'; upd.err=''; upd.prog='Downloading…'; showUpdate(); if($('#setdlg')) openSettings();
-  const stop=APP.onUpdateProgress(([got,total])=>{ upd.prog=total?`Downloading… ${Math.min(100,Math.round(got/total*100))}%`:`Downloading… ${(got/1048576).toFixed(1)} MB`; if(got&&total&&got>=total) upd.prog='Installing…'; const el=$('#upd-prog'); if(el) el.textContent=upd.prog; showUpdate(); });
+  toast(`Updating to ${upd.v}: ${upd.prog}`,'busy');
+  const stop=APP.onUpdateProgress(([got,total])=>{ upd.prog=total?`Downloading… ${Math.min(100,Math.round(got/total*100))}%`:`Downloading… ${(got/1048576).toFixed(1)} MB`; if(got&&total&&got>=total) upd.prog='Installing…'; const el=$('#upd-prog'); if(el) el.textContent=upd.prog; toast(`Updating to ${upd.v}: ${upd.prog}${upd.prog==='Installing…'?' The app closes and opens again.':''}`,'busy'); });
   try{ await APP.updateInstall(); }
   catch(e){ stop(); upd.st='new'; const m=String(e||'');
     // a release built without the update files can't install itself: send people to the release page
     if(/No update|latest\.json|404|signature/i.test(m)) upd.noSelf=true;
     upd.err=upd.noSelf?"This update can't install itself. Download it from the release page instead.":`Couldn't install the update: ${m}. Try again, or download it from the release page.`;
-    showUpdate(); if($('#setdlg')) openSettings(); else toast(upd.err,'bad'); } }
+    showUpdate(); if($('#setdlg')) openSettings(); toast(upd.err,'bad'); } }
 function updatesPage(){ const s=setGet();
   let st='';
   if(upd.st==='checking') st=`<p class="msg updst"><i class="spin" aria-hidden="true"></i>Checking for updates…</p>`;
