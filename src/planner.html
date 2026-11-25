@@ -3020,7 +3020,8 @@ const HK_OK=/^((Ctrl|Alt|Shift|Super)\+)*[A-Za-z][A-Za-z0-9]*$/;
 const keyName=k=>!k?'Off':k.split('+').map(t=>t==='Super'?'Win':t.replace(/^Key(?=[A-Z]$)/,'').replace(/^Digit(?=\d$)/,'').replace(/^Numpad/,'Num ').replace(/^Arrow/,'')).join(' + ');
 // a key with no Ctrl, Alt or Shift that the game may use (letters, digits, Space...): the game won't get it while the planner is open
 const hkPlain=k=>!!k&&!k.includes('+')&&!/^(F\d+|Numpad.*|Insert|Home|End|PageUp|PageDown|Pause|ScrollLock|PrintScreen)$/.test(k);
-let keyRec=null;   // 'key' or 'tkey' while Settings waits for you to press a key
+let keyRec=null;   // 'key', 'tkey' or 'dkey' while Settings waits for you to press a key
+const HK_NAME={key:'Dreglord timer',tkey:'show/hide',dkey:'day timer'};
 let ovlMoving=false, curRun=null;
 // Dreglord timer: a cycle (about 20 s) that starts at the user's start point when the hotkey is pressed and repeats
 // until stopped; zones colour parts of the cycle safe (green) or danger (red). A zone may wrap past the end (15 to 2).
@@ -3029,13 +3030,14 @@ const OVL_BARS=[[8,'Thin'],[12,'Slim'],[16,'Medium'],[28,'Thick'],[44,'Large'],[
 const OVL_CYAN='#2ce0ff', OVL_MK=[['#ffffff','White'],[OVL_CYAN,'Cyan']];   // playhead colours
 const mkAt=o=>o.mk;
 function ovlGet(){ let o={}; try{ o=JSON.parse(localStorage.getItem(OVL_KEY)||'{}')||{}; }catch(e){} if(o.tr==null&&o.bg!=null&&+o.bg!==80) o.tr=100-o.bg; delete o.bg;   // the old 'how solid' setting; its old default gives way to the new one
-  o=Object.assign({on:false,key:'F8',cycle:20,start:0.5,x:null,y:null,nl:true,timer:true,showTime:false,showBar:true,barH:12,mk:'#ffffff',simple:false,showZone:false,nlName:'boss',tr:30,tkey:'F9'},o); delete o.secs; delete o.sq;
+  o=Object.assign({on:false,key:'F8',cycle:20,start:0.5,x:null,y:null,nl:true,timer:true,day:true,dkey:'F7',showTime:false,showBar:true,barH:12,mk:'#ffffff',simple:false,showZone:false,nlName:'boss',tr:30,tkey:'F9'},o); delete o.secs; delete o.sq;
   o.simple=o.simple===true; o.showZone=o.showZone!==false; if(!['boss','exp','both'].includes(o.nlName)) o.nlName='boss';
   o.mk=String(o.mk).toLowerCase(); if(o.mk==='#ffd43b') o.mk=OVL_CYAN;   // the old yellow playhead is cyan now
   if(!OVL_MK.some(m=>m[0]===o.mk)) o.mk='#ffffff';   // 'Cyan in danger' is gone: white
   o.tr=Math.min(100,Math.max(0,Math.round((isNaN(+o.tr)?30:+o.tr)/5)*5));   // how see-through the card's background is, %
   o.showTime=o.showTime!==false; o.showBar=o.showBar!==false; if(!OVL_BARS.some(b=>b[0]===+o.barH)) o.barH=12; o.barH=+o.barH;
-  if(o.key!==''&&!HK_OK.test(o.key||'')) o.key='F8'; if(o.tkey!==''&&!HK_OK.test(o.tkey||'')) o.tkey='F9'; if(o.tkey&&o.tkey===o.key) o.tkey=''; o.nl=o.nl!==false; o.timer=o.timer!==false;
+  if(o.key!==''&&!HK_OK.test(o.key||'')) o.key='F8'; if(o.tkey!==''&&!HK_OK.test(o.tkey||'')) o.tkey='F9'; if(o.tkey&&o.tkey===o.key) o.tkey='';
+  if(o.dkey!==''&&!HK_OK.test(o.dkey||'')) o.dkey='F7'; if(o.dkey&&(o.dkey===o.key||o.dkey===o.tkey)) o.dkey=''; o.nl=o.nl!==false; o.timer=o.timer!==false; o.day=o.day!==false;
   o.cycle=Math.min(600,Math.max(1,r1(+o.cycle)||20)); o.start=Math.min(o.cycle,Math.max(0,r1(+o.start)||0));
   // one safe zone (it may wrap past the end, 15 to 2); the rest of the cycle is danger. Older settings with a list
   // of zones keep their first safe one.
@@ -3044,7 +3046,7 @@ function ovlGet(){ let o={}; try{ o=JSON.parse(localStorage.getItem(OVL_KEY)||'{
   o.zones=o.safe.a===o.safe.b?[{c:'r',a:0,b:o.cycle}]:[{c:'g',a:o.safe.a,b:o.safe.b},{c:'r',a:o.safe.b,b:o.safe.a}];
   return o; }
 function ovlSet(o){ try{ localStorage.setItem(OVL_KEY,JSON.stringify(o)); }catch(e){} }
-const ovlCfg = o => ({key:o.key,cycle:o.cycle,start:o.start,zones:o.zones,nl:o.nl,timer:o.timer,showTime:o.showTime,showBar:o.showBar,barH:o.barH,mk:o.mk,simple:o.simple,showZone:o.showZone,nlName:o.nlName,bg:100-o.tr});
+const ovlCfg = o => ({key:o.key,dkey:o.dkey,day:o.day,cycle:o.cycle,start:o.start,zones:o.zones,nl:o.nl,timer:o.timer,showTime:o.showTime,showBar:o.showBar,barH:o.barH,mk:o.mk,simple:o.simple,showZone:o.showZone,nlName:o.nlName,bg:100-o.tr});
 // the cycle drawn as a bar: each zone's share of it, split in two when it wraps past the end
 const zoneSegs=(z,c)=>z.a===z.b?[]:z.a<z.b?[[z.a,z.b-z.a]]:[[z.a,c-z.a],[0,z.b]];
 const zoneTrack=o=>`<div class="ztrack">${o.zones.flatMap(z=>zoneSegs(z,o.cycle).map(([x,w])=>`<i class="z${z.c}" style="left:${(x/o.cycle*100).toFixed(2)}%;width:${(w/o.cycle*100).toFixed(2)}%"></i>`)).join('')}<b style="left:${(o.start/o.cycle*100).toFixed(2)}%;background:${mkAt(o,o.start)}" title="Start point"></b></div><div class="zticks"><span>0 s</span><span class="zleg"><i aria-hidden="true" style="background:${mkAt(o,o.start)}"></i>start ${o.start} s</span><span>${o.cycle} s</span></div>`;
@@ -3074,7 +3076,8 @@ function ovlRunStatus(){ if(!appSavePath) return 'Load your save in the planner:
   if(!curRun) return 'No run going on in your save right now.';
   const c=runCard(curRun); return `Run going on now: <b>${c.ev?'<span class="ev">Everdark</span> ':''}${esc(c.name)}</b>, ${esc(c.title)}${c.don?' · Deep of Night':''}`; }
 async function ovlApply(o){ const O=APP&&APP.overlay; if(!O) return;
-  try{ if(o.on){ await O.show(o.x,o.y); await O.hotkey(o.timer?o.key:''); O.config(ovlCfg(o)); O.run(runCard(curRun)); } else { ovlMoving=false; await O.hotkey(''); await O.hide(); } }
+  try{ if(o.on){ await O.show(o.x,o.y); await O.hotkey(o.timer?o.key:''); if(O.dayKey) await O.dayKey(o.day?o.dkey:''); O.config(ovlCfg(o)); O.run(runCard(curRun)); }
+    else { ovlMoving=false; await O.hotkey(''); if(O.dayKey) await O.dayKey(''); await O.hide(); } }
   catch(e){ toast(`Overlay: ${e}`,'bad'); } }
 async function ovlLock(lock){ const O=APP&&APP.overlay; if(!O) return; ovlMoving=!lock;
   // while you move it, the overlay shows the same card as the preview, so you place it at its real size
@@ -3083,7 +3086,7 @@ async function ovlLock(lock){ const O=APP&&APP.overlay; if(!O) return; ovlMoving
 const ovTgl=(id,on,label,dis)=>`<label class="tgl"><input type="checkbox" id="${id}" role="switch" ${on?'checked':''} ${dis?'disabled':''}><span class="knob" aria-hidden="true"></span><span class="tt">${label}</span></label>`;
 function overlayPage(){ const o=ovlGet();
   return `<h4 class="spt">Overlay</h4>
-    <div class="ocprev"><div class="ocstage"><div class="oc" id="ov-prev"></div><p class="msg ocnone" id="ov-prevnone" hidden>Nothing to show: the Nightlord and the timer are both off.</p></div><span class="occap" id="ov-prevcap">Preview of the card, the timer running on a loop</span></div>
+    <div class="ocprev"><div class="ocstage"><div class="oc" id="ov-prev"></div><p class="msg ocnone" id="ov-prevnone" hidden>Nothing to show: the Nightlord and both timers are off.</p></div><span class="occap" id="ov-prevcap">Preview of the card, the timer running on a loop</span></div>
     <div class="ovsec">${ovTgl('ov-on',o.on,'Show the overlay')}
       <p class="msg">A small card on top of the game. Works with the game in borderless or windowed mode.</p>
       <div class="btns"><button class="btn" data-act="ovmove" ${o.on?'':'disabled'}>${ovlMoving?'Done moving':'Move'}</button></div>
@@ -3094,6 +3097,9 @@ function overlayPage(){ const o=ovlGet();
       <div class="seg" role="group" aria-label="Name on the card"><button data-act="ovname" data-v="boss" aria-pressed="${o.nlName==='boss'}">Nightlord</button><button data-act="ovname" data-v="exp" aria-pressed="${o.nlName==='exp'}">Expedition</button><button data-act="ovname" data-v="both" aria-pressed="${o.nlName==='both'}">Both</button></div></div>
       <p class="msg">Read from your save as soon as a run starts, so a hidden Nightlord isn't hidden from you. Under its name: the damage types it takes more of, then the statuses it isn't immune to, with a green bar if they build up easily, yellow if slower and red if very slowly.</p>
       <p class="msg ovnow" id="ov-runst">${ovlRunStatus()}</p></div>
+    <div class="ovsec"><h5 class="sh3">Day timer</h5>${ovTgl('ov-day',o.day,'Show the day timer')}
+      <p class="msg">Double-press the hotkey when DAY I shows after you land, and again at DAY II after the night boss. The card tells you when the circle closes and when the boss comes: the first circle closes from 4:30 to 7:30, the second from 11:00, and the boss comes at 14:00 (players' timings). The run's end resets it.</p>
+      ${APP&&APP.overlay&&APP.overlay.dayKey?hkField('dkey','Hotkey',o.dkey,o.dkey?'Twice fast: start the day (within 2 minutes of the last start: resync the same day) · three times: stop':'No hotkey: the day timer can\'t start'):''}</div>
     ${timerPage(o)}
     <p class="msg">The overlay reads your save file and listens to your hotkey. It never touches the game.</p>`; }
 // what's wrong with the zones, in words: empty ones, and ones that overlap (where they do, the first one counts)
@@ -3121,7 +3127,7 @@ function timerPage(o){ const full=!o.simple;
       <div class="btns"><button class="btn" data-act="ovtest" ${o.on&&o.timer?'':'disabled'}>Test</button><button class="btn" data-act="ovstop" ${o.on&&o.timer?'':'disabled'}>Stop</button></div>
       ${testWhy}</div>`; }
 // the live preview: the overlay's own card, the same one it shows right now (same size), redrawn 10 times a second
-let prevTimer=null, ovTimerEpoch=null;   // when the overlay's cycle started (wall clock, from the overlay), null when it isn't running
+let prevTimer=null, ovTimerEpoch=null, ovDayEpoch=null, ovDayN=0;   // the overlay's timers as it reports them: when the Dreglord cycle and the day started (wall clock), null when not running
 // while you move the overlay it shows your last run's Nightlord (or Fulghor) as an example, so you place the full card
 const exampleRun=()=>{ const r=runs[0]; return r&&NLORD[r.nl%10]?{nl:r.nl%10,mode:r.mode,ev:!!r.u}:{nl:5,mode:2,ev:false}; };
 function ovPreview(){ const el=$('#ov-prev'), OC=window.NROverlayCard; if(!el||!OC){ clearInterval(prevTimer); prevTimer=null; return; }
@@ -3130,7 +3136,8 @@ function ovPreview(){ const el=$('#ov-prev'), OC=window.NROverlayCard; if(!el||!
   const o=ovlGet(), cfg=ovlCfg(o), ex=cfg.nl&&!curRun&&ovlMoving;
   const tRun=cfg.timer&&ovTimerEpoch?((+o.start||0)+(Date.now()-ovTimerEpoch)/1000)%Math.max(1,+o.cycle||20):null;
   const t=!cfg.timer?null:tRun!=null?tRun:ovlMoving?OC.sample(cfg):null;
-  const r=OC.render(cfg, cfg.nl?(curRun?runCard(curRun):ovlMoving?runCard(exampleRun()):null):null, t, ovlMoving);
+  const day=!cfg.day?null:ovDayEpoch?{s:(Date.now()-ovDayEpoch)/1000,n:ovDayN}:ovlMoving&&OC.daySample?OC.daySample():null;
+  const r=OC.render(cfg, cfg.nl?(curRun?runCard(curRun):ovlMoving?runCard(exampleRun()):null):null, t, ovlMoving, day);
   el.className=r.cls; el.innerHTML=r.html; el.hidden=r.empty; el.style.setProperty('--oc-bga',r.bga); const none=$('#ov-prevnone'); if(none) none.hidden=!r.empty;
   const cap=$('#ov-prevcap'); if(cap) cap.textContent=ovlMoving?'The card as the overlay shows it while you move it'+(ex?": your last run's Nightlord as an example":'')+'.':'The card as the overlay shows it now'+(cfg.nl&&!curRun?', no run yet':'')+(cfg.timer&&tRun==null?'. Test runs the timer':'')+'.'; }
 function startPreview(){ const OC=window.NROverlayCard;
@@ -3223,11 +3230,11 @@ function openSettings(pg){ const old=document.querySelector('#setdlg .setpanel')
 function openOverlayDlg(){ openSettings('overlay'); }
 // a hotkey: press the button, then the key (with Ctrl, Alt, Shift or Win if you like); Esc cancels, Remove clears it
 function hkField(k,label,val,help){ const rec=keyRec===k, id='hk-'+k;
-  return `<div class="field hk"><span class="flab" id="${id}-l">${label}</span><div class="hkrow"><button class="btn hkbtn${rec?' rec':''}" data-act="hkrec" data-k="${k}" aria-labelledby="${id}-l" aria-describedby="${id}-h">${rec?'Press a key… Esc cancels':`<kbd>${esc(keyName(val))}</kbd>`}</button>${val&&!rec?`<button class="btn sm ghost" data-act="hkoff" data-k="${k}" aria-label="Remove the ${k==='key'?'timer':'show/hide'} hotkey">Remove</button>`:''}</div>
+  return `<div class="field hk"><span class="flab" id="${id}-l">${label}</span><div class="hkrow"><button class="btn hkbtn${rec?' rec':''}" data-act="hkrec" data-k="${k}" aria-labelledby="${id}-l" aria-describedby="${id}-h">${rec?'Press a key… Esc cancels':`<kbd>${esc(keyName(val))}</kbd>`}</button>${val&&!rec?`<button class="btn sm ghost" data-act="hkoff" data-k="${k}" aria-label="Remove the ${HK_NAME[k]} hotkey">Remove</button>`:''}</div>
     <span class="fhelp" id="${id}-h">${help}</span>${!rec&&hkPlain(val)?`<span class="fhelp hkwarn">The game won't get ${esc(keyName(val))} while the planner is open. Add Ctrl, Alt or Shift, or pick a key you don't play with.</span>`:''}</div>`; }
-async function setHotkey(which,combo){ keyRec=null; const o=ovlGet(), other=which==='key'?o.tkey:o.key, prev=o[which];
-  if(combo&&combo===other){ toast(`${keyName(combo)} is already the ${which==='key'?'show/hide':'timer'} hotkey`,'bad'); openSettings('overlay'); return; }
-  const apply=async n=>{ if(which==='tkey') await APP.overlay.toggleKey(n.tkey); else if(n.on) await APP.overlay.hotkey(n.timer?n.key:''); if(n.on) APP.overlay.config(ovlCfg(n)); };
+async function setHotkey(which,combo){ keyRec=null; const o=ovlGet(), prev=o[which], taken=Object.keys(HK_NAME).find(k=>k!==which&&combo&&o[k]===combo);
+  if(taken){ toast(`${keyName(combo)} is already the ${HK_NAME[taken]} hotkey`,'bad'); openSettings('overlay'); return; }
+  const apply=async n=>{ if(which==='tkey') await APP.overlay.toggleKey(n.tkey); else if(which==='dkey'){ if(n.on) await APP.overlay.dayKey(n.day?n.dkey:''); } else if(n.on) await APP.overlay.hotkey(n.timer?n.key:''); if(n.on) APP.overlay.config(ovlCfg(n)); };
   o[which]=combo; ovlSet(o);
   try{ await apply(ovlGet()); }
   catch(e){ const r=ovlGet(); r[which]=prev; ovlSet(r); try{ await apply(r); }catch(_){} toast(`Couldn't use ${keyName(combo)}: ${e}`,'bad'); }
@@ -3245,7 +3252,7 @@ async function startApp(){
   try{ localStorage.removeItem(OVL_RUN); }catch(e){}   // a run remembered from last time is stale until the save is read again
   if(APP.overlay){ const b=$('#ovbtn'); if(b) b.hidden=false; const o=ovlGet();
     // the show/hide hotkey works whether the overlay is on or off, so it can bring it back from inside the game
-    if(APP.overlay.onTimer) APP.overlay.onTimer(p=>{ ovTimerEpoch=p&&p.epoch?+p.epoch:null; });
+    if(APP.overlay.onTimer) APP.overlay.onTimer(p=>{ ovTimerEpoch=p&&p.epoch?+p.epoch:null; ovDayEpoch=p&&p.dayEpoch?+p.dayEpoch:null; ovDayN=p&&+p.day||0; });
     if(APP.overlay.toggleKey){ APP.overlay.toggleKey(o.tkey).catch(e=>toast(`Overlay hotkey: ${e}`,'bad')); APP.overlay.onToggle(ovlToggle); }
     if(o.on) ovlApply(o); }
   APP.onSaveChanged(p=>{ if(p===appSavePath) loadAppSave(p,{quiet:true}); });
@@ -3508,6 +3515,9 @@ document.addEventListener('change', ev=>{
     ovlSet(o); if(t.id==='ov-bar') ['#ov-barh','#ov-mk'].forEach(q=>{ const e=$(q); if(e) e.disabled=!o.showBar; });
     if(t.id==='ov-mk'){ const pv=$('#ov-zprev'); if(pv) pv.innerHTML=zoneTrack(ovlGet()); }
     if(o.on&&APP&&APP.overlay) APP.overlay.config(ovlCfg(ovlGet())); return; }
+  if(t.id==='ov-day'){ const o=ovlGet(); o.day=t.checked; ovlSet(o); openSettings();
+    if(o.on&&APP&&APP.overlay){ if(APP.overlay.dayKey) APP.overlay.dayKey(o.day?o.dkey:'').catch(e=>toast(`Overlay: ${e}`,'bad')); APP.overlay.config(ovlCfg(o)); }
+    return; }
   if(t.id==='ov-on'||t.id==='ov-cycle'||t.id==='ov-start'||t.id==='ov-nl'||t.id==='ov-tm'){ const o=ovlGet();
     if(t.id==='ov-on') o.on=t.checked; else if(t.id==='ov-nl') o.nl=t.checked; else if(t.id==='ov-tm') o.timer=t.checked; else if(t.id==='ov-cycle') o.cycle=+t.value; else o.start=+t.value;
     ovlSet(o);

@@ -44,10 +44,12 @@ struct SaveList {
 struct AppState {
     picked: Mutex<Vec<PathBuf>>,
     watch_gen: AtomicU64,
-    /// the overlay's hotkeys: the Dreglord timer's and the one that shows or hides the overlay ("" = off)
+    /// the overlay's hotkeys: the Dreglord timer's, the day timer's and the one that shows or hides the overlay ("" = off)
     hk_timer: Mutex<String>,
     hk_toggle: Mutex<String>,
+    hk_day: Mutex<String>,
     toggle_sc: Mutex<Option<Shortcut>>,
+    day_sc: Mutex<Option<Shortcut>>,
 }
 
 /// %APPDATA%\Nightreign
@@ -336,11 +338,22 @@ fn overlay_toggle_key(app: AppHandle, key: String) -> Result<(), String> {
     register_hotkeys(&app)
 }
 
-/// Registers both overlay hotkeys afresh: the show/hide key, and the timer's key unless it is the same key.
+/// The day timer's key (e.g. "F7"); an empty string turns it off.
+#[tauri::command]
+fn overlay_day_key(app: AppHandle, key: String) -> Result<(), String> {
+    if let Ok(mut g) = app.state::<AppState>().hk_day.lock() {
+        *g = key;
+    }
+    register_hotkeys(&app)
+}
+
+/// Registers the overlay hotkeys afresh: the show/hide key, the timer's key and the day timer's key, each unless it
+/// is the same key as one before it.
 fn register_hotkeys(app: &AppHandle) -> Result<(), String> {
     let st = app.state::<AppState>();
     let timer = st.hk_timer.lock().map(|g| g.clone()).unwrap_or_default();
     let toggle = st.hk_toggle.lock().map(|g| g.clone()).unwrap_or_default();
+    let day = st.hk_day.lock().map(|g| g.clone()).unwrap_or_default();
     let gs = app.global_shortcut();
     gs.unregister_all().map_err(|e| e.to_string())?;
     let mut toggle_sc = None;
@@ -355,6 +368,15 @@ fn register_hotkeys(app: &AppHandle) -> Result<(), String> {
     if !timer.is_empty() && timer != toggle {
         let sc: Shortcut = timer.parse().map_err(|_| format!("Unknown key: {timer}"))?;
         gs.register(sc).map_err(|e| e.to_string())?;
+    }
+    let mut day_sc = None;
+    if !day.is_empty() && day != toggle && day != timer {
+        let sc: Shortcut = day.parse().map_err(|_| format!("Unknown key: {day}"))?;
+        gs.register(sc).map_err(|e| e.to_string())?;
+        day_sc = Some(sc);
+    }
+    if let Ok(mut g) = st.day_sc.lock() {
+        *g = day_sc;
     }
     Ok(())
 }
@@ -407,11 +429,13 @@ fn main() {
         .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(
             tauri_plugin_global_shortcut::Builder::new()
-                // the show/hide key goes to the planner (it keeps the overlay's on/off), the timer's to the overlay
+                // the show/hide key goes to the planner (it keeps the overlay's on/off), the timers' keys to the overlay
                 .with_handler(|app, shortcut, event| {
                     if event.state() == ShortcutState::Pressed {
-                        let toggle = app.state::<AppState>().toggle_sc.lock().map(|g| *g == Some(*shortcut)).unwrap_or(false);
-                        let _ = app.emit(if toggle { "overlay:toggle" } else { "overlay:hotkey" }, ());
+                        let st = app.state::<AppState>();
+                        let toggle = st.toggle_sc.lock().map(|g| *g == Some(*shortcut)).unwrap_or(false);
+                        let day = st.day_sc.lock().map(|g| *g == Some(*shortcut)).unwrap_or(false);
+                        let _ = app.emit(if toggle { "overlay:toggle" } else if day { "overlay:day" } else { "overlay:hotkey" }, ());
                     }
                 })
                 .build(),
@@ -440,7 +464,7 @@ fn main() {
             }
             Ok(())
         })
-        .invoke_handler(tauri::generate_handler![list_saves, read_save, pick_save, watch_save, overlay_show, overlay_hide, overlay_lock, overlay_fit, overlay_hotkey, overlay_toggle_key, open_releases, app_installed, update_check, update_install])
+        .invoke_handler(tauri::generate_handler![list_saves, read_save, pick_save, watch_save, overlay_show, overlay_hide, overlay_lock, overlay_fit, overlay_hotkey, overlay_toggle_key, overlay_day_key, open_releases, app_installed, update_check, update_install])
         .run(tauri::generate_context!())
         .expect("error while running Nightreign Relic Planner");
 }
