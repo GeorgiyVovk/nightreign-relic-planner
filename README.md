@@ -58,6 +58,7 @@ The gear button in the header opens Settings, with its pages down the left (the 
 - **Overlay**: a live preview of the card, showing it on top of the game and moving it, this run's Nightlord, and the Dreglord timer's hotkey, cycle, start point, zones and look (below).
 - **Updates**: the installed version, "Check for updates when the app starts and every 30 minutes" (on by default, with a retry a minute later if GitHub can't be reached) and a Check for updates button, which also says when it last checked. The app asks the release's latest.json through its own updater and GitHub's API; when a newer version is out, an "Update to …" button stays at the top until it's installed, and the gear gets a dot. The installed app updates itself: Update now downloads the new installer, checks its signature against the key built into the app, installs it and opens the app again. The portable exe can't replace itself, so it opens the release page instead.
 - **History**: "Count a run for a preset when one relic differs" (off by default): a run where one of your six relics wasn't the preset's still counts for it in Stats, marked ≈ in History.
+  "Leave out defeats before 14:00" (off by default): Day 1's boss comes about 14 minutes in, so a run lost before that (a disconnect, a teammate quitting, an early wipe) leaves History and Stats and doesn't count against the win rate or streaks; both say how many were left out. The rating chart keeps every run.
 
 ## Overlay (desktop app)
 
