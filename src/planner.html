@@ -613,6 +613,8 @@ select:hover{background-image:linear-gradient(to top right,transparent 50%,var(-
 .run .res{font-size:12px;font-weight:600;color:var(--bad);white-space:nowrap}
 .run.win .res{color:var(--good)}
 .run .meta{font-size:12px;color:var(--muted);min-width:0}
+.run .meta .rpre{color:var(--fg);font-weight:500}
+.htab tr.faintrow td{color:var(--muted)}
 .run .rt{grid-column:2;grid-row:1 / span 2;display:flex;flex-direction:column;align-items:flex-end;gap:2px;font-family:var(--f-mono);font-variant-numeric:tabular-nums;font-size:13px;white-space:nowrap}
 @media (max-width:560px){
   .hstats{gap:6px} .hstat{padding:8px 10px} .hstat .v{font-size:20px}
@@ -1543,7 +1545,9 @@ const curVessel = () => build.vessel[build.char] || 'Urn';
 const slotKey = () => build.char+'|'+curVessel();
 function curSlots(){ const k=slotKey(); if(!Array.isArray(build.slots[k])) build.slots[k]=[null,null,null,null,null,null]; return build.slots[k]; }
 const relicById = id => relics.find(r=>r.id===id) || saveMap.get(id) || guarMap.get(id);
-function relicFromRow(row){ const [h,item,sk,ef,cu]=row; const v=RITEM.get(item)||'R0'; return {id:'s'+h, src:'save', sk, guar:item>=2000&&item<1000000, color:v[0]==='W'?'R':v[0], deep:v[1]==='2', name:UNAME[item]||'', effects:(ef||[]).map(x=>CTMAP[x]).filter(Boolean), curses:(cu||[]).filter(x=>x!=null&&x!==-1).map(x=>CTMAP[x]).filter(Boolean), bad:relicIssues(row)}; }
+// a relic as the game stores it: item and effects with their curses, whatever order; the same in the relic list and in a run's record
+const relSig=(item,ef,cu)=>item+'|'+(ef||[]).filter(x=>x!==-1).sort((a,b)=>a-b).join(',')+'|'+(cu||[]).filter(x=>x!==-1&&x!==0).sort((a,b)=>a-b).join(',');
+function relicFromRow(row){ const [h,item,sk,ef,cu]=row; const v=RITEM.get(item)||'R0'; return {id:'s'+h, src:'save', gs:relSig(item,ef,cu), sk, guar:item>=2000&&item<1000000, color:v[0]==='W'?'R':v[0], deep:v[1]==='2', name:UNAME[item]||'', effects:(ef||[]).map(x=>CTMAP[x]).filter(Boolean), curses:(cu||[]).filter(x=>x!=null&&x!==-1).map(x=>CTMAP[x]).filter(Boolean), bad:relicIssues(row)}; }
 function setSaveRows(rows, info){ saveRelics=rows.map(relicFromRow).sort((a,b)=>b.sk-a.sk); saveMap=new Map(saveRelics.map(r=>[r.id,r])); saveInfo=info||null; }
 const toks = t => String(t).toLowerCase().split(/[^a-z0-9]+/).filter(Boolean);
 // one token list per searchable line: each effect, each curse, the relic's name, and a line with its size/color/kind
@@ -1787,6 +1791,21 @@ function histRelic(x,nf){
   const curses=r.curses.map(e=>`<span class="curse">${esc(shortName(nm(e),nf))}</span>`);
   return `<li class="rrelf c-${r.color}${r.deep?' dp':''}" title="${esc([...(r.name?[r.name]:[]),...r.effects.map(nm),...r.curses.map(nm)].join('\n'))}">${label||'Relic'}${curses.length?`<span class="rcur">${curses.join(', ')}</span>`:''}</li>`;
 }
+// The preset you took on a run: the run keeps your six relics, so a preset of that Nightfarer (the game's or yours here) with the
+// same relics matches. Presets change, so one with all but one of them still counts, marked close; a set with fewer than four
+// relics in common matches nothing. Ties go to the game's own presets, then the list's order.
+let _pm=null;
+function runPreset(r){
+  if(!_pm){ _pm=new Map(); const C=build.presets.map((p,i)=>({p,i,sigs:p.slots.filter(Boolean).map(id=>{ const x=saveMap.get(id); return x&&x.gs||null; })})).filter(c=>c.sigs.some(Boolean));
+    _pm.C=C; }
+  if(_pm.has(r.n)) return _pm.get(r.n);
+  const me=r.pl[0], ch=me&&SV_CHARS[me.ch-1]; let best=null;
+  if(me&&me.rel&&me.rel.length){ const rs=me.rel.map(x=>relSig(x[0],x.slice(1,4),x.slice(4,7)));
+    for(const c of _pm.C){ if(c.p.char!==ch) continue; const a=rs.slice(); let k=0; c.sigs.forEach(g=>{ const j=g?a.indexOf(g):-1; if(j>=0){ a.splice(j,1); k++; } });
+      const off=Math.max(rs.length,c.sigs.length)-k; if(off>1||(off===1&&k<4)) continue;
+      const sc=[-off,c.p.game?1:0,-c.i]; if(!best||sc[0]>best.sc[0]||(sc[0]===best.sc[0]&&(sc[1]>best.sc[1]||(sc[1]===best.sc[1]&&sc[2]>best.sc[2])))) best={p:c.p,close:off===1,sc}; } }
+  const out=best?{p:best.p,close:best.close}:null; _pm.set(r.n,out); return out; }
+const presetChip=m=>m?`<span class="rpre" title="${m.close?'Your relics on this run: all but one of this preset\'s, as it is saved now':'Your relics on this run: this preset\'s'}">${m.close?'≈ ':''}${esc(m.p.name)}</span>`:'';
 function histGroup(list,keys){
   const m=new Map();
   list.forEach(r=>keys(r).forEach(([k,extra])=>{ const e=m.get(k)||{k,n:0,w:0,kills:0,chars:new Map()}; e.n++; if(r.win) e.w++;
@@ -1809,7 +1828,7 @@ function histRunHtml(r){
       <span class="st"><span class="num">${p.kills}</span> kills · <span class="num">${int(p.runes)}</span> runes</span><span class="gearln">Weapons, talismans and relics<i class="caret" aria-hidden="true"></i></span></button>`).join('');
   return `<details class="run${r.win?' win':''}"><summary>
     <span class="nl">${esc(nlName(r.nl))}<small>${esc(NLORD[r.nl%10]?NLORD[r.nl%10][1]:'')}</small>${r.u?'<span class="nlunk" title="Everdark Sovereign: the stronger version of this Nightlord">Everdark</span>':''}</span>
-    <span class="meta"><span class="res">${res}</span> · ${runDate(r.t)} · ${esc(team)}</span><span class="rt">${rt}</span></summary>
+    <span class="meta"><span class="res">${res}</span> · ${runDate(r.t)} · ${esc(team)}${runPreset(r)?' · '+presetChip(runPreset(r)):''}</span><span class="rt">${rt}</span></summary>
     <div class="rbody"><div class="rcount">${counts.map(([k,v])=>`<span><b>${int(v)}</b> ${k}</span>`).join('')}${mates}</div><div class="rplayers">${players}</div></div></details>`;
 }
 // a player's weapons (left), talismans and relics (right), for the gear window
@@ -1853,9 +1872,9 @@ function ratingChart(){
   if(hist.mode==='exp'||!runs.some(r=>r.mode===2)) return '';
   return `<div class="hchart" id="hchart"><div class="hch"><span>Rating after each Deep of Night run</span><span class="hlegend"><span><i aria-hidden="true"></i>Victory</span><span><i class="o" aria-hidden="true"></i>Defeat</span></span></div><div class="hplot"></div></div>`;
 }
-function renderHistory(){ renderRuns(); renderStats(); }
+function renderHistory(){ _pm=null; renderRuns(); renderStats(); }
 function renderRuns(){
-  const el=$('#pg-history'); if(!el) return;
+  const el=$('#pg-history'); if(!el) return; _pm=null;
   if(!runs.length){ el.innerHTML=histEmpty('History'); return; }
   const list=histRuns(), shown=list.slice(0,hist.limit);
   el.innerHTML=`<section class="panel">${histHead('History',list)}${ratingChart()}${list.length?`<p class="hhint">Newest first. Open a run, then a player for their weapons, talismans and relics.</p><div class="runs">${shown.map(histRunHtml).join('')}</div>
@@ -1863,7 +1882,7 @@ function renderRuns(){
   if(curPage()==='history') drawRatingChart();
 }
 function renderStats(){
-  const el=$('#pg-stats'); if(!el) return;
+  const el=$('#pg-stats'); if(!el) return; _pm=null;
   if(!runs.length){ el.innerHTML=histEmpty('Stats'); return; }
   const list=histRuns(), won=list.filter(r=>r.win).length, oldest=list.length?list[list.length-1].t:0;
   let h=`<section class="panel">${histHead('Stats',list)}`;
@@ -1884,12 +1903,21 @@ function renderStats(){
   const byNf=histGroup(list,r=>[[r.pl[0].ch,{kills:r.pl[0].kills}]]).sort((a,b)=>b.n-a.n||a.k-b.k);
   const mates=histGroup(list,r=>r.pl.slice(1).map(p=>[p.name,{ch:p.ch}])).sort((a,b)=>b.n-a.n||b.w-a.w||a.k.localeCompare(b.k));
   const top=hist.all.m?mates:mates.slice(0,10);
-  const more=(k,n,shown)=>n>shown?`<button class="btn sm ghost" data-act="hall" data-k="${k}">Show all ${n}</button>`:hist.all[k]&&n>(k==='m'?10:12)?`<button class="btn sm ghost" data-act="hall" data-k="${k}">Show fewer</button>`:'';
+  const more=(k,n,shown)=>n>shown?`<button class="btn sm ghost" data-act="hall" data-k="${k}">Show all ${n}</button>`:hist.all[k]&&n>(k==='m'||k==='p'?10:12)?`<button class="btn sm ghost" data-act="hall" data-k="${k}">Show fewer</button>`:'';
   const wmap=histGroup(list,r=>[...new Set(r.pl[0].w.filter(w=>w[0]!==110000).map(w=>wName(w[0],w[5],1)).filter(Boolean))].map(n=>[n])).sort((a,b)=>b.n-a.n||b.w-a.w||a.k.localeCompare(b.k));
   const wtop=hist.all.w?wmap:wmap.slice(0,12);
   const smap=histGroup(list,r=>[...new Set(r.pl[0].w.flatMap(w=>[w[6],w[7]]).map(spName).filter(Boolean))].map(n=>[n])).sort((a,b)=>b.n-a.n||b.w-a.w||a.k.localeCompare(b.k));
   const stop=hist.all.s?smap:smap.slice(0,12);
-  h+=`<div class="hgrid">
+  // presets: the ones you took, most runs first, then the runs that match none
+  const pre=new Map(); let none={n:0,w:0};
+  list.forEach(r=>{ const m=runPreset(r); if(!m){ none.n++; if(r.win) none.w++; return; } const e=pre.get(m.p.id)||{p:m.p,n:0,w:0,close:0}; e.n++; if(r.win) e.w++; if(m.close) e.close++; pre.set(m.p.id,e); });
+  const pall=[...pre.values()].sort((a,b)=>b.n-a.n||b.w-a.w||a.p.name.localeCompare(b.p.name)), ptop=hist.all.p?pall:pall.slice(0,10);
+  const presetPanel=`<section class="panel"><div class="ph"><h2>Your presets</h2></div>${pall.length?`<table class="htab"><thead><tr><th>Preset</th><th>Runs</th><th>Won</th><th>Win rate</th></tr></thead><tbody>
+      ${ptop.map(e=>`<tr><td>${esc(e.p.name)}<span class="s2">${esc(nfName(SV_CHARS.indexOf(e.p.char)+1))}${e.p.game?'':' · saved here'}${e.close?` · ${e.close===e.n?'one relic different on each run':e.close+' with one relic different'}`:''}</span></td><td>${e.n}</td><td>${e.w}</td><td>${wrCell(e)}</td></tr>`).join('')}
+      ${none.n?`<tr class="faintrow"><td>No preset<span class="s2">Relics that match none of your presets</span></td><td>${none.n}</td><td>${none.w}</td><td>${wrCell(none)}</td></tr>`:''}</tbody></table>
+      <div class="hmore"><span>Your relics on each run against your presets as they're saved now; one relic changed since still counts.</span>${more('p',pall.length,ptop.length)}</div>`
+      :`<p class="msg">${build.presets.some(p=>p.slots.some(id=>id&&saveMap.has(id)))?'None of these runs match your presets.':'Load your save to match runs to your presets.'}</p>`}</section>`;
+  h+=`<div class="hgrid">`+presetPanel+`
     <section class="panel"><div class="ph"><h2>Nightlords</h2></div><table class="htab hnl"><thead><tr><th>Nightlord</th><th>Runs</th><th>Won</th><th>Win rate</th></tr></thead><tbody>
       ${byNl.map(nlRow).join('')}</tbody>
       </table></section>
