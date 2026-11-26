@@ -3,7 +3,7 @@
 Plan Elden Ring Nightreign relic loadouts from your own save: pick a Nightfarer and vessel, drop relics into the slots, and see the stats you end up with.
 
 - **Website:** https://georgiyvovk.github.io/nightreign-relic-planner/
-- **Windows app:** [Releases](https://github.com/GeorgiyVovk/nightreign-relic-planner/releases). The app finds your saves in `%APPDATA%\Nightreign` and updates your relics every time the game saves. Its window opens where and as big as you left it (maximized too), and never bigger than your screen's free area, so the taskbar stays visible.
+- **Windows app:** [Releases](https://github.com/GeorgiyVovk/nightreign-relic-planner/releases). The app finds your saves in `%APPDATA%\Nightreign` and updates your relics every time the game saves. Loading a save with more than one character asks which one you play, marking the one your last run was on; the automatic updates keep that character. Its window opens where and as big as you left it (maximized too), and never bigger than your screen's free area, so the taskbar stays visible.
 
 ## What it does
 
