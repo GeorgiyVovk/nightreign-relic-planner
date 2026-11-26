@@ -509,7 +509,7 @@ table.bt{border-collapse:collapse;width:100%;font-size:12px;min-width:600px}
 .dlg .dh .btn.ghost[data-act="close"]{color:var(--bad)}
 .dlg .dh .btn.ghost[data-act="close"]::before{content:"";width:9px;height:9px;background:currentColor;-webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 10'%3E%3Cpath d='M1 1l8 8M9 1l-8 8' stroke='%23000' stroke-width='1.8' stroke-linecap='round'/%3E%3C/svg%3E") center/contain no-repeat;mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 10'%3E%3Cpath d='M1 1l8 8M9 1l-8 8' stroke='%23000' stroke-width='1.8' stroke-linecap='round'/%3E%3C/svg%3E") center/contain no-repeat}
 .profgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
-.prof{display:flex;justify-content:space-between;align-items:center;gap:8px;min-width:0;height:var(--h);text-align:left;border:1px solid var(--line2);background:var(--surface2);border-radius:var(--r-md);padding:0 12px}
+.prof{display:flex;flex-direction:column;justify-content:center;align-items:flex-start;gap:2px;min-width:0;min-height:var(--h);text-align:left;border:1px solid var(--line2);background:var(--surface2);border-radius:var(--r-md);padding:8px 12px}
 .prof b{font-size:13px;font-weight:600;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .prof span{color:var(--muted);font-size:12px;white-space:nowrap;font-variant-numeric:tabular-nums}
 .prof[aria-current]{border-color:var(--accent);background:var(--accent-soft);box-shadow:var(--glow);cursor:default}
@@ -2945,9 +2945,15 @@ async function parseSave(buffer){
   slots.forEach(x=>{ x.hist=hl; x.run=cur; });
   return slots;
 }
-const profGrid = (list,cur) => `<div class="profgrid">${list.map((x,i)=>x.name===cur
-  ? `<button class="prof" aria-current="true" disabled title="${esc(x.name)} · ${x.relics.length} relics · loaded now"><b>${esc(x.name)}</b><span>${x.relics.length}</span></button>`
-  : `<button class="prof" data-act="saveslot" data-i="${i}" title="${esc(x.name)} · ${x.relics.length} relics"><b>${esc(x.name)}</b><span>${x.relics.length}</span></button>`).join('')}</div>`;
+// the character you played your last run on: the one whose relics hold every relic you took on it
+function lastPlayed(list){ const r=(list[0]&&list[0].hist||[])[0], rel=r&&r.pl[0]&&r.pl[0].rel; if(!rel||!rel.length) return null;
+  const want=rel.map(x=>relSig(x[0],x.slice(1,4),x.slice(4,7)));
+  return list.find(x=>{ const have=x.relics.map(q=>relSig(q.itemId,q.eff,q.cur)); return want.every(w=>{ const j=have.indexOf(w); if(j<0) return false; have.splice(j,1); return true; }); })||null; }
+const profGrid = (list,cur) => { const lp=lastPlayed(list);
+  return `<div class="profgrid">${list.map((x,i)=>{ const note=`${x.relics.length} relics${x===lp?' · your last run':''}`;
+    return x.name===cur
+    ? `<button class="prof" aria-current="true" disabled title="${esc(x.name)} · ${note} · loaded now"><b>${esc(x.name)}</b><span>${esc(note)}</span></button>`
+    : `<button class="prof" data-act="saveslot" data-i="${i}" title="${esc(x.name)} · ${note}"><b>${esc(x.name)}</b><span>${esc(note)}</span></button>`; }).join('')}</div>`; };
 function openSaveDlg(st){
   st=st||{step:'intro'}; let body=''; endBusyToast();
   if(APP && st.step==='intro'){ openSaveDlg({step:'busy',msg:'Looking for your saves…'}); APP.listSaves().then(r=>{ appSaves=r.saves||[]; openSaveDlg({step:'applist',root:r.root}); }).catch(()=>openSaveDlg({step:'applist'})); return; }
@@ -2963,7 +2969,7 @@ function openSaveDlg(st){
       +(lastProfiles.length>1?profGrid(lastProfiles,cur.name):'')
       +`<div class="dh"><span></span><button class="btn pri" data-act="${APP?'loadsave':'choosesave'}" data-autofocus>Load another save</button></div>`; }
   else if(st.step==='busy') body=`<p class="msg" style="margin:0">${esc(st.msg)}</p>`;
-  else if(st.step==='pick') body=`<p class="msg" style="margin:0">This save has more than one profile. Which one?</p>${profGrid(st.slots)}`;
+  else if(st.step==='pick') body=`<p class="msg" style="margin:0">This save has more than one character. Which one do you play?${saveInfo&&st.slots.some(x=>x.name===saveInfo.name)?` Loaded now: <b>${esc(saveInfo.name)}</b>.`:''}</p>${profGrid(st.slots)}`;
   else if(st.step==='done') body=`<p class="msg good" style="margin:0">${esc(st.msg)}</p><div class="dh"><span></span><button class="btn pri" data-act="close" data-autofocus>Done</button></div>`;
   else body=`<p class="msg bad" style="margin:0">${esc(st.msg)}</p><div class="dh"><span></span><button class="btn" data-act="${APP?'loadsave':'choosesave'}">Pick another file</button></div>`;
   openOv(`<div class="dlg sm savedlg" role="dialog" aria-modal="true" aria-label="Load save"><div class="dh"><h3>${st.step==='menu'?'Save':'Load save'}</h3>${st.step==='busy'?'':'<button class="btn sm ghost" data-act="close">Close</button>'}</div>${body}</div>`);
@@ -3029,8 +3035,10 @@ async function loadAppSave(p, opt={}){
     if(!slots.length) throw new SaveParseError('No relics found in this save.');
     lastProfiles=slots;
     if(appSavePath!==p){ appSavePath=p; try{ localStorage.setItem(LS_APP,p); }catch(e){} APP.watchSave(p); renderStore(); }
-    let slot=slots.length===1?slots[0]:(saveInfo?slots.find(x=>x.name===saveInfo.name):null);
-    if(!slot){ if(opt.quiet) slot=slots[0]; else { pendingSave=slots; openSaveDlg({step:'pick',slots}); return; } }
+    // loading a save yourself asks which character when it has more than one; the automatic reloads keep the one you
+    // picked, or take the one you played your last run on
+    let slot=slots.length===1?slots[0]:opt.quiet?((saveInfo&&slots.find(x=>x.name===saveInfo.name))||lastPlayed(slots)||slots[0]):null;
+    if(!slot){ pendingSave=slots; openSaveDlg({step:'pick',slots}); return; }
     await importSaveSlot(slot,{quiet:!!opt.quiet});
   }catch(e){
     if(opt.quiet){ if(!opt.retry) setTimeout(()=>loadAppSave(p,{quiet:true,retry:true}),3000); return; } // the game may still be writing
