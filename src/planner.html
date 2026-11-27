@@ -2180,7 +2180,8 @@ let chartTimer=null;
 window.addEventListener('resize',()=>{ if(curPage()!=='history') return; clearTimeout(chartTimer); chartTimer=setTimeout(()=>{ drawRatingChart(); },120); });
 
 /* ============ RENDER ============ */
-function renderAll(){ showPage(); renderStore(); renderPickers(); renderSlots(); renderLibrary(); renderEnemy(); renderCombat(); renderResults(); renderHistory(); }
+function renderAll(){ if(build.temp&&build.temp.char&&build.char!==build.temp.char) build.char=build.temp.char;   // a teammate's build keeps its Nightfarer
+  showPage(); renderStore(); renderPickers(); renderSlots(); renderLibrary(); renderEnemy(); renderCombat(); renderResults(); renderHistory(); }
 const ENEG = [['Standard','d-phys'],['Strike','d-phys'],['Slash','d-phys'],['Pierce','d-phys'],['Magic','d-mag'],['Fire','d-fire'],['Lightning','d-ltng'],['Holy','d-holy']];
 const enLabel = e => e.n+(e.loc?` · ${e.loc}`:'');
 const STATN = {str:'STR',dex:'DEX',int:'INT',fth:'FTH',arc:'ARC'};
@@ -3217,7 +3218,8 @@ async function onSaveFile(file){
   }catch(e){ openSaveDlg({step:'error',msg:e instanceof SaveParseError?e.message:"Couldn't read this file. Pick NR0000.sl2 from the Nightreign save folder."}); }
 }
 // the save's presets replace the ones from an earlier load; presets made in the planner stay
-function setGamePresets(list){ normBuild(); const keep=build.presets.filter(p=>!p.game);
+// a save read with no presets for the character (an empty slot, or a save the reader can't find them in) keeps the ones you had
+function setGamePresets(list){ normBuild(); if(!(list||[]).length&&build.presets.some(p=>p.game)) return; const keep=build.presets.filter(p=>!p.game);
   build.presets=keep.concat((list||[]).map(p=>({id:`g-${p.char}-${p.order}`,name:p.name,char:p.char,vessel:p.vessel,slots:p.slots.slice(),game:true})));
   for(const ch of Object.keys(build.activePreset)){ const id=build.activePreset[ch]; if(id&&!build.presets.some(p=>p.id===id)) build.activePreset[ch]=null; }
   saveBuildSoon(); }
