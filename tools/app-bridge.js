@@ -16,6 +16,8 @@
       return () => { if (stop) stop(); };
     },
     version: () => T.app.getVersion(),
+    // Settings > Window: whether the close button (close) and minimizing (min) hide the planner in the tray
+    tray: (close, min) => invoke('app_tray', { close: !!close, min: !!min }),
     // the latest release page on GitHub, in the default browser (the address is fixed in the app)
     openReleases: () => invoke('open_releases'),
     // updates: the installed app downloads, verifies and installs a new version itself; the portable exe can't

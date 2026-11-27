@@ -5,6 +5,8 @@
 // installs it (Tauri's updater), the portable one opens the release page.
 // Also runs the overlay: a small click-through window on top of the game that shows this run's Nightlord
 // (read from the save by the planner page) and a timer started by a global hotkey. It never touches the game itself.
+// A tray icon opens the planner, shows or hides the overlay and quits; Settings > App can make the close and minimize
+// buttons hide the planner there instead, so the overlay keeps working with the window out of the way.
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 use serde::Serialize;
@@ -12,13 +14,18 @@ use std::{
     fs,
     path::{Path, PathBuf},
     sync::{
-        atomic::{AtomicU64, Ordering},
+        atomic::{AtomicBool, AtomicU64, Ordering},
         Mutex,
     },
     thread,
     time::{Duration, UNIX_EPOCH},
 };
-use tauri::{ipc::Response, AppHandle, Emitter, Manager, State, WebviewUrl, WebviewWindowBuilder, WindowEvent};
+use tauri::{
+    ipc::Response,
+    menu::{Menu, MenuItem, PredefinedMenuItem},
+    tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent},
+    AppHandle, Emitter, Manager, State, WebviewUrl, WebviewWindowBuilder, WindowEvent,
+};
 use tauri_plugin_dialog::DialogExt;
 use tauri_plugin_global_shortcut::{GlobalShortcutExt, Shortcut, ShortcutState};
 use tauri_plugin_updater::UpdaterExt;
@@ -50,6 +57,9 @@ struct AppState {
     hk_day: Mutex<String>,
     toggle_sc: Mutex<Option<Shortcut>>,
     day_sc: Mutex<Option<Shortcut>>,
+    /// Settings > App: the close button, or minimizing, hides the planner in the tray instead
+    close_to_tray: AtomicBool,
+    min_to_tray: AtomicBool,
 }
 
 /// %APPDATA%\Nightreign
@@ -381,6 +391,54 @@ fn register_hotkeys(app: &AppHandle) -> Result<(), String> {
     Ok(())
 }
 
+/// The page says what the close and minimize buttons should do (Settings > App), at start and when it changes.
+#[tauri::command]
+fn app_tray(app: AppHandle, close: bool, min: bool) {
+    let st = app.state::<AppState>();
+    st.close_to_tray.store(close, Ordering::SeqCst);
+    st.min_to_tray.store(min, Ordering::SeqCst);
+}
+
+/// Brings the planner back from the tray (or the taskbar) to the front.
+fn show_main(app: &AppHandle) {
+    if let Some(w) = app.get_webview_window("main") {
+        let _ = w.unminimize();
+        let _ = w.show();
+        let _ = w.set_focus();
+    }
+}
+
+/// The tray icon: a left click opens the planner; the menu opens it, shows or hides the overlay (as its hotkey does)
+/// and quits, which closes the app for real whatever the close button does.
+fn make_tray(app: &tauri::App) -> tauri::Result<()> {
+    let open = MenuItem::with_id(app, "open", "Open the planner", true, None::<&str>)?;
+    let overlay = MenuItem::with_id(app, "overlay", "Show or hide the overlay", true, None::<&str>)?;
+    let quit = MenuItem::with_id(app, "quit", "Quit", true, None::<&str>)?;
+    let menu = Menu::with_items(app, &[&open, &overlay, &PredefinedMenuItem::separator(app)?, &quit])?;
+    let mut tray = TrayIconBuilder::with_id("main")
+        .tooltip("Nightreign Relic Planner")
+        .menu(&menu)
+        .show_menu_on_left_click(false)
+        .on_menu_event(|app, ev| match ev.id().as_ref() {
+            "open" => show_main(app),
+            "overlay" => {
+                let _ = app.emit("overlay:toggle", ());
+            }
+            "quit" => app.exit(0),
+            _ => {}
+        })
+        .on_tray_icon_event(|tray, ev| {
+            if let TrayIconEvent::Click { button: MouseButton::Left, button_state: MouseButtonState::Up, .. } = ev {
+                show_main(tray.app_handle());
+            }
+        });
+    if let Some(icon) = app.default_window_icon() {
+        tray = tray.icon(icon.clone());
+    }
+    tray.build(app)?;
+    Ok(())
+}
+
 /// Keeps the planner window inside its screen's usable area, so the taskbar stays visible. A window too big for the
 /// screen (the default size on a small or scaled screen) shrinks to fit and is centred; one that only hangs over an
 /// edge moves back in.
@@ -418,6 +476,8 @@ fn fit_to_screen(win: &tauri::WebviewWindow) {
 
 fn main() {
     tauri::Builder::default()
+        // starting the app again while it runs (say, hidden in the tray) brings back the one that's open
+        .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| show_main(app)))
         .plugin(tauri_plugin_dialog::init())
         // the planner window opens where and as big as you left it (maximized too); the overlay places itself
         .plugin(
@@ -440,12 +500,22 @@ fn main() {
                 })
                 .build(),
         )
-        // closing the planner closes the overlay too
+        // closing the planner closes the overlay too, unless Settings > App sends it to the tray
         .on_window_event(|window, event| {
-            if let WindowEvent::Destroyed = event {
-                if window.label() == "main" {
-                    window.app_handle().exit(0);
+            if window.label() != "main" {
+                return;
+            }
+            let st = window.app_handle().state::<AppState>();
+            match event {
+                WindowEvent::CloseRequested { api, .. } if st.close_to_tray.load(Ordering::SeqCst) => {
+                    api.prevent_close();
+                    let _ = window.hide();
                 }
+                WindowEvent::Resized(_) if st.min_to_tray.load(Ordering::SeqCst) && window.is_minimized().unwrap_or(false) => {
+                    let _ = window.hide();
+                }
+                WindowEvent::Destroyed => window.app_handle().exit(0),
+                _ => {}
             }
         })
         .manage(AppState::default())
@@ -453,6 +523,7 @@ fn main() {
             if let Some(win) = app.get_webview_window("main") {
                 fit_to_screen(&win);
             }
+            make_tray(app)?;
             if let Some(file) = picked_file(app.handle()) {
                 if let Ok(text) = fs::read_to_string(file) {
                     if let Ok(list) = serde_json::from_str::<Vec<String>>(&text) {
@@ -464,7 +535,7 @@ fn main() {
             }
             Ok(())
         })
-        .invoke_handler(tauri::generate_handler![list_saves, read_save, pick_save, watch_save, overlay_show, overlay_hide, overlay_lock, overlay_fit, overlay_hotkey, overlay_toggle_key, overlay_day_key, open_releases, app_installed, update_check, update_install])
+        .invoke_handler(tauri::generate_handler![list_saves, read_save, pick_save, watch_save, overlay_show, overlay_hide, overlay_lock, overlay_fit, overlay_hotkey, overlay_toggle_key, overlay_day_key, app_tray, open_releases, app_installed, update_check, update_install])
         .run(tauri::generate_context!())
         .expect("error while running Nightreign Relic Planner");
 }

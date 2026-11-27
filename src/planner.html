@@ -3246,9 +3246,18 @@ function updatesPage(){ const s=setGet();
       ${ovTgl('set-updstart',s.updStart,'Check for updates when the app starts and every 30 minutes')}
       <div class="btns"><button class="btn" data-act="updcheck" ${upd.st==='checking'||upd.st==='installing'?'disabled':''}>Check for updates</button></div>
       <div role="status">${st}</div></div>`; }
-const SET_PAGES=[['overlay','Overlay'],['updates','Updates'],['history','History']];
+const SET_PAGES=[['overlay','Overlay'],['window','Window'],['updates','Updates'],['history','History']];
 const setPages=()=>SET_PAGES.filter(([k])=>APP||k==='history');   // the website has only History
 if(!APP){ const b=document.getElementById('ovbtn'); if(b) b.hidden=false; }
+// the app's tray icon is always there; these make the close and minimize buttons hide the planner in it
+function windowSetPage(){ const s=setGet();
+  return `<h4 class="spt">Window</h4>
+    <div class="ovsec"><p class="msg">While the app runs, its icon sits in the tray next to the clock (Windows may tuck it behind the ^ arrow). Click it to open the planner; right-click it to show or hide the overlay, or to quit.</p></div>
+    <div class="ovsec">${ovTgl('set-closetray',!!s.closeTray,'Close button hides the planner in the tray')}
+      <p class="msg">The ✕ keeps the app running, so the overlay and the save watcher carry on while you play. To close the app for real, right-click the tray icon and pick Quit.</p></div>
+    <div class="ovsec">${ovTgl('set-mintray',!!s.minTray,'Minimize to the tray')}
+      <p class="msg">Minimizing hides the window in the tray instead of the taskbar.</p></div>`; }
+function trayApply(){ const s=setGet(); if(APP&&APP.tray) APP.tray(!!s.closeTray,!!s.minTray).catch(()=>{}); }
 function historySetPage(){ const s=setGet();
   return `<h4 class="spt">History</h4>
     <div class="ovsec">${ovTgl('set-preclose',!!s.preClose,'Count a run for a preset when one relic differs')}
@@ -3259,7 +3268,7 @@ function openSettings(pg){ const old=document.querySelector('#setdlg .setpanel')
   if(!setPages().some(([k])=>k===setPage)) setPage=setPages()[0][0];
   openOv(`<div class="dlg setdlg" id="setdlg" role="dialog" aria-modal="true" aria-label="Settings"><div class="dh"><h3>Settings</h3><button class="btn sm ghost" data-act="close">Close</button></div>
     <div class="setwrap"><nav class="stabs" aria-label="Settings pages">${setPages().map(([k,n])=>`<button data-act="setpage" data-p="${k}"${k===setPage?' aria-current="page"':''}>${n}${k==='updates'&&upd.st==='new'?'<i class="sdot" title="Update available" aria-label="update available"></i>':''}</button>`).join('')}</nav>
-    <div class="setpanel" data-p="${setPage}">${setPage==='updates'?updatesPage():setPage==='history'?historySetPage():overlayPage()}</div></div></div>`);
+    <div class="setpanel" data-p="${setPage}">${setPage==='updates'?updatesPage():setPage==='history'?historySetPage():setPage==='window'?windowSetPage():overlayPage()}</div></div></div>`);
   const np=document.querySelector('#setdlg .setpanel'); if(np) np.scrollTop=keep;
   if(setPage==='overlay') startPreview(); }
 function openOverlayDlg(){ openSettings('overlay'); }
@@ -3285,6 +3294,7 @@ async function ovlToggle(){ const o=ovlGet(); o.on=!o.on; ovlSet(o); await ovlAp
 async function startApp(){
   if(!APP) return;
   try{ localStorage.removeItem(OVL_RUN); }catch(e){}   // a run remembered from last time is stale until the save is read again
+  trayApply();
   if(APP.overlay){ const b=$('#ovbtn'); if(b) b.hidden=false; const o=ovlGet();
     // the show/hide hotkey works whether the overlay is on or off, so it can bring it back from inside the game
     if(APP.overlay.onTimer) APP.overlay.onTimer(p=>{ ovTimerEpoch=p&&p.epoch?+p.epoch:null; ovDayEpoch=p&&p.dayEpoch?+p.dayEpoch:null; ovDayN=p&&+p.day||0; });
@@ -3539,6 +3549,7 @@ document.addEventListener('change', ev=>{
   if(t.id==='w-skill'){ weaponState().skill=+t.value; saveBuildSoon(); renderCombat(); return; }
   if(t.id==='set-hideearly'){ const o=setGet(); o.hideEarly=t.checked; setSave(o); renderHistory(); return; }
   if(t.id==='set-preclose'){ const o=setGet(); o.preClose=t.checked; setSave(o); renderHistory(); return; }
+  if(t.id==='set-closetray'||t.id==='set-mintray'){ const o=setGet(); o[t.id==='set-closetray'?'closeTray':'minTray']=t.checked; setSave(o); trayApply(); return; }
   if(t.id==='set-updstart'){ const o=setGet(); o.updStart=t.checked; setSave(o); if(t.checked&&!updTimer) scheduleUpdateChecks(); return; }
   if(t.id==='ov-sa'||t.id==='ov-sb'){ const o=ovlGet(); o.safe[t.id==='ov-sa'?'a':'b']=+t.value; delete o.zones;
     ovlSet(o); const n=ovlGet(); ovlSet(n); t.value=n.safe[t.id==='ov-sa'?'a':'b'];
