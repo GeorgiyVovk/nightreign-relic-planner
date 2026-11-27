@@ -605,6 +605,15 @@ select:hover{background-image:linear-gradient(to top right,transparent 50%,var(-
 .hfsel select{width:100%;min-width:0;font-size:13px;padding-left:10px;text-overflow:ellipsis}
 .hfsel.on select{border-color:var(--accent);background-color:var(--accent-soft)}
 .hfclr{align-self:flex-end}
+.hfbtn .hfn{display:inline-grid;place-items:center;min-width:18px;height:18px;padding:0 5px;margin-left:6px;border-radius:9px;background:var(--accent);color:var(--bg);font-size:11px;font-weight:600}
+.hfbtn.on{border-color:var(--accent)}
+.hfbtn .caret{display:inline-block;width:0;height:0;margin-left:8px;border-left:5px solid transparent;border-right:5px solid transparent;border-top:6px solid var(--muted)}
+.hfbtn[aria-expanded="true"] .caret{transform:rotate(180deg)}
+.hfchips{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:10px 0 14px}
+.hfchip{display:inline-flex;align-items:center;gap:6px;min-height:28px;padding:0 6px 0 10px;border:1px solid var(--accent);background:var(--accent-soft);border-radius:14px;color:var(--fg);font-size:12px;cursor:pointer}
+.hfchip span{color:var(--muted)}
+.hfchip i{font-style:normal;font-size:15px;line-height:1;color:var(--muted);padding:0 3px}
+.hfchip:hover i{color:var(--fg)}
 .hfl{border:0;background:none;padding:0;margin:0;font:inherit;color:inherit;text-align:left;cursor:pointer;border-radius:3px}
 .hfl:hover{color:var(--accent);text-decoration:underline;text-underline-offset:3px}
 .runs{display:flex;flex-direction:column;gap:6px}
@@ -1751,7 +1760,7 @@ window.addEventListener('hashchange',showPage); window.addEventListener('popstat
 
 /* ============ HISTORY ============ */
 // The save's Result History (svHistory): totals, by Nightlord, by your Nightfarer, the people you played with, and every run.
-const hist = {mode:'all', team:0, limit:20, all:{}, days:0, f:{}};   // team: 0 any, 1 solo, 2 duo, 3 trio; days: 0 all time;
+const hist = {mode:'all', team:0, limit:20, all:{}, days:0, f:{}, open:false};   // team: 0 any, 1 solo, 2 duo, 3 trio; days: 0 all time;
 // f: one pick per kind (HF below), as the select's value
 const NLORD=[['Gladius','Tricephalos'],['Adel','Gaping Jaw'],['Gnoster','Sentient Pest'],['Maris','Augur'],['Libra','Equilibrious Beast'],['Fulghor','Darkdrift Knight'],['Caligo','Fissure in the Fog'],['Heolstor','Night Aspect'],['Harmonia','Balancers'],['Straghess','Dreglord']];
 const nlName = n => NLORD[n%10] ? (n>=10?'Everdark ':'')+NLORD[n%10][0] : 'Nightlord '+n;
@@ -1951,8 +1960,13 @@ function histHead(title,list){
   const pseg=HPER.map(([k,l])=>`<button data-hdays="${k}" aria-pressed="${hist.days===k}">${l}</button>`).join(''), on=hfOn();
   const sel=Object.keys(HF).map(kind=>{ const cur=hist.f[kind]||'', id=`hf-${title[0].toLowerCase()}-${kind}`;
     return `<label class="hfsel${cur?' on':''}" for="${id}"><span class="flab">${HF[kind].name}</span><select id="${id}" data-hf="${kind}"><option value="">Any</option>${hfOptions(kind).map(o=>`<option value="${esc(String(o.k))}"${String(o.k)===cur?' selected':''}>${esc(HF[kind].label(o.k,o.r))} (${o.n})</option>`).join('')}</select></label>`; }).join('');
-  return `<div class="ph"><h2>${title}</h2><div class="phr"><div class="seg" role="group" aria-label="Mode">${seg}</div><div class="seg" role="group" aria-label="Team">${tseg}</div></div></div>`
-    +`<div class="hfilt"><div class="hfper"><span class="flab">Period</span><div class="seg" role="group" aria-label="Period">${pseg}</div></div>${sel}${on.length?`<button class="btn sm ghost hfclr" data-act="hclear">Clear ${on.length===1?'filter':on.length+' filters'}</button>`:''}</div>`
+  // the period and the pickers fold away behind Filters; what's set shows as chips while they're folded
+  const nOn=on.length+(hist.days?1:0), fid=`hf-${title[0].toLowerCase()}-panel`;
+  const chips=hist.open||!nOn?'':`<div class="hfchips">${hist.days?`<button class="hfchip" data-act="hfdel" data-f="days" aria-label="Remove the filter: last ${hist.days} days">Last ${hist.days} days<i aria-hidden="true">×</i></button>`:''}${on.map(k=>{ const o=hfOptions(k).find(x=>String(x.k)===hist.f[k]), l=HF[k].label(hist.f[k],o&&o.r);
+      return `<button class="hfchip" data-act="hfdel" data-f="${k}" aria-label="Remove the filter: ${esc(HF[k].name)} ${esc(l)}"><span>${esc(HF[k].name)}:</span> ${esc(l)}<i aria-hidden="true">×</i></button>`; }).join('')}<button class="btn sm ghost" data-act="hclear">Clear</button></div>`;
+  return `<div class="ph"><h2>${title}</h2><div class="phr"><div class="seg" role="group" aria-label="Mode">${seg}</div><div class="seg" role="group" aria-label="Team">${tseg}</div>
+      <button class="btn hfbtn${nOn?' on':''}" data-act="hfopen" aria-expanded="${hist.open}" aria-controls="${fid}">Filters${nOn?` <span class="hfn">${nOn}</span>`:''}<i class="caret" aria-hidden="true"></i></button></div></div>`
+    +(hist.open?`<div class="hfilt" id="${fid}"><div class="hfper"><span class="flab">Period</span><div class="seg" role="group" aria-label="Period">${pseg}</div></div>${sel}${nOn?`<button class="btn sm ghost hfclr" data-act="hclear">Clear ${nOn===1?'filter':nOn+' filters'}</button>`:''}</div>`:chips)
     +(list.length?'':on.length||hist.days?`<p class="msg">No runs match these filters${hist.days?` in the last ${hist.days} days`:''}.</p>`:`<p class="msg">No ${hist.team?['','solo','duo','trio'][hist.team]+' ':''}${hist.mode==='don'?'Deep of Night':hist.mode==='exp'?'normal':''} runs in the last ${runs.length}.</p>`)
     +(()=>{ const n=setGet().hideEarly?histBase().filter(earlyLoss).length:0; return n?`<p class="hhint">${n} ${n===1?'defeat':'defeats'} before 14:00 left out (Settings → History).</p>`:''; })();
 }
@@ -3503,7 +3517,9 @@ document.addEventListener('click', async ev=>{
   if(a==='prdel'){ normBuild(); const ch=build.char, id=build.activePreset[ch]; build.presets=build.presets.filter(p=>p.id!==id); build.activePreset[ch]=null; saveBuildSoon(); closeOv(); renderPresets(); toast('Preset deleted.'); return; }
   if(a==='loadsave'){ openSaveDlg({step:'intro'}); return; }
   if(a==='hmore'){ hist.limit+=20; renderRuns(); return; }
-  if(a==='hclear'){ hist.f={}; hist.limit=20; renderHistory(); return; }
+  if(a==='hclear'){ hist.f={}; hist.days=0; hist.limit=20; renderHistory(); return; }
+  if(a==='hfopen'){ const pg=curPage(); hist.open=!hist.open; renderHistory(); const b=document.querySelector(`#pg-${pg} [data-act=hfopen]`); if(b) b.focus(); return; }
+  if(a==='hfdel'){ if(t.dataset.f==='days') hist.days=0; else delete hist.f[t.dataset.f]; hist.limit=20; renderHistory(); return; }
   if(a==='hgo'){ hist.f[t.dataset.f]=t.dataset.k; hist.limit=20; renderHistory();
     if(curPage()!=='history'){ history.pushState(null,'',location.pathname+location.search+'#history'); showPage(); } window.scrollTo(0,0); return; }
   if(a==='hplayer'){ openPlayerDlg(+t.dataset.run,+t.dataset.p); return; }
