@@ -621,6 +621,9 @@ select:hover{background-image:linear-gradient(to top right,transparent 50%,var(-
 .dorm select{flex:1;min-width:0;font-size:13px}
 .dormhint{margin:8px 0 0;font-size:12px}
 #d-dorm{margin-top:4px}
+.ctrs{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px 10px}
+.ctr input{width:100%;height:var(--h);border:1px solid var(--line2);background:var(--surface2);border-radius:var(--r-md);padding:0 10px;color:var(--fg);font:inherit;font-variant-numeric:tabular-nums}
+.ctr input:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
 .dgear .lnk{border:0;background:none;padding:0;margin-left:6px;color:var(--accent);font:inherit;cursor:pointer;text-decoration:underline;text-underline-offset:3px}
 .btn.rst{display:inline-flex;align-items:center;gap:6px;border:1px solid color-mix(in srgb,var(--bad) 70%,transparent);color:var(--bad);background:transparent}
 .btn.rst:hover{background:color-mix(in srgb,var(--bad) 12%,transparent)}
@@ -786,6 +789,8 @@ select:hover{background-image:linear-gradient(to top right,transparent 50%,var(-
       <div id="d-arms"></div>
       <h3 class="sub">Dormant powers</h3>
       <div id="d-dorm"></div>
+      <h3 class="sub">Run counters</h3>
+      <div class="ctrs" id="d-ctrs"></div>
     </section>
   </div>
 
@@ -1358,22 +1363,38 @@ CU({id:'c_neardeath',n:'Near Death Reduces Max HP',note:'HP ×0.75 for 60 s afte
 
 /* ---- talismans ---- */
 // Dormant powers: the boons bosses offer during a run (field bosses sometimes, evergaols two, the end-of-Night bosses three).
-// They last the run and add up, one row each on the Build page. Values from the community wiki, not checked in game yet;
-// the ones that change no number here are listed with a note.
-const DORM=[]; const DM=o=>{ o.st=true; o.deep='n'; o.dorm=true; o.note=(o.note?o.note+'; ':'')+'dormant power'; EBY[o.id]=o; DORM.push(o); return o; };
-[[6,1.06],[9,1.09]].forEach(([v,m])=>DM({id:'dm_phys'+v,n:`Improved Physical Attack Power +${v}%`,g:'off',dmg:[D('phys',m)]}));
-[[5,1.05],[8,1.08]].forEach(([v,m])=>DM({id:'dm_aff'+v,n:`Improved Affinity Attack Power +${v}%`,g:'off',dmg:[D('elem',m)]}));
-DM({id:'dm_spell7',n:'Improved Sorceries & Incantations +7%',g:'off',dmg:[D('spell',1.07)]});
-[12,15,18].forEach(v=>DM({id:'dm_negphys'+v,n:`Improved Physical Damage Negation +${v}%`,g:'def',neg:{phys:v/100}}));
-[12,15,18].forEach(v=>DM({id:'dm_negaff'+v,n:`Improved Affinity Damage Negation +${v}%`,g:'def',neg:{mag:v/100,fire:v/100,ltng:v/100,holy:v/100}}));
+// They last the run, one row each on the Build page. Values and "stacks with itself" from the Nightreign Useful Info sheet
+// (Dormant Powers tab); the ones that change no number here are listed with a note.
+const DORM=[]; const DM=o=>{ o.st=o.st!==false; o.deep='n'; o.dorm=true; o.note=(o.note?o.note+'; ':'')+'dormant power'; EBY[o.id]=o; DORM.push(o); return o; };
+[[6,1.06],[9,1.09]].forEach(([v,m])=>DM({id:'dm_phys'+v,n:`Improved Physical Attack Power ×${m}`,g:'off',dmg:[D('phys',m)]}));
+[[5,1.05],[8,1.08]].forEach(([v,m])=>DM({id:'dm_aff'+v,n:`Improved Affinity Attack Power ×${m}`,g:'off',dmg:[D('elem',m)]}));
+DM({id:'dm_spell7',n:'Improved Sorceries & Incantations ×1.07',g:'off',dmg:[D('spell',1.07)]});
+DM({id:'dm_bleednear',n:'Blood Loss in Vicinity Increases Attack Power ×1.2',g:'off',dmg:[D('all',1.2)],cond:'nearBleed',note:'20 s after blood loss procs nearby'});
+DM({id:'dm_grace',n:'Traces of a Grace-Given Lord (×1.02 per grace)',g:'off',st:false,stack:{k:'grace',t:'all',m:1.02,max:10,label:'Graces found (0–10)'}});
+[12,18].forEach(v=>DM({id:'dm_negphys'+v,n:`Improved Physical Damage Negation +${v}%`,g:'def',neg:{phys:v/100}}));
+[12,18].forEach(v=>DM({id:'dm_negaff'+v,n:`Improved Non-Physical Damage Negation +${v}%`,g:'def',neg:{mag:v/100,fire:v/100,ltng:v/100,holy:v/100}}));
 [57,75].forEach(v=>DM({id:'dm_res'+v,n:`All Resistances Up +${v}`,g:'stat',res:{poison:v,rot:v,bleed:v,frost:v,sleep:v,madness:v,blight:v}}));
-[[10,1.1],[15,1.15]].forEach(([v,m])=>{ DM({id:'dm_hp'+v,n:`Increased Maximum HP +${v}%`,g:'stat',hpM:m}); DM({id:'dm_fp'+v,n:`Increased Maximum FP +${v}%`,g:'stat',fpM:m}); DM({id:'dm_st'+v,n:`Increased Maximum Stamina +${v}%`,g:'stat',stM:m}); });
-[['dm_dragon','Attack Boost vs. Dragons +20%'],['dm_stars','Attack Boost vs. Lifeforms Born of Falling Stars +20%'],['dm_death','Attack Boost vs. Those Who Live in Death +20%'],
- ['dm_stance10','Improved Stance-Breaking +10%'],['dm_stance15','Improved Stance-Breaking +15%'],['dm_thrust','Improved Thrusting Counterattack +20%'],['dm_roar','Improved Roar & Breath Attacks +20%'],
- ['dm_critafter','Increased Enemy Damage after Critical Hit +15%'],['dm_bleednear','Blood Loss in Vicinity Increases Attack Power +20%'],['dm_pots','Improved Throwing Pots +20%'],['dm_perfume','Improved Perfuming Arts +20%'],
- ['dm_poise25','Improved Poise +25%'],['dm_poise38','Improved Poise +38%'],['dm_flask20','Improved Flask HP Restoration +20%'],['dm_flask30','Improved Flask HP Restoration +30%'],
- ['dm_fpcost10','Reduced FP Consumption 10%'],['dm_fpcost15','Reduced FP Consumption 15%'],['dm_cd','Character Skill Cooldown Reduction 10%'],['dm_ult','Improved Ultimate Art Gauge Charge Speed +6%'],
- ['dm_wend','Wending Grace (one revive)'],['dm_dodge','Improved Dodging']].forEach(([id,n])=>DM({id,n,g:id.startsWith('dm_poise')||id.startsWith('dm_flask')||id==='dm_wend'||id==='dm_dodge'?'def':id.match(/fpcost|cd|ult/)?'regen':'off',note:'not counted in the numbers here'}));
+[[10,1.1],[15,1.15]].forEach(([v,m])=>{ DM({id:'dm_hp'+v,n:`Increased Maximum HP ×${m}`,g:'stat',hpM:m}); DM({id:'dm_fp'+v,n:`Increased Maximum FP ×${m}`,g:'stat',fpM:m}); DM({id:'dm_st'+v,n:`Increased Maximum Stamina ×${m}`,g:'stat',stM:m}); });
+DM({id:'dm_rotwoods',n:'Favor of the Rotten Woods (max HP ×1.25)',g:'stat',st:false,hpM:1.25,note:'also nullifies scarlet rot; attacks after taking damage heal'});
+[['dm_dragon','Attack Boost [Dragons] ×1.1 (Ancient ×1.05)','off'],['dm_stars','Attack Boost [Lifeforms Born of Falling Stars] ×1.2','off'],['dm_death','Attack Boost [Those Who Live in Death] ×1.2','off'],
+ ['dm_critneg','Damage Boosted after Critical Hit (enemy negation −15%, 30 s)','off',false],['dm_critbleed','Critical Hits Inflict Blood Loss (+50)','off',false],
+ ['dm_stance10','Improved Stance-Breaking ×1.1','off'],['dm_stance15','Improved Stance-Breaking ×1.15','off'],['dm_thrust','Improved Thrusting Counterattack ×1.2','off'],['dm_roar','Improved Roar & Breath Attacks ×1.2','off'],
+ ['dm_pots','Improved Throwing Pots ×1.2','off'],['dm_perfume','Improved Perfuming Arts ×1.2','off'],['dm_spelldur','Increased Sorcery & Incantation Duration ×2','off'],
+ ['dm_glint','Periodical Giant Glintblades','off',false],['dm_death2','Sudden Enemy Death upon Attacks that Land','off',false],['dm_comm','Communion Grants Anti-Dragon Effect','off',false],
+ ['dm_demon',"Demon's Plating (by runes held)",'off',false],['dm_balance','Power to Balance the World (×1.1 after reviving)','off',false],['dm_mount','Favor of the Mountaintop (×1.15 after frost procs nearby)','off',false],['dm_noklateo','Favor of Noklateo, the Shrouded City','off',false],
+ ['dm_poise25','Improved Poise (poise damage taken ×0.75)','def'],['dm_poise38','Improved Poise (poise damage taken ×0.62)','def'],['dm_dodge','Improved Dodging','def',false],['dm_holyground','Creates Holy Ground at Low HP','def',false],['dm_mirage','Cold Mirage','def',false],
+ ['dm_flask20','Improved Flask HP Restoration ×1.2','regen'],['dm_flask30','Improved Flask HP Restoration ×1.3','regen'],['dm_gradual','Gradual Restoration by Flask','regen',false],
+ ['dm_fpcost10','Reduced FP Consumption ×0.9','regen'],['dm_fpcost15','Reduced FP Consumption ×0.85','regen'],['dm_cd','Character Skill Cooldown Reduction ×0.9','regen'],['dm_ult','Ultimate Art Gauge Charge Speed Up ×1.06','regen'],
+ ['dm_favnight','Favor of the Night','regen',false],['dm_stam4','Improved Stamina Recovery +4/s','regen'],['dm_stam6','Improved Stamina Recovery +6/s','regen'],
+ ['dm_hpsucc','HP Restoration upon Successive Attacks','regen'],['dm_fpsucc','FP Restoration upon Successive Attacks','regen'],['dm_hpguard','HP Recovery From Successful Guarding','regen'],['dm_fpguard','FP Recovery From Successful Guarding','regen'],
+ ['dm_crithp','Critical Hit HP Restoration','regen'],['dm_critfp','Critical Hit FP Restoration','regen'],['dm_porot','Poison & Rot Trigger Continuous HP Recovery','regen'],['dm_fate','Unifying Fate (flask restores FP)','regen',false],['dm_beast',"Beast's Hunt",'regen'],
+ ['dm_runes','More Runes From Defeated Enemies ×1.1','regen'],['dm_int','Integration of Intelligence','regen',false]
+].forEach(([id,n,g,st])=>DM({id,n,g,st,note:'not counted in the numbers here'}));
+// run stacks the Build page counts: Power of House Marais (Marais Executioner's Sword) and Power of Vengeance (Grafted Blade
+// Greatsword), from the sheet's Weapon Effects tab: percent per stack, added up, in three bands up to 100 stacks
+const bandVals=(a,b,c)=>Array.from({length:100},(_,i)=>{ const n=i+1; return 1+(Math.min(n,30)*a+Math.max(0,Math.min(n,50)-30)*b+Math.max(0,n-50)*c)/100; });
+add({id:'pw_marais',n:'Power of House Marais',g:'off',st:false,stack:{k:'marais',t:'all',vals:bandVals(1.1,.85,.4),max:100,label:'Marais stacks (0–100)'},note:'Marais Executioner\'s Sword: up to +70% damage at 100 stacks'});
+add({id:'pw_vengeance',n:'Power of Vengeance',g:'off',st:false,stack:{k:'vengeance',t:'all',vals:bandVals(.7,.45,.2),hfs:bandVals(.7,.45,.2),max:100,label:'Vengeance stacks (0–100)'},note:'Grafted Blade Greatsword: up to +40% damage, max HP, FP and stamina at 100 stacks (and up to +10% negation, not counted)'});
 const TAL=[]; const T=(id,n,o)=>{ const t=Object.assign({id:'t_'+id,n,g:'tal',st:false,deep:'n'},o); TAL.push(t); EBY[t.id]=t; };
 T('kindred',"Kindred of Rot's Exultation",{dmg:[D('all',1.2)],cond:'nearPR'});
 T('lordblood',"Lord of Blood's Exultation",{dmg:[D('all',1.2)],cond:'nearBleed'});
@@ -1672,7 +1693,8 @@ function collect(){
   });
   talArr().forEach(t=>{ if(t) push(t); });
   armsEffects().forEach(push);
-  if(build.combat.wpOn!==false) (gearSrc().dorm||[]).forEach(id=>{ if(id) push(id); });
+  if(build.combat.wpOn!==false){ (gearSrc().dorm||[]).forEach(id=>{ if(id) push(id); });
+    const S=build.combat.stacks||{}; if(+S.marais>0) push('pw_marais'); if(+S.vengeance>0) push('pw_vengeance'); }
   const list=[...map.values()].map(a=>{
     const e=a.eff; a.ok=true; a.apply=e.st?a.count:1; a.why='';
     if(e.ch && e.ch!==ch.k){ a.ok=false; a.why='no'; warn.push({t:'warn',m:`${e.n} only works on ${e.ch}`}); }
@@ -1777,7 +1799,7 @@ function calcStats(list){
     if(e.restage) restage=Math.max(restage,e.restage);
     if(e.neg) Object.entries(e.neg).forEach(([k,v])=>(negIdx[k]||[]).forEach(i=>negMul[i]*=Math.pow(1-v,n)));
     if(e.res) Object.entries(e.res).forEach(([k,v])=>{ if(k==='all') res.forEach((_,i)=>res[i]+=v*n); else { const i=resIdx(k); if(i>=0) res[i]+=v*n; } });
-    if(e.stack){ const s=+ctx.stacks[e.stack.k]||0; if(s>0){ if(e.stack.t==='hp') hpM*=Math.pow(e.stack.m,s); if(e.stack.t==='fp') fpM*=Math.pow(e.stack.m,s); if(e.stack.t==='st') stM*=Math.pow(e.stack.m,s); if(e.stack.t==='arc') a.arc+=e.stack.add*s; } }
+    if(e.stack){ const s=+ctx.stacks[e.stack.k]||0; if(s>0){ if(e.stack.hfs){ const v=e.stack.hfs[Math.min(s,e.stack.hfs.length)-1]; hpM*=v; fpM*=v; stM*=v; } if(e.stack.t==='hp') hpM*=Math.pow(e.stack.m,s); if(e.stack.t==='fp') fpM*=Math.pow(e.stack.m,s); if(e.stack.t==='st') stM*=Math.pow(e.stack.m,s); if(e.stack.t==='arc') a.arc+=e.stack.add*s; } }
   });
   const hp=Math.max(1,20*a.vig+80)*hpM, fp=Math.max(0,5*a.mnd+45)*fpM, st=Math.max(1,2*a.end+48)*stM;
   return {base,a,hp,fp,st,hp0:20*base.vig+80,fp0:5*base.mnd+45,st0:2*base.end+48,neg0:neg,neg:neg.map((v,i)=>1-(1-v)*negMul[i]),res0:ch.res,res,poise:ch.poise,poiseM,cdM,ultM,restage};
@@ -2603,7 +2625,15 @@ function renderDorm(){ const host=$('#d-dorm'); if(!host) return; const g=gearSr
   const opts=v=>`<option value="">Pick a dormant power…</option>`+DORM_GRP.map(([k,n])=>`<optgroup label="${n}">${DORM.filter(d=>d.g===k).map(d=>`<option value="${d.id}" ${d.id===v?'selected':''}>${esc(d.n)}${d.note.includes('not counted')?' (not counted)':''}</option>`).join('')}</optgroup>`).join('');
   host.innerHTML=`<div class="dorms">${g.dorm.map((v,i)=>`<div class="dorm"><select id="dorm-${i}" data-dorm="${i}" aria-label="Dormant power ${i+1}">${opts(v)}</select><button class="btn sm ghost" data-act="dormdel" data-i="${i}" aria-label="Remove dormant power ${i+1}">×</button></div>`).join('')}</div>
     <button class="btn sm" data-act="dormadd">+ Add dormant power</button>${g.dorm.length?'':'<p class="msg dormhint">Boons from bosses: field bosses sometimes, evergaols two, the end-of-Night bosses three. Add as many as you have.</p>'}`; }
-function renderGear(){ renderTals(); renderArms(); renderDorm();
+// what you've done in the run so far: the relic and dormant-power stacks read these (they change nothing without one,
+// except Marais and Vengeance, which are the stacks of those two weapons' own passives)
+const CTRS=[['evergaol','Evergaol bosses',30],['invader','Night Invaders',30],['marais','Marais stacks',100],['vengeance','Vengeance stacks',100]];
+function renderCtrs(){ const host=$('#d-ctrs'); if(!host) return; const S=build.combat.stacks||(build.combat.stacks={}), g=gearSrc();
+  const list=CTRS.concat((g.dorm||[]).includes('dm_grace')?[['grace','Graces found',10]]:[]);
+  if(host.dataset.k!==list.map(x=>x[0]).join()){ host.dataset.k=list.map(x=>x[0]).join();
+    host.innerHTML=list.map(([k,n,mx])=>`<label class="field ctr" for="ctr-${k}"><span class="flab">${n}</span><input type="number" id="ctr-${k}" min="0" max="${mx}" inputmode="numeric" data-stack="${k}" value="${+S[k]||0}"></label>`).join(''); }
+  else list.forEach(([k])=>{ const i=$('#ctr-'+k); if(i&&document.activeElement!==i) i.value=+S[k]||0; }); }
+function renderGear(){ renderTals(); renderArms(); renderDorm(); renderCtrs();
   const w=$('#wpon'); if(w) w.checked=build.combat.wpOn!==false;
   const g=gearSrc(), any=talArr().some(Boolean)||armsState().some(c=>c.some(Boolean))||(g.dorm||[]).length>0, b=$('#gearclr'); if(b) b.hidden=!any;
   const p=$('#gearp'); if(p) p.classList.toggle('wpoff',build.combat.wpOn===false);
