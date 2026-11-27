@@ -1,5 +1,4 @@
 <title>Nightreign Relic Planner</title>
-<meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=EB+Garamond:wght@500;600&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
@@ -823,7 +822,7 @@ select:hover{background-image:linear-gradient(to top right,transparent 50%,var(-
 
 <script>/*@overlay-card*/</script>
 <script>
-/* desktop app bridge (Electron preload); null in a browser or inside Claude */
+/* desktop app bridge (tools/app-bridge.js, Tauri); null in a plain browser */
 const APP = window.nrApp || null;
 
 /* ============ DATA ============ */
