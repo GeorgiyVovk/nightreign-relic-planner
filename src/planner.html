@@ -610,6 +610,11 @@ select:hover{background-image:linear-gradient(to top right,transparent 50%,var(-
 .hfsel select{width:100%;min-width:0;font-size:13px;padding-left:10px;text-overflow:ellipsis}
 .hfsel.on select{border-color:var(--accent);background-color:var(--accent-soft)}
 .hfclr{align-self:flex-end}
+.btn.rst{display:inline-flex;align-items:center;gap:6px;border:1px solid color-mix(in srgb,var(--bad) 70%,transparent);color:var(--bad);background:transparent}
+.btn.rst:hover{background:color-mix(in srgb,var(--bad) 12%,transparent)}
+.btn.rst .rsti{flex:none}
+#slotclr{display:inline-flex;align-items:center;gap:6px}
+#slotclr[hidden]{display:none}
 .pstat .pcalc{margin-left:auto}
 .hfbtn .hfn{display:inline-grid;place-items:center;min-width:18px;height:18px;padding:0 5px;margin-left:6px;border-radius:9px;background:var(--accent);color:var(--bg);font-size:11px;font-weight:600}
 .hfbtn.on{border-color:var(--accent)}
@@ -759,7 +764,7 @@ select:hover{background-image:linear-gradient(to top right,transparent 50%,var(-
       </div>
     </section>
     <section class="panel grow">
-      <div class="ph"><h2>Slots</h2><button class="btn sm ghost" id="slotclr" data-act="slotclear" hidden>Clear</button></div>
+      <div class="ph"><h2>Slots</h2><button class="btn sm rst" id="slotclr" data-act="slotclear" hidden><svg class="rsti" viewBox="0 0 16 16" width="13" height="13" aria-hidden="true"><path d="M2.5 8A5.5 5.5 0 1 0 4.2 4.1" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path d="M4.4 1.3 4.2 4.1 7 4.3" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Clear</span></button></div>
       <div id="slots"></div>
     </section>
   </div>
@@ -801,7 +806,7 @@ select:hover{background-image:linear-gradient(to top right,transparent 50%,var(-
 <main class="wrap layout" id="pg-damage" hidden>
   <div class="col">
     <section class="panel buildp">
-      <div class="ph"><h2>Build</h2><div class="phr"><button class="btn sm ghost" data-act="calcreset" title="Back to the Relics page's relics, no talismans and no armament passives">Reset</button><label class="tgl" title="Count deep relics, as in Deep of Night"><input type="checkbox" id="don2" role="switch"><span class="knob" aria-hidden="true"></span><span class="tt">Deep of Night</span></label><div class="lvlbox"><label for="f-level2">Level</label><select id="f-level2"></select></div></div></div>
+      <div class="ph"><h2>Build</h2><div class="phr"><button class="btn sm rst" data-act="calcreset" title="Back to the Relics page's relics, no talismans and no armament passives"><svg class="rsti" viewBox="0 0 16 16" width="13" height="13" aria-hidden="true"><path d="M2.5 8A5.5 5.5 0 1 0 4.2 4.1" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path d="M4.4 1.3 4.2 4.1 7 4.3" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Reset</span></button><label class="tgl" title="Count deep relics, as in Deep of Night"><input type="checkbox" id="don2" role="switch"><span class="knob" aria-hidden="true"></span><span class="tt">Deep of Night</span></label><div class="lvlbox"><label for="f-level2">Level</label><select id="f-level2"></select></div></div></div>
       <div class="pickrow"><select id="d-preset" aria-label="Preset"></select></div>
       <p class="enwhere" id="d-sum"></p>
       <div class="form tals" id="d-tals"></div>
@@ -811,7 +816,7 @@ select:hover{background-image:linear-gradient(to top right,transparent 50%,var(-
     <div class="wgroup">
     <div class="tabs" id="wtabs" role="tablist" aria-label="Attack with"><button role="tab" data-wmode="wep" aria-pressed="true">Weapons</button><button role="tab" data-wmode="s" aria-pressed="false">Sorceries</button><button role="tab" data-wmode="i" aria-pressed="false">Incantations</button></div>
     <section class="panel weaponp">
-      <div class="ph"><label class="flab" id="w-title" for="w-pick">Weapon</label><div class="phr"><button class="btn sm ghost" data-act="wreset" title="Back to your starting weapon, common, one-handed">Reset</button><label class="tgl" id="w-twol" title="Two-handing counts your Strength ×1.5"><input type="checkbox" id="w-two" role="switch"><span class="knob" aria-hidden="true"></span><span class="tt" id="w-twot">Two-handed</span></label></div></div>
+      <div class="ph"><label class="flab" id="w-title" for="w-pick">Weapon</label><div class="phr"><button class="btn sm rst" data-act="wreset" title="Back to your starting weapon, common, one-handed"><svg class="rsti" viewBox="0 0 16 16" width="13" height="13" aria-hidden="true"><path d="M2.5 8A5.5 5.5 0 1 0 4.2 4.1" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path d="M4.4 1.3 4.2 4.1 7 4.3" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Reset</span></button><label class="tgl" id="w-twol" title="Two-handing counts your Strength ×1.5"><input type="checkbox" id="w-two" role="switch"><span class="knob" aria-hidden="true"></span><span class="tt" id="w-twot">Two-handed</span></label></div></div>
       <div id="weapon"></div>
     </section>
     </div>
@@ -2413,7 +2418,7 @@ function renderSlots(){
   const code=vesselCode(build.char,curVessel()), slots=curSlots();
   // Clear empties all six slots; for 10 s after, the same button puts them back
   { const b=$('#slotclr'); if(b){ const undo=slotUndo&&slotUndo.k===slotKey()&&Date.now()<slotUndo.until; b.hidden=!undo&&!slots.some(Boolean);
-      b.textContent=undo?'Undo':'Clear'; b.dataset.act=undo?'slotundo':'slotclear'; b.title=undo?'Put the relics back':'Take every relic out of the slots'; } }
+      b.querySelector('span').textContent=undo?'Undo':'Clear'; b.classList.toggle('rst',!undo); b.dataset.act=undo?'slotundo':'slotclear'; b.title=undo?'Put the relics back':'Take every relic out of the slots'; } }
   const seen=new Map(), seenG=new Map(), dead={};
   slots.forEach((rid,i)=>{ const r=rid?relicById(rid):null; if(!r || !slotOk(code,i,r)) return;
     (r.effects||[]).forEach((eid,j)=>{ const e=EBY[eid]; let why='';
