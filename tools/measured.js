@@ -116,7 +116,7 @@ const win = dom.window;
 win.eval(`window.__measure = function(c){
   const mk = ids => { const m = new Map(); ids.forEach(id => { const e = EBY[id]; if (!e) throw new Error('no effect ' + id); const a = m.get(id) || { eff: e, count: 0 }; a.count++; m.set(id, a); });
     return [...m.values()].map(a => Object.assign(a, { ok: true, apply: a.eff.st ? a.count : 1, why: '' })); };
-  build.char = c.char; const cs = calcState(); cs.preset = null; cs.level = c.level; cs.don = true; enemyState().id = DUMMY.id;
+  build.char = c.char; const cs = calcState(); cs.wchar = c.char; cs.wv = 1; cs.preset = null; cs.level = c.level; cs.don = true; enemyState().id = DUMMY.id;
   const ws = weaponState();
   if (c.kind === 'wep') { const w = WEAPONS.find(x => x[0] === c.weapon); if (!w) throw new Error('no weapon ' + c.weapon);
     ws.mode = 'wep'; ws.name = w[0]; ws.aff = w[5][0][0]; ws.rar = Math.max(w[2], c.rar || 0); ws.two = c.two; ws.atk = c.atk; }

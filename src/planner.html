@@ -1822,13 +1822,13 @@ const runSlots=run=>{ if(!run||!Array.isArray(run.rel)) return [null,null,null,n
   const std=ids.filter(id=>!deep(id)), dp=ids.filter(deep), out=[null,null,null,null,null,null];
   std.slice(0,3).forEach((id,i)=>out[i]=id); dp.slice(0,3).forEach((id,i)=>out[3+i]=id); return out; };
 let calcPlannerChar=null;
-// The calculator knows the build's Nightfarer, so it knows the starting weapon: when the Nightfarer changes, a Nightfarer weapon
-// (or the default) in the weapon card becomes the new one's (Recluse: her staff); a weapon you picked yourself stays.
+// The calculator knows the build's Nightfarer, so it knows the starting weapon: the weapon card starts on it, and whenever the
+// Nightfarer changes it goes back to the new one's (Recluse: her staff). A weapon you pick yourself stays until then.
 // "Using starting weapon" follows the weapon card by itself.
 const NF_CAT = {Recluse:"Recluse's Staff"};
 function calcStartWeapon(cs){ const ch=build.char, ws=weaponState();
-  if(cs.wchar!==ch){ const cur=ws.mode==='wep'?WBYN[ws.name]:CATBY[ws.cat[ws.mode]], nfw=cur&&cur[6], dflt=ws.mode==='wep'&&ws.name===WEAPON_DEFAULT.name;
-    if(!isStartWpn()&&((cs.wchar!=null&&nfw)||(cs.wchar==null&&dflt))){ if(NF_WEAPON[ch]){ ws.mode='wep'; ws.name=NF_WEAPON[ch]; ws.rar=0; delete ws.skill; } else if(NF_CAT[ch]){ ws.mode='s'; ws.cat.s=NF_CAT[ch]; ws.crar.s=0; } }
+  if(cs.wchar!==ch||cs.wv!==1){ cs.wv=1;
+    if(!isStartWpn()){ if(NF_WEAPON[ch]){ ws.mode='wep'; ws.name=NF_WEAPON[ch]; ws.rar=0; delete ws.skill; } else if(NF_CAT[ch]){ ws.mode='s'; ws.cat.s=NF_CAT[ch]; ws.crar.s=0; } }
     cs.wchar=ch; saveBuildSoon(); }
   build.combat.cond.startWpn=isStartWpn(); }
 const isStartWpn = () => { const ch=build.char, ws=weaponState(); return ws.mode==='wep'?NF_WEAPON[ch]===ws.name:NF_CAT[ch]===ws.cat[ws.mode]||(ch==='Revenant'&&ws.cat[ws.mode]==='Finger Seal (Revenant)'); };
@@ -2210,7 +2210,8 @@ function renderWeapon(a){
   if(cs) return renderSpell(a,cs);
   const cw=curWeapon(), {w,v,s}=cw, r=weaponAR(cw,a);
   const types=[...new Set(WEAPONS.filter(x=>!x[6]).map(x=>x[1]))], opt=x=>`<option ${x[0]===w[0]?'selected':''}>${esc(x[0])}</option>`;
-  const opts=`<optgroup label="Nightfarers">${WEAPONS.filter(x=>x[6]).map(opt).join('')}</optgroup>`+types.map(t=>`<optgroup label="${esc(wtLabel(t))}">${WEAPONS.filter(x=>x[1]===t&&!x[6]).map(opt).join('')}</optgroup>`).join('');
+  const rsel=build.temp&&build.temp.wsel!=null?build.temp.wsel:null, opt2=rsel!=null?(x=>`<option>${esc(x[0])}</option>`):opt;
+  const opts=runInvGroup(rsel)+`<optgroup label="Nightfarers">${WEAPONS.filter(x=>x[6]).map(opt2).join('')}</optgroup>`+types.map(t=>`<optgroup label="${esc(wtLabel(t))}">${WEAPONS.filter(x=>x[1]===t&&!x[6]).map(opt2).join('')}</optgroup>`).join('');
   let h=`<div class="wrow"><select id="w-pick">${opts}</select></div>`;
   h+=`<div class="wrow"><div class="seg" role="group" aria-label="Rarity">${RARITY.map((n,i)=>i<w[2]?'':`<button class="rar" style="--rc:var(--rar${i})" data-wr="${i}" aria-pressed="${i===s.rar}">${n}</button>`).join('')}</div></div>`;
   const fields=[], notes=[], rel=NF_WEAPON[charObj().k]===w[0]?startRelics():null;
@@ -2646,11 +2647,24 @@ function calcReset(){ const cs=calcState(); cs.preset=null; const was=exitTemp()
 // Reset on the weapon card: the build's starting weapon (Recluse: her staff), common, one-handed, its own Ash of War, R1;
 // the spell tabs go back to their default staff, seal and spell
 function weaponReset(){ const cs=calcState(), ws=weaponState();
-  Object.assign(ws,{mode:'wep',name:WEAPON_DEFAULT.name,aff:0,rar:0,two:false,atk:'r1',pt:0,sp:{},cat:{},crar:{},ch:false}); delete ws.skill; cs.wchar=null;
+  Object.assign(ws,{mode:'wep',name:WEAPON_DEFAULT.name,aff:0,rar:0,two:false,atk:'r1',pt:0,sp:{},cat:{},crar:{},ch:false}); delete ws.skill; cs.wchar=null; if(build.temp) delete build.temp.wsel;
   saveBuildSoon(); renderCombat(); renderResults(); toast('Weapon reset to your starting weapon.'); }
 // A player's build from a run into the calculator: Nightfarer, level, Deep of Night, the six relics, the talismans that change
 // damage, every armament's passives, and the weapon in the right hand (or a staff's or seal's first spell).
 const _wpk={}; const wpKind=id=>{ if(!_wpk.p) ['p','d','c'].forEach(k=>{ _wpk[k]=new Set(WPSLOT[k]); }); return WGRIEF[id]?0:_wpk.p.has(id)?1:_wpk.d.has(id)?2:_wpk.c.has(id)?3:-1; };
+// a weapon from a run's inventory into the weapon card: the weapon with its affinity, rarity and Ash of War, or a staff or seal
+// with its first spell
+const runWeaponOk=w=>{ const nm=wName(w[0],w[5],1); return !!(WBYN[nm]||CATALYSTS.find(c=>c[0]===nm)); };
+function applyRunWeapon(w){ const ws=weaponState(), nm=wName(w[0],w[5],1), aff=Math.floor(w[0]%10000/100), rar=wRar(w[0],w[5]);
+  const cat=CATALYSTS.find(c=>c[0]===nm), sp=[w[6],w[7]].map(v=>v>=2000000?v-2000000:v).find(v=>SPBY[v]);
+  if(WBYN[nm]){ ws.mode='wep'; ws.name=nm; ws.aff=WBYN[nm][5].some(v=>v[0]===aff)?aff:WBYN[nm][5][0][0]; ws.rar=typeof rar==='number'?Math.max(rar,WBYN[nm][2]):WBYN[nm][2]; ws.skill=w[1]; return true; }
+  if(cat){ const k=cat[1]; ws.mode=k; ws.cat[k]=cat[0]; if(typeof rar==='number') ws.crar[k]=rar; if(sp&&SPBY[sp][2]===k) ws.sp[k]=sp; return true; }
+  return false; }
+// the teammate's inventory from that run, first in the weapon picker
+function runInvGroup(cur){ const T=build.temp; if(!T||!Array.isArray(T.inv)||!T.inv.length) return '';
+  const items=T.inv.map((w,k)=>[w,k]).filter(([w])=>runWeaponOk(w));
+  return items.length?`<optgroup label="${esc((T.who||'Their')+"'s weapons that run")}">${items.map(([w,k])=>{ const nm=wName(w[0],w[5]), sk=skName(w[1]), rar=wRar(w[0],w[5]);
+    return `<option value="run:${k}" ${cur===k?'selected':''}>${esc(nm)}${sk?' · '+esc(sk):''}${typeof rar==='number'?' · '+RARN[rar]:''}</option>`; }).join('')}</optgroup>`:''; }
 function runToCalc(n,i){
   const r=runs.find(x=>x.n===n), p=r&&r.pl[i]; if(!p) return;
   const cs=calcState(), ch=SV_CHARS[p.ch-1]; if(!ch) return;
@@ -2664,12 +2678,9 @@ function runToCalc(n,i){
     w.slice(2,5).forEach((id,k)=>{ if(!id) return; if(WGRIEF[id]){ out[0]=out[0]||id; return; } const want=['p','d','c'][k];
       if(wpKind(id)>=0&&_wpk[want].has(id)&&!out[k+1]) out[k+1]=id; else { const j=wpKind(id); if(j>0&&!out[j]) out[j]=id; } }); return out; });
   armOpen.clear();
-  const w=p.w[0], ws=weaponState(); let wnote='';
-  if(w&&w[0]!==110000){ const nm=wName(w[0],w[5],1), aff=Math.floor(w[0]%10000/100), rar=wRar(w[0],w[5]);
-    const cat=CATALYSTS.find(c=>c[0]===nm), sp=[w[6],w[7]].map(v=>v>=2000000?v-2000000:v).find(v=>SPBY[v]);
-    if(WBYN[nm]){ ws.mode='wep'; ws.name=nm; ws.aff=WBYN[nm][5].some(v=>v[0]===aff)?aff:WBYN[nm][5][0][0]; if(typeof rar==='number') ws.rar=rar; ws.skill=w[1]; }
-    else if(cat){ const k=cat[1]; ws.mode=k; ws.cat[k]=cat[0]; if(typeof rar==='number') ws.crar[k]=rar; if(sp&&SPBY[sp][2]===k) ws.sp[k]=sp; }
-    else wnote=nm?` (${nm} isn't in the calculator, so the weapon stayed)`:''; }
+  build.temp.inv=(p.w||[]).filter(w=>w&&w[0]!==110000).map(w=>w.slice()); build.temp.who=p.name;
+  const w=(p.w||[]).find(w=>w&&w[0]!==110000&&runWeaponOk(w)); let wnote='';
+  if(w){ applyRunWeapon(w); build.temp.wsel=build.temp.inv.indexOf(build.temp.inv.find(x=>x[0]===w[0]&&x[1]===w[1])); } else if(p.w&&p.w[0]&&p.w[0][0]!==110000){ const nm=wName(p.w[0][0],p.w[0][5],1); wnote=nm?` (${nm} isn't in the calculator, so the weapon stayed)`:''; }
   saveBuildSoon(); closeOv();
   history.pushState(null,'',location.pathname+location.search+'#calculator'); showPage(); renderAll(); window.scrollTo(0,0);
   toast(`${p.name}'s build from the ${runDate(r.t,1)} run is on the Build page and in the calculator${wnote}. Back to my build (Build page) or Reset puts yours back.`); }
@@ -3785,6 +3796,8 @@ document.addEventListener('change', ev=>{
   if(t.id==='d-two'){ if(isSpellMode()) weaponState().ch=t.checked; else weaponState().two=t.checked; saveBuildSoon(); renderCombat(); renderResults(); return; }
   if(t.id==='w-two'&&isSpellMode()){ weaponState().ch=t.checked; saveBuildSoon(); renderCombat(); renderResults(); return; }
   if(t.id==='w-pick'||t.id==='w-aff'||t.id==='w-two'){ const ws=weaponState();
+    if(t.id==='w-pick'&&t.value.startsWith('run:')){ const T=build.temp, k=+t.value.slice(4), w=T&&T.inv&&T.inv[k]; if(w&&applyRunWeapon(w)) T.wsel=k; saveBuildSoon(); renderCombat(); renderResults(); return; }
+    if(build.temp&&t.id!=='w-two') delete build.temp.wsel;
     if(t.id==='w-pick'){ ws.name=t.value; const w=WBYN[ws.name]; if(!w[5].some(x=>x[0]===ws.aff)) ws.aff=w[5][0][0]; ws.rar=Math.max(ws.rar,w[2]); delete ws.skill; } else if(t.id==='w-aff') ws.aff=+t.value; else ws.two=t.checked;
     saveBuildSoon(); renderCombat(); renderResults(); return; }
   if(t.id==='w-skill'){ weaponState().skill=+t.value; saveBuildSoon(); renderCombat(); return; }
