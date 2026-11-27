@@ -2416,6 +2416,8 @@ let slotUndo=null, slotUndoT=null;
 function renderSlots(){
   { const dn=$('#don'); if(dn) dn.checked=!!build.don; }
   const code=vesselCode(build.char,curVessel()), slots=curSlots();
+  // a relic that doesn't fit its slot (another vessel's colours, or left over from an earlier preset) comes out
+  { let out=0; slots.forEach((rid,i)=>{ const r=rid&&relicById(rid); if(r&&!slotOk(code,i,r)){ slots[i]=null; out++; } }); if(out) saveBuildSoon(); }
   // Clear empties all six slots; for 10 s after, the same button puts them back
   { const b=$('#slotclr'); if(b){ const undo=slotUndo&&slotUndo.k===slotKey()&&Date.now()<slotUndo.until; b.hidden=!undo&&!slots.some(Boolean);
       b.querySelector('span').textContent=undo?'Undo':'Clear'; b.classList.toggle('rst',!undo); b.dataset.act=undo?'slotundo':'slotclear'; b.title=undo?'Put the relics back':'Take every relic out of the slots'; } }
