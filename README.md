@@ -9,7 +9,7 @@ Plan Elden Ring Nightreign relic loadouts from your own save: pick a Nightfarer 
 
 - Reads `NR0000.sl2` (normal game) and `NR0000.co2` (Seamless Co-op). The save is only read, never changed.
 - Stats for every Nightfarer at levels 1–15: HP, FP, stamina, attributes, damage negation, resistances.
-- Flags relics that can't come from the game (wrong effect count, order, curses, pools).
+- Flags relics that can't come from the game (wrong effect count, order, curses, pools); the header and the Relics page show the flagged count and filter only when there are any).
 - Fades effects that do nothing (another Nightfarer's effect, a duplicate that doesn't stack, a second skill change).
 - Presets per Nightfarer, including the ones you saved in the game (Relic Rites → Save as Preset), read from the save with their names and kept up to date; search by effect (`aff atk 2, vigor`).
 - Your Result History: the last 100 expeditions with wins by Nightlord, Nightfarer and teammate, and each run's team and weapons.

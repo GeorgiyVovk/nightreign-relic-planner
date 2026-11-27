@@ -2219,7 +2219,7 @@ function renderSavePill(){
   if(!saveRelics.length){ sp.innerHTML=`<button class="nm" data-act="loadsave" title="Pull your relics from the game's save file">Load save</button>`; return; }
   const k=flaggedCount(), live=APP&&appSavePath?appSavePath.split(/[\\/]/).pop():'';
   const fn=(saveInfo&&saveInfo.file)||'';
-  sp.innerHTML=`${live?`<i class="live" title="Live: your relics update by themselves every time the game saves"></i>`:''}${fn?`<button class="fn" data-act="pillprof" title="Switch profile or load another save">${esc(fn)}</button><span class="sep" aria-hidden="true"></span>`:''}<button class="nm" data-act="pillprof" title="Switch profile or load another save">${esc((saveInfo&&(saveInfo.name||saveInfo.file))||'Save')}</button><span>·</span><button data-act="pillall" title="Show all your relics">${saveRelics.length} relics</button><span>·</span><button data-act="pillflag" class="${k?'fl':''}" title="Show flagged relics">${k} flagged</button>`;
+  sp.innerHTML=`${live?`<i class="live" title="Live: your relics update by themselves every time the game saves"></i>`:''}${fn?`<button class="fn" data-act="pillprof" title="Switch profile or load another save">${esc(fn)}</button><span class="sep" aria-hidden="true"></span>`:''}<button class="nm" data-act="pillprof" title="Switch profile or load another save">${esc((saveInfo&&(saveInfo.name||saveInfo.file))||'Save')}</button><span>·</span><button data-act="pillall" title="Show all your relics">${saveRelics.length} relics</button>${k?`<span>·</span><button data-act="pillflag" class="fl" title="Show flagged relics">${k} flagged</button>`:''}`;
 }
 const flaggedCount = () => saveRelics.reduce((n,r)=>n+(r.bad&&r.bad.length?1:0),0);
 function normBuild(){ if(!Array.isArray(build.presets)) build.presets=[]; if(!build.activePreset||typeof build.activePreset!=='object'||Array.isArray(build.activePreset)) build.activePreset={}; }
@@ -2409,7 +2409,7 @@ function relicCard(r, pickMode, unowned){
   return `<div class="relic ${incompat?'incompat':''} ${pickable?'pickable':''} ${sus?'sus':''} ${unowned?'unowned':''}"${pickable?` data-place="${r.id}" role="button" tabindex="0" title="Put in slot ${ui.pick+1}"`:''}>${inSlot>=0?`<div class="inslot"><span class="ck" aria-hidden="true"></span><span>In slot ${inSlot+1}</span></div>`:''}<div class="rh">${gem(r.color,r.deep,true)}<div class="t">${isNamed(r)?`<b title="${esc(r.name)}">${esc(r.name)}</b>`:''}<small>${sizeName(r)} · ${COLORN[r.color]}${r.guar?` · <span class="gtag">Guaranteed</span>${r.from?` <span class="gfrom">${esc(fromLabel(r.from))}</span>`:''}${unowned?` · <span class="gno">not owned</span>`:''}`:''}</small></div></div><ul class="fxl">${lis||'<li>no effects</li>'}</ul>${sus}<div class="ra">${acts}</div></div>`;
 }
 function renderLibrary(){
-  { const fb=$('#lf-flag'); if(fb){ fb.hidden=!saveRelics.length; fb.textContent=`Flagged (${flaggedCount()})`; if(!saveRelics.length&&ui.lf==='f') ui.lf='all'; } }
+  { const fb=$('#lf-flag'); if(fb){ const nf=flaggedCount(); fb.hidden=!nf; fb.textContent=`Flagged (${nf})`; if(!nf&&ui.lf==='f') ui.lf='all'; } }
   document.querySelectorAll('#libfilter button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.lf===ui.lf));
   const code=vesselCode(build.char,curVessel());
   const all=relics.concat(saveRelics.length?saveRelics:GUAR_RELICS);
