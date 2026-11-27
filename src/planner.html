@@ -365,6 +365,10 @@ select{-webkit-appearance:none;appearance:none;cursor:pointer;border:1px solid v
 .armh b{font-weight:600}
 .armw{color:var(--muted);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .arm .field label{font-size:11px}
+.arm.fold{align-self:start;flex-direction:row;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:6px 10px}
+.arm.fold .field{display:none}
+.arm.fold .armh{min-height:0}
+.arm:not(.fold) .armadd{display:none}
 .arm .field select{font-size:13px;padding:0 8px}
 #combat .conds{min-height:28px}   /* a checkbox showing up doesn't move the cards under it */
 @media (min-width:721px){.armh{min-height:34px;align-content:flex-start}}   /* the in-hand card's header can take two lines; keep the rows level */
@@ -2506,15 +2510,18 @@ function wpOptions(){ if(_wpOpts) return _wpOpts;
     return (d.length?`<optgroup label="Counted in damage">${d.map(opt).join('')}</optgroup>`:'')+(o.length?`<optgroup label="Other">${o.map(opt).join('')}</optgroup>`:''); };
   const gr=Object.entries(WGRIEF).map(([id,g])=>`<option value="${id}" title="${esc(Object.entries(g[2]).map(([k,v])=>`+${v} ${ABBR[k]||k}`).join(', '))}">${esc(g[0])} +${g[1]}</option>`).join('');
   return _wpOpts={g:none+gr,p:none+split(WPSLOT.p),d:none+split(WPSLOT.d),c:none+split(WPSLOT.c)}; }
+const armOpen=new Set();
 function renderArms(c=build.combat){
   const host=$('#d-arms'); if(!host) return; const A=armsState(), O=wpOptions();
   if(!host.children.length){
-    const card=i=>`<div class="arm${i%3===0?' held':''}"><div class="armh"><b>${WP_SLOTN[i]}</b><span class="armw" id="arm-w${i}"></span></div>${WP_KIND.map(([k,lab,tip],j)=>
+    const card=i=>`<div class="arm${i%3===0?' held':''}" id="arm-${i}"><div class="armh"><b>${WP_SLOTN[i]}</b><span class="armw" id="arm-w${i}"></span></div><button class="btn sm ghost armadd" data-act="armopen" data-i="${i}" aria-label="Add a Grief or passives to ${WP_SLOTN[i]}">+ Grief, passives</button>${WP_KIND.map(([k,lab,tip],j)=>
       `<div class="field${j>=2?' armdeep':''}"><label for="arm-${i}-${j}" title="${esc(tip)}">${lab}</label><select id="arm-${i}-${j}" data-arm="${i}" data-ap="${j}">${O[k]}</select></div>`).join('')}</div>`;
     host.innerHTML=`<h3 class="sub">Armaments</h3><div class="arms">${[0,1,2,3,4,5].map(card).join('')}</div>`;
   }
   A.forEach((card,i)=>card.forEach((id,j)=>{ const s=$(`#arm-${i}-${j}`); if(!s) return; if(s.value!==String(id)) s.value=String(id); s.title=!id?'':j===0?`${WGRIEF[id][0]} +${WGRIEF[id][1]}`:wpLabel(id); }));
   host.querySelectorAll('.armdeep').forEach(f=>{ f.hidden=!build.don; });
+  // a hand with nothing picked folds to one line; picking something (or + Grief, passives) opens it
+  A.forEach((card,i)=>{ const el=$('#arm-'+i); if(el) el.classList.toggle('fold',!card.some(Boolean)&&!armOpen.has(i)); });
   const cs=curSpell(), w0=$('#arm-w0'), w3=$('#arm-w3');
   if(w0) w0.textContent='in hand · '+(cs?cs.cat[0]:weaponState().name); if(w3) w3.textContent='in hand';
 }
@@ -3517,6 +3524,7 @@ document.addEventListener('click', async ev=>{
   if(a==='prdel'){ normBuild(); const ch=build.char, id=build.activePreset[ch]; build.presets=build.presets.filter(p=>p.id!==id); build.activePreset[ch]=null; saveBuildSoon(); closeOv(); renderPresets(); toast('Preset deleted.'); return; }
   if(a==='loadsave'){ openSaveDlg({step:'intro'}); return; }
   if(a==='hmore'){ hist.limit+=20; renderRuns(); return; }
+  if(a==='armopen'){ const i=+t.dataset.i; armOpen.add(i); renderArms(); const f=$(`#arm-${i}-0`); if(f) f.focus(); return; }
   if(a==='hclear'){ hist.f={}; hist.days=0; hist.limit=20; renderHistory(); return; }
   if(a==='hfopen'){ const pg=curPage(); hist.open=!hist.open; renderHistory(); const b=document.querySelector(`#pg-${pg} [data-act=hfopen]`); if(b) b.focus(); return; }
   if(a==='hfdel'){ if(t.dataset.f==='days') hist.days=0; else delete hist.f[t.dataset.f]; hist.limit=20; renderHistory(); return; }
