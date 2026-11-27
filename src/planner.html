@@ -614,7 +614,13 @@ select:hover{background-image:linear-gradient(to top right,transparent 50%,var(-
 .tempbar > span{display:flex;flex-direction:column;gap:2px;min-width:0}
 .tempbar .msg{font-size:12px}
 #gearp .ph .phr{gap:12px}
-#gearp.wpoff #d-arms .arm{opacity:.45}
+#gearp.wpoff #d-arms .arm,#gearp.wpoff .dorm{opacity:.45}
+.dorms{display:flex;flex-direction:column;gap:6px;margin-bottom:8px}
+.dorms:empty{display:none}
+.dorm{display:flex;gap:6px;align-items:center}
+.dorm select{flex:1;min-width:0;font-size:13px}
+.dormhint{margin:8px 0 0;font-size:12px}
+#d-dorm{margin-top:4px}
 .dgear .lnk{border:0;background:none;padding:0;margin-left:6px;color:var(--accent);font:inherit;cursor:pointer;text-decoration:underline;text-underline-offset:3px}
 .btn.rst{display:inline-flex;align-items:center;gap:6px;border:1px solid color-mix(in srgb,var(--bad) 70%,transparent);color:var(--bad);background:transparent}
 .btn.rst:hover{background:color-mix(in srgb,var(--bad) 12%,transparent)}
@@ -775,9 +781,11 @@ select:hover{background-image:linear-gradient(to top right,transparent 50%,var(-
       <div id="slots"></div>
     </section>
     <section class="panel" id="gearp">
-      <div class="ph"><h2>Talismans &amp; weapons</h2><div class="phr"><button class="btn sm rst" id="gearclr" data-act="gearclear" hidden><svg class="rsti" viewBox="0 0 16 16" width="13" height="13" aria-hidden="true"><path d="M2.5 8A5.5 5.5 0 1 0 4.2 4.1" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path d="M4.4 1.3 4.2 4.1 7 4.3" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Clear</span></button><label class="tgl" title="Count the passives on the weapons you carry. Deep passives and curses also need Deep of Night."><input type="checkbox" id="wpon" role="switch"><span class="knob" aria-hidden="true"></span><span class="tt">Weapon passives</span></label></div></div>
+      <div class="ph"><h2>Talismans &amp; weapons</h2><div class="phr"><button class="btn sm rst" id="gearclr" data-act="gearclear" hidden><svg class="rsti" viewBox="0 0 16 16" width="13" height="13" aria-hidden="true"><path d="M2.5 8A5.5 5.5 0 1 0 4.2 4.1" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path d="M4.4 1.3 4.2 4.1 7 4.3" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Clear</span></button><label class="tgl" title="Count what you pick up in the run: the passives on your weapons and your dormant powers. Deep passives and curses also need Deep of Night."><input type="checkbox" id="wpon" role="switch"><span class="knob" aria-hidden="true"></span><span class="tt">Run passives</span></label></div></div>
       <div class="form tals" id="d-tals"></div>
       <div id="d-arms"></div>
+      <h3 class="sub">Dormant powers</h3>
+      <div id="d-dorm"></div>
     </section>
   </div>
 
@@ -1349,6 +1357,23 @@ CU({id:'c_rot',n:'Rot Buildup When Below Max HP',bu:{s:'rot',rate:2/0.24},note:'
 CU({id:'c_neardeath',n:'Near Death Reduces Max HP',note:'HP ×0.75 for 60 s after being downed'});
 
 /* ---- talismans ---- */
+// Dormant powers: the boons bosses offer during a run (field bosses sometimes, evergaols two, the end-of-Night bosses three).
+// They last the run and add up, one row each on the Build page. Values from the community wiki, not checked in game yet;
+// the ones that change no number here are listed with a note.
+const DORM=[]; const DM=o=>{ o.st=true; o.deep='n'; o.dorm=true; o.note=(o.note?o.note+'; ':'')+'dormant power'; EBY[o.id]=o; DORM.push(o); return o; };
+[[6,1.06],[9,1.09]].forEach(([v,m])=>DM({id:'dm_phys'+v,n:`Improved Physical Attack Power +${v}%`,g:'off',dmg:[D('phys',m)]}));
+[[5,1.05],[8,1.08]].forEach(([v,m])=>DM({id:'dm_aff'+v,n:`Improved Affinity Attack Power +${v}%`,g:'off',dmg:[D('elem',m)]}));
+DM({id:'dm_spell7',n:'Improved Sorceries & Incantations +7%',g:'off',dmg:[D('spell',1.07)]});
+[12,15,18].forEach(v=>DM({id:'dm_negphys'+v,n:`Improved Physical Damage Negation +${v}%`,g:'def',neg:{phys:v/100}}));
+[12,15,18].forEach(v=>DM({id:'dm_negaff'+v,n:`Improved Affinity Damage Negation +${v}%`,g:'def',neg:{mag:v/100,fire:v/100,ltng:v/100,holy:v/100}}));
+[57,75].forEach(v=>DM({id:'dm_res'+v,n:`All Resistances Up +${v}`,g:'stat',res:{poison:v,rot:v,bleed:v,frost:v,sleep:v,madness:v,blight:v}}));
+[[10,1.1],[15,1.15]].forEach(([v,m])=>{ DM({id:'dm_hp'+v,n:`Increased Maximum HP +${v}%`,g:'stat',hpM:m}); DM({id:'dm_fp'+v,n:`Increased Maximum FP +${v}%`,g:'stat',fpM:m}); DM({id:'dm_st'+v,n:`Increased Maximum Stamina +${v}%`,g:'stat',stM:m}); });
+[['dm_dragon','Attack Boost vs. Dragons +20%'],['dm_stars','Attack Boost vs. Lifeforms Born of Falling Stars +20%'],['dm_death','Attack Boost vs. Those Who Live in Death +20%'],
+ ['dm_stance10','Improved Stance-Breaking +10%'],['dm_stance15','Improved Stance-Breaking +15%'],['dm_thrust','Improved Thrusting Counterattack +20%'],['dm_roar','Improved Roar & Breath Attacks +20%'],
+ ['dm_critafter','Increased Enemy Damage after Critical Hit +15%'],['dm_bleednear','Blood Loss in Vicinity Increases Attack Power +20%'],['dm_pots','Improved Throwing Pots +20%'],['dm_perfume','Improved Perfuming Arts +20%'],
+ ['dm_poise25','Improved Poise +25%'],['dm_poise38','Improved Poise +38%'],['dm_flask20','Improved Flask HP Restoration +20%'],['dm_flask30','Improved Flask HP Restoration +30%'],
+ ['dm_fpcost10','Reduced FP Consumption 10%'],['dm_fpcost15','Reduced FP Consumption 15%'],['dm_cd','Character Skill Cooldown Reduction 10%'],['dm_ult','Improved Ultimate Art Gauge Charge Speed +6%'],
+ ['dm_wend','Wending Grace (one revive)'],['dm_dodge','Improved Dodging']].forEach(([id,n])=>DM({id,n,g:id.startsWith('dm_poise')||id.startsWith('dm_flask')||id==='dm_wend'||id==='dm_dodge'?'def':id.match(/fpcost|cd|ult/)?'regen':'off',note:'not counted in the numbers here'}));
 const TAL=[]; const T=(id,n,o)=>{ const t=Object.assign({id:'t_'+id,n,g:'tal',st:false,deep:'n'},o); TAL.push(t); EBY[t.id]=t; };
 T('kindred',"Kindred of Rot's Exultation",{dmg:[D('all',1.2)],cond:'nearPR'});
 T('lordblood',"Lord of Blood's Exultation",{dmg:[D('all',1.2)],cond:'nearBleed'});
@@ -1647,6 +1672,7 @@ function collect(){
   });
   talArr().forEach(t=>{ if(t) push(t); });
   armsEffects().forEach(push);
+  if(build.combat.wpOn!==false) (gearSrc().dorm||[]).forEach(id=>{ if(id) push(id); });
   const list=[...map.values()].map(a=>{
     const e=a.eff; a.ok=true; a.apply=e.st?a.count:1; a.why='';
     if(e.ch && e.ch!==ch.k){ a.ok=false; a.why='no'; warn.push({t:'warn',m:`${e.n} only works on ${e.ch}`}); }
@@ -2148,8 +2174,8 @@ function renderDmgBuild(a){
   const n=curSlots().filter((x,i)=>x&&(i<3||build.don)).length;
   const sum=$('#d-sum'); if(sum) sum.innerHTML=`${esc(ch)} · ${build.temp&&!cs.preset?'from a run':esc(curVessel())} · ${n} relic${n===1?'':'s'} · ${STAT5.map(k=>`${STATN[k]} <b>${a[k]}</b>`).join(' ')}`;
   sum&&sum.classList.add('dsum');
-  const gl=$('#d-gear'); if(gl){ const T=talArr().filter(Boolean).map(id=>EBY[id]?EBY[id].n:id), on=build.combat.wpOn!==false, np=armsState().reduce((n,c)=>n+c.filter(Boolean).length,0);
-    gl.innerHTML=`${T.length?esc(T.join(', ')):'No talismans'} · ${np?`${np} weapon passive${np===1?'':'s'}${on?'':' (off)'}`:'no weapon passives'} <button class="lnk" data-act="gobuild">Change on the Build page</button>`; }
+  const gl=$('#d-gear'); if(gl){ const T=talArr().filter(Boolean).map(id=>EBY[id]?EBY[id].n:id), on=build.combat.wpOn!==false, np=armsState().reduce((n,c)=>n+c.filter(Boolean).length,0), nd=(gearSrc().dorm||[]).filter(Boolean).length;
+    gl.innerHTML=`${T.length?esc(T.join(', ')):'No talismans'} · ${np?`${np} weapon passive${np===1?'':'s'}`:'no weapon passives'} · ${nd?`${nd} dormant power${nd===1?'':'s'}`:'no dormant powers'}${(np||nd)&&!on?' (run passives off)':''} <button class="lnk" data-act="gobuild">Change on the Build page</button>`; }
 }
 function renderWeapon(a){
   const host=$('#weapon'); if(!host) return;
@@ -2572,9 +2598,14 @@ function wpOptions(){ if(_wpOpts) return _wpOpts;
   return _wpOpts={g:none+gr,p:none+split(WPSLOT.p),d:none+split(WPSLOT.d),c:none+split(WPSLOT.c)}; }
 const armOpen=new Set();
 // Talismans & weapons on the Build page: the switch turns every weapon passive off at once (deep ones also follow Deep of Night)
-function renderGear(){ renderTals(); renderArms();
+const DORM_GRP=[['off','Attack'],['def','Defense'],['stat','HP, FP, stamina & resistances'],['regen','Skills & FP']];
+function renderDorm(){ const host=$('#d-dorm'); if(!host) return; const g=gearSrc(); if(!Array.isArray(g.dorm)) g.dorm=[];
+  const opts=v=>`<option value="">Pick a dormant power…</option>`+DORM_GRP.map(([k,n])=>`<optgroup label="${n}">${DORM.filter(d=>d.g===k).map(d=>`<option value="${d.id}" ${d.id===v?'selected':''}>${esc(d.n)}${d.note.includes('not counted')?' (not counted)':''}</option>`).join('')}</optgroup>`).join('');
+  host.innerHTML=`<div class="dorms">${g.dorm.map((v,i)=>`<div class="dorm"><select id="dorm-${i}" data-dorm="${i}" aria-label="Dormant power ${i+1}">${opts(v)}</select><button class="btn sm ghost" data-act="dormdel" data-i="${i}" aria-label="Remove dormant power ${i+1}">×</button></div>`).join('')}</div>
+    <button class="btn sm" data-act="dormadd">+ Add dormant power</button>${g.dorm.length?'':'<p class="msg dormhint">Boons from bosses: field bosses sometimes, evergaols two, the end-of-Night bosses three. Add as many as you have.</p>'}`; }
+function renderGear(){ renderTals(); renderArms(); renderDorm();
   const w=$('#wpon'); if(w) w.checked=build.combat.wpOn!==false;
-  const g=gearSrc(), any=talArr().some(Boolean)||armsState().some(c=>c.some(Boolean)), b=$('#gearclr'); if(b) b.hidden=!any;
+  const g=gearSrc(), any=talArr().some(Boolean)||armsState().some(c=>c.some(Boolean))||(g.dorm||[]).length>0, b=$('#gearclr'); if(b) b.hidden=!any;
   const p=$('#gearp'); if(p) p.classList.toggle('wpoff',build.combat.wpOn===false);
   renderTemp(); }
 function renderTemp(){ const t=build.temp, bar=$('#tempbar'); if(bar){ bar.hidden=!t; if(t) bar.innerHTML=`<span><b>${esc(t.label)}</b><span class="msg">A teammate's build: their relics, talismans and weapon passives</span></span><button class="btn sm" data-act="tempexit">Back to my build</button>`; }
@@ -3633,7 +3664,9 @@ document.addEventListener('click', async ev=>{
   if(a==='calcreset'){ calcReset(); return; }
   if(a==='tempexit'){ exitTemp(); renderAll(); return; }
   if(a==='gobuild'){ history.pushState(null,'',location.pathname+location.search); showPage(); const g=$('#gearp'); if(g) g.scrollIntoView({block:'start'}); return; }
-  if(a==='gearclear'){ const g=gearSrc(); g.tal=['','']; g.arms=[0,1,2,3,4,5].map(()=>[0,0,0,0]); armOpen.clear(); saveBuildSoon(); renderSlots(); renderCombat(); renderResults(); return; }
+  if(a==='dormadd'){ const g=gearSrc(); (g.dorm=g.dorm||[]).push(''); saveBuildSoon(); renderSlots(); const f=$('#dorm-'+(g.dorm.length-1)); if(f) f.focus(); return; }
+  if(a==='dormdel'){ const g=gearSrc(); (g.dorm||[]).splice(+t.dataset.i,1); saveBuildSoon(); renderSlots(); renderCombat(); renderResults(); return; }
+  if(a==='gearclear'){ const g=gearSrc(); g.dorm=[]; g.tal=['','']; g.arms=[0,1,2,3,4,5].map(()=>[0,0,0,0]); armOpen.clear(); saveBuildSoon(); renderSlots(); renderCombat(); renderResults(); return; }
   if(a==='wreset'){ weaponReset(); return; }
   if(a==='runcalc'){ runToCalc(+t.dataset.run,+t.dataset.p); return; }
   if(a==='armopen'){ const i=+t.dataset.i; armOpen.add(i); renderArms(); const f=$(`#arm-${i}-0`); if(f) f.focus(); return; }
@@ -3758,6 +3791,7 @@ document.addEventListener('change', ev=>{
   if(t.dataset.cond){ build.combat.cond[t.dataset.cond]=t.checked; t.closest('.cond').classList.toggle('on',t.checked); saveBuildSoon(); renderResults(); return; }
   if(t.dataset.arm!=null){ const A=armsState(); A[+t.dataset.arm][+t.dataset.ap]=+t.value||0; saveBuildSoon(); renderSlots(); renderCombat(); renderResults(); return; }
   if(t.dataset.tal!=null){ talArr()[+t.dataset.tal]=t.value; saveBuildSoon(); renderSlots(); renderCombat(); renderResults(); return; }
+  if(t.dataset.dorm!=null){ const g=gearSrc(); (g.dorm=g.dorm||[])[+t.dataset.dorm]=t.value; saveBuildSoon(); renderSlots(); renderCombat(); renderResults(); return; }
   if(t.id==='wpon'){ build.combat.wpOn=t.checked; saveBuildSoon(); renderSlots(); renderCombat(); renderResults(); return; }
   if(t.dataset.c){ const k=t.dataset.c; build.combat[k]=t.type==='number'?(t.value===''?0:+t.value):t.value; saveBuildSoon(); if(k==='boss'||k==='wtype') renderCombat(); renderResults(); return; }
 });
