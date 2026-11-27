@@ -599,6 +599,14 @@ select:hover{background-image:linear-gradient(to top right,transparent 50%,var(-
 .wr i{display:inline-block;width:36px;height:4px;border-radius:2px;background:linear-gradient(to right,var(--good) var(--p),var(--line2) var(--p))}
 .hmore{margin-top:8px;font-size:12px;color:var(--muted);display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
 .hmore:empty{display:none}
+.hfilt{display:flex;flex-wrap:wrap;align-items:flex-end;gap:10px 12px;margin:12px 0 14px}
+.hfper,.hfsel{display:flex;flex-direction:column;gap:4px;min-width:0}
+.hfsel{flex:1 1 140px;max-width:220px}
+.hfsel select{width:100%;min-width:0;font-size:13px;padding-left:10px;text-overflow:ellipsis}
+.hfsel.on select{border-color:var(--accent);background-color:var(--accent-soft)}
+.hfclr{align-self:flex-end}
+.hfl{border:0;background:none;padding:0;margin:0;font:inherit;color:inherit;text-align:left;cursor:pointer;border-radius:3px}
+.hfl:hover{color:var(--accent);text-decoration:underline;text-underline-offset:3px}
 .runs{display:flex;flex-direction:column;gap:6px}
 .run{border:1px solid var(--line);border-left:3px solid var(--bad);border-radius:var(--r-md);background:var(--surface)}
 .run.win{border-left-color:var(--good)}
@@ -1743,7 +1751,8 @@ window.addEventListener('hashchange',showPage); window.addEventListener('popstat
 
 /* ============ HISTORY ============ */
 // The save's Result History (svHistory): totals, by Nightlord, by your Nightfarer, the people you played with, and every run.
-const hist = {mode:'all', team:0, limit:20, all:{}};   // team: 0 any, 1 solo, 2 duo, 3 trio
+const hist = {mode:'all', team:0, limit:20, all:{}, days:0, f:{}};   // team: 0 any, 1 solo, 2 duo, 3 trio; days: 0 all time;
+// f: one pick per kind (HF below), as the select's value
 const NLORD=[['Gladius','Tricephalos'],['Adel','Gaping Jaw'],['Gnoster','Sentient Pest'],['Maris','Augur'],['Libra','Equilibrious Beast'],['Fulghor','Darkdrift Knight'],['Caligo','Fissure in the Fog'],['Heolstor','Night Aspect'],['Harmonia','Balancers'],['Straghess','Dreglord']];
 const nlName = n => NLORD[n%10] ? (n>=10?'Everdark ':'')+NLORD[n%10][0] : 'Nightlord '+n;
 const runNl = r => (r.u?'Everdark ':'')+nlName(r.nl);   // r.u: the run's Nightlord was the Everdark Sovereign
@@ -1786,7 +1795,30 @@ const skName = s => s&&s!==10 ? ((WSKILL[s]&&WSKILL[s][0])||WSKILLX[s]||'') : ''
 // Day 1's boss comes about 14 minutes in; a defeat before that (a disconnect, a teammate quitting, an early wipe) can be left out of History
 // and Stats with Settings → History. Runs read by a version without the run time stay in.
 const EARLY_S=14*60, earlyLoss=r=>!r.win&&r.dur>0&&r.dur<EARLY_S;
-const histBase=()=>runs.filter(r=>(hist.mode==='all'||(hist.mode==='don')===(r.mode===2))&&(!hist.team||r.pl.length===hist.team));
+// History and Stats share their filters: mode, team size, period, and one pick each of Nightlord, your Nightfarer, preset,
+// teammate, weapon and spell (a row in Stats sets one and opens History). The pickers list what the mode, team and period leave.
+// Run times are the game's local clock written as UTC, so "now" is taken the same way.
+const HF={
+  nl:{name:'Nightlord',keys:r=>[r.nl+(r.u?10:0)],label:k=>nlName(+k),order:(a,b)=>(a.k%10)-(b.k%10)||a.k-b.k},
+  nf:{name:'Your Nightfarer',keys:r=>[r.pl[0].ch],label:k=>nfName(+k)},
+  pre:{name:'Preset',keys:r=>{ const m=runPreset(r); return [m?m.p.id:'none']; },label:(k,r)=>{ if(k==='none') return 'No preset'; const m=r&&runPreset(r); return m?m.p.name+(m.p.gone?' (old)':''):(k.split(':').pop()||k); }},
+  mate:{name:'Teammate',keys:r=>[...new Set(r.pl.slice(1).map(p=>p.name))],label:k=>k},
+  w:{name:'Weapon',keys:r=>[...new Set(r.pl[0].w.filter(w=>w[0]!==110000).map(w=>wName(w[0],w[5],1)).filter(Boolean))],label:k=>k},
+  s:{name:'Spell',keys:r=>[...new Set(r.pl[0].w.flatMap(w=>[w[6],w[7]]).map(spName).filter(Boolean))],label:k=>k},
+};
+const HPER=[[0,'All time'],[90,'90 days'],[30,'30 days'],[7,'7 days']];
+const histFrom=()=>hist.days?Date.now()-new Date().getTimezoneOffset()*60000-hist.days*86400000:0;
+const histPool=()=>{ const from=histFrom();
+  return runs.filter(r=>(hist.mode==='all'||(hist.mode==='don')===(r.mode===2))&&(!hist.team||r.pl.length===hist.team)&&(!from||r.t>=from)); };
+const hfOn=()=>Object.keys(HF).filter(k=>hist.f[k]!=null&&hist.f[k]!=='');
+const histBase=()=>{ const on=hfOn(); return histPool().filter(r=>on.every(k=>HF[k].keys(r).some(x=>String(x)===hist.f[k]))); };
+// the pickers: what each kind has in the runs the other filters leave, most runs first (Nightlords in the game's order)
+function hfOptions(kind){ const on=hfOn().filter(k=>k!==kind), m=new Map();
+  histPool().filter(r=>on.every(k=>HF[k].keys(r).some(x=>String(x)===hist.f[k]))).forEach(r=>HF[kind].keys(r).forEach(x=>{ const k=String(x), e=m.get(k)||{k:x,n:0,r}; e.n++; m.set(k,e); }));
+  const cur=hist.f[kind]; if(cur!=null&&cur!==''&&!m.has(cur)) m.set(cur,{k:cur,n:0,r:runs.find(r=>HF[kind].keys(r).some(x=>String(x)===cur))});
+  return [...m.values()].sort(HF[kind].order||((a,b)=>b.n-a.n||String(HF[kind].label(a.k,a.r)).localeCompare(HF[kind].label(b.k,b.r)))); }
+// a name in a Stats table that opens History with just those runs
+const hfLink=(kind,k,html)=>`<button class="hfl" data-act="hgo" data-f="${kind}" data-k="${esc(String(k))}" title="Show these runs in History">${html}</button>`;
 function histRuns(){ const hide=!!setGet().hideEarly; return histBase().filter(r=>!(hide&&earlyLoss(r))); }
 // a relic from the run's record, as one line: its name if it has one, else its effects (short), then its curses
 // a relic from the run's record, as one line: its name if it has one, else its effects (short), then its curses
@@ -1916,8 +1948,12 @@ function histEmpty(title){
 function histHead(title,list){
   const seg=[['all','All'],['don','Deep of Night'],['exp','Normal']].map(([k,l])=>`<button data-hmode="${k}" aria-pressed="${hist.mode===k}">${l}</button>`).join('');
   const tseg=[[0,'Any'],[1,'Solo'],[2,'Duo'],[3,'Trio']].map(([k,l])=>`<button data-hteam="${k}" aria-pressed="${hist.team===k}">${l}</button>`).join('');
+  const pseg=HPER.map(([k,l])=>`<button data-hdays="${k}" aria-pressed="${hist.days===k}">${l}</button>`).join(''), on=hfOn();
+  const sel=Object.keys(HF).map(kind=>{ const cur=hist.f[kind]||'', id=`hf-${title[0].toLowerCase()}-${kind}`;
+    return `<label class="hfsel${cur?' on':''}" for="${id}"><span class="flab">${HF[kind].name}</span><select id="${id}" data-hf="${kind}"><option value="">Any</option>${hfOptions(kind).map(o=>`<option value="${esc(String(o.k))}"${String(o.k)===cur?' selected':''}>${esc(HF[kind].label(o.k,o.r))} (${o.n})</option>`).join('')}</select></label>`; }).join('');
   return `<div class="ph"><h2>${title}</h2><div class="phr"><div class="seg" role="group" aria-label="Mode">${seg}</div><div class="seg" role="group" aria-label="Team">${tseg}</div></div></div>`
-    +(list.length?'':`<p class="msg">No ${hist.team?['','solo','duo','trio'][hist.team]+' ':''}${hist.mode==='don'?'Deep of Night':hist.mode==='exp'?'normal':''} runs in the last ${runs.length}.</p>`)
+    +`<div class="hfilt"><div class="hfper"><span class="flab">Period</span><div class="seg" role="group" aria-label="Period">${pseg}</div></div>${sel}${on.length?`<button class="btn sm ghost hfclr" data-act="hclear">Clear ${on.length===1?'filter':on.length+' filters'}</button>`:''}</div>`
+    +(list.length?'':on.length||hist.days?`<p class="msg">No runs match these filters${hist.days?` in the last ${hist.days} days`:''}.</p>`:`<p class="msg">No ${hist.team?['','solo','duo','trio'][hist.team]+' ':''}${hist.mode==='don'?'Deep of Night':hist.mode==='exp'?'normal':''} runs in the last ${runs.length}.</p>`)
     +(()=>{ const n=setGet().hideEarly?histBase().filter(earlyLoss).length:0; return n?`<p class="hhint">${n} ${n===1?'defeat':'defeats'} before 14:00 left out (Settings → History).</p>`:''; })();
 }
 // the Deep of Night rating chart above the runs (only when there are Deep of Night runs and the filter allows them)
@@ -1950,9 +1986,9 @@ function renderStats(){
   // each Nightlord's Everdark Sovereign (key nl+10) sits in a compact row right under it
   const byNl=histGroup(list,r=>[[r.nl+(r.u?10:0)]]).sort((a,b)=>(a.k%10)-(b.k%10)||a.k-b.k);
   const nlRow=(e,i)=>{ const nums=`<td>${e.n}</td><td>${e.w}</td><td>${wrCell(e)}</td>`, N=NLORD[e.k%10]||['Nightlord '+e.k,''];
-    if(e.k>=10&&i>0&&byNl[i-1].k===e.k-10) return `<tr class="evrow"><td><span class="unkl">Everdark</span></td>${nums}</tr>`;
+    if(e.k>=10&&i>0&&byNl[i-1].k===e.k-10) return `<tr class="evrow"><td>${hfLink('nl',e.k,'<span class="unkl">Everdark</span>')}</td>${nums}</tr>`;
     const ev=byNl[i+1]&&byNl[i+1].k===e.k+10;
-    return `<tr${ev?' class="hasev"':''}><td>${e.k>=10?'<span class="unkl">Everdark</span> ':''}${esc(N[0])}<span class="s2">${esc(N[1])}</span></td>${nums}</tr>`; };
+    return `<tr${ev?' class="hasev"':''}><td>${hfLink('nl',e.k,`${e.k>=10?'<span class="unkl">Everdark</span> ':''}${esc(N[0])}`)}<span class="s2">${esc(N[1])}</span></td>${nums}</tr>`; };
   const byNf=histGroup(list,r=>[[r.pl[0].ch,{kills:r.pl[0].kills}]]).sort((a,b)=>b.n-a.n||a.k-b.k);
   const mates=histGroup(list,r=>r.pl.slice(1).map(p=>[p.name,{ch:p.ch}])).sort((a,b)=>b.n-a.n||b.w-a.w||a.k.localeCompare(b.k));
   const editedRuns=new Map(); list.forEach(r=>r.pl.slice(1).forEach(p=>{ if(playerEdited(p)) editedRuns.set(p.name,(editedRuns.get(p.name)||0)+1); }));
@@ -1967,23 +2003,23 @@ function renderStats(){
   list.forEach(r=>{ const m=runPreset(r); if(!m){ none.n++; if(r.win) none.w++; return; } const e=pre.get(m.p.id)||{p:m.p,n:0,w:0,close:0,old:0}; e.n++; if(r.win) e.w++; if(m.close) e.close++; if(m.old) e.old++; pre.set(m.p.id,e); });
   const pall=[...pre.values()].sort((a,b)=>b.n-a.n||b.w-a.w||a.p.name.localeCompare(b.p.name)), ptop=hist.all.p?pall:pall.slice(0,10);
   const presetPanel=`<section class="panel"><div class="ph"><h2>Your presets</h2></div>${pall.length?`<table class="htab"><thead><tr><th>Preset</th><th>Runs</th><th>Won</th><th>Win rate</th></tr></thead><tbody>
-      ${ptop.map(e=>`<tr><td>${esc(e.p.name)}${e.p.gone?' <span class="old">(old)</span>':''}<span class="s2">${esc(nfName(SV_CHARS.indexOf(e.p.char)+1))}${e.p.slot&&presetCache().slots>1?' · '+esc(e.p.slot):''}${e.p.game?'':' · saved here'}${e.p.gone?' · no longer saved':e.old?` · ${e.old===e.n?'all':e.old} on an older version`:''}${e.close?` · ${e.close===e.n?'one relic different on each run':e.close+' with one relic different'}`:''}</span></td><td>${e.n}</td><td>${e.w}</td><td>${wrCell(e)}</td></tr>`).join('')}
-      ${none.n?`<tr class="faintrow"><td>No preset<span class="s2">Relics that match none of your presets</span></td><td>${none.n}</td><td>${none.w}</td><td>${wrCell(none)}</td></tr>`:''}</tbody></table>
+      ${ptop.map(e=>`<tr><td>${hfLink('pre',e.p.id,esc(e.p.name)+(e.p.gone?' <span class="old">(old)</span>':''))}<span class="s2">${esc(nfName(SV_CHARS.indexOf(e.p.char)+1))}${e.p.slot&&presetCache().slots>1?' · '+esc(e.p.slot):''}${e.p.game?'':' · saved here'}${e.p.gone?' · no longer saved':e.old?` · ${e.old===e.n?'all':e.old} on an older version`:''}${e.close?` · ${e.close===e.n?'one relic different on each run':e.close+' with one relic different'}`:''}</span></td><td>${e.n}</td><td>${e.w}</td><td>${wrCell(e)}</td></tr>`).join('')}
+      ${none.n?`<tr class="faintrow"><td>${hfLink('pre','none','No preset')}<span class="s2">Relics that match none of your presets</span></td><td>${none.n}</td><td>${none.w}</td><td>${wrCell(none)}</td></tr>`:''}</tbody></table>
       <div class="hmore"><span>Runs where your relics were exactly a preset's; ones you've changed since show as older versions (the planner remembers from the first time it sees a run).${setGet().preClose?' Also counted: runs with all but one of a preset\'s relics (≈ in History).':' Settings → History can count one relic different too.'}</span>${more('p',pall.length,ptop.length)}</div>`
       :`<p class="msg">${presetCache().C.length?'None of these runs match your presets.':'Load your save to match runs to your presets.'}</p>`}</section>`;
   h+=`<div class="hgrid">`+presetPanel+`
     <section class="panel"><div class="ph"><h2>Nightlords</h2></div><table class="htab hnl"><thead><tr><th>Nightlord</th><th>Runs</th><th>Won</th><th>Win rate</th></tr></thead><tbody>
       ${byNl.map(nlRow).join('')}</tbody>
       </table></section>
-    <section class="panel"><div class="ph"><h2>Your Nightfarers</h2></div><table class="htab"><thead><tr><th>Nightfarer</th><th>Runs</th><th>Won</th><th>Win rate</th><th>Kills</th></tr></thead><tbody>
-      ${byNf.map(e=>`<tr><td>${nfName(e.k)}</td><td>${e.n}</td><td>${e.w}</td><td>${wrCell(e)}</td><td title="Average per run">${Math.round(e.kills/e.n)}</td></tr>`).join('')}</tbody></table>
-      <p class="hmore">Kills: average per run.</p></section>
+    <section class="panel"><div class="ph"><h2>Your Nightfarers</h2></div><table class="htab"><thead><tr><th>Nightfarer</th><th>Runs</th><th>Won</th><th>Win rate</th><th>Kills/run</th></tr></thead><tbody>
+      ${byNf.map(e=>`<tr><td>${hfLink('nf',e.k,nfName(e.k))}</td><td>${e.n}</td><td>${e.w}</td><td>${wrCell(e)}</td><td title="Average per run">${Math.round(e.kills/e.n)}</td></tr>`).join('')}</tbody></table>
+</section>
     <section class="panel"><div class="ph"><h2>Teammates</h2></div>${top.length?`<table class="htab"><thead><tr><th>Player</th><th>Runs</th><th>Won</th><th>Win rate</th></tr></thead><tbody>
-      ${top.map(e=>`<tr><td>${esc(e.k)}<span class="s2">${[...e.chars.entries()].sort((a,b)=>b[1]-a[1]).slice(0,3).map(([c])=>nfName(c)).join(', ')}${editedRuns.get(e.k)?` · <span class="redit">edited relics in ${editedRuns.get(e.k)===1?'1 run':editedRuns.get(e.k)+' runs'}</span>`:''}</span></td><td>${e.n}</td><td>${e.w}</td><td>${wrCell(e)}</td></tr>`).join('')}</tbody></table><div class="hmore">${editedRuns.size?`<span class="redit">Edited relics seen on: ${esc([...editedRuns.keys()].join(', '))}</span>`:''}${more('m',mates.length,top.length)}</div>`:`<p class="msg">Only solo runs here.</p>`}</section>
+      ${top.map(e=>`<tr><td>${hfLink('mate',e.k,esc(e.k))}<span class="s2">${[...e.chars.entries()].sort((a,b)=>b[1]-a[1]).slice(0,3).map(([c])=>nfName(c)).join(', ')}${editedRuns.get(e.k)?` · <span class="redit">edited relics in ${editedRuns.get(e.k)===1?'1 run':editedRuns.get(e.k)+' runs'}</span>`:''}</span></td><td>${e.n}</td><td>${e.w}</td><td>${wrCell(e)}</td></tr>`).join('')}</tbody></table><div class="hmore">${editedRuns.size?`<span class="redit">Edited relics seen on: ${esc([...editedRuns.keys()].join(', '))}</span>`:''}${more('m',mates.length,top.length)}</div>`:`<p class="msg">Only solo runs here.</p>`}</section>
     <section class="panel"><div class="ph"><h2>Your weapons</h2></div>${wtop.length?`<table class="htab"><thead><tr><th>Weapon</th><th>Runs</th><th>Won</th><th>Win rate</th></tr></thead><tbody>
-      ${wtop.map(e=>`<tr><td>${esc(e.k)}</td><td>${e.n}</td><td>${e.w}</td><td>${wrCell(e)}</td></tr>`).join('')}</tbody></table><div class="hmore"><span>Runs you finished with it, any affinity.</span>${more('w',wmap.length,wtop.length)}</div>`:`<p class="msg">No weapons recorded.</p>`}</section>
+      ${wtop.map(e=>`<tr><td>${hfLink('w',e.k,esc(e.k))}</td><td>${e.n}</td><td>${e.w}</td><td>${wrCell(e)}</td></tr>`).join('')}</tbody></table><div class="hmore"><span>Runs you finished with it, any affinity.</span>${more('w',wmap.length,wtop.length)}</div>`:`<p class="msg">No weapons recorded.</p>`}</section>
     <section class="panel"><div class="ph"><h2>Your spells</h2></div>${stop.length?`<table class="htab"><thead><tr><th>Spell</th><th>Runs</th><th>Won</th><th>Win rate</th></tr></thead><tbody>
-      ${stop.map(e=>`<tr><td>${esc(e.k)}</td><td>${e.n}</td><td>${e.w}</td><td>${wrCell(e)}</td></tr>`).join('')}</tbody></table><div class="hmore"><span>Runs you finished with it on a staff or seal.</span>${more('s',smap.length,stop.length)}</div>`:`<p class="msg">No spells in these runs.</p>`}</section>
+      ${stop.map(e=>`<tr><td>${hfLink('s',e.k,esc(e.k))}</td><td>${e.n}</td><td>${e.w}</td><td>${wrCell(e)}</td></tr>`).join('')}</tbody></table><div class="hmore"><span>Runs you finished with it on a staff or seal.</span>${more('s',smap.length,stop.length)}</div>`:`<p class="msg">No spells in these runs.</p>`}</section>
   </div>`;
   el.innerHTML=h;
 }
@@ -1991,7 +2027,8 @@ function renderStats(){
 // filled dots are victories, hollow ones defeats (shape, not colour). Hover, tap or arrow keys for the run.
 function drawRatingChart(){
   const box=curPage()==='history'&&$('#hchart .hplot'); if(!box) return;
-  const pts=runs.filter(r=>r.mode===2).slice().reverse(), n=pts.length; if(!n){ box.textContent=''; return; }
+  // the period applies (the line is your rating over time); the other filters don't, as they'd cut the line into pieces
+  const from=histFrom(), pts=runs.filter(r=>r.mode===2&&(!from||r.t>=from)).slice().reverse(), n=pts.length; if(!n){ box.textContent=''; return; }
   const W=Math.max(260,Math.floor(box.clientWidth)), H=W<560?180:220, L=48, R=14, T=12, B=26, PW=W-L-R;
   const v=pts.map(rAfter); let lo=Math.min(...v), hi=Math.max(...v);
   const step=[100,250,500,1000,2000].find(st=>Math.max(hi-lo,100)/st<=5)||5000;
@@ -3428,6 +3465,7 @@ document.addEventListener('click', async ev=>{
   if(t.dataset.page){ if(t.dataset.page===curPage()) return; history.pushState(null,'',location.pathname+location.search+(t.dataset.page==='damage'?'#calculator':t.dataset.page==='history'?'#history':t.dataset.page==='stats'?'#stats':t.dataset.page==='library'?'#relics':'')); showPage(); window.scrollTo(0,0); return; }
   if(t.dataset.hmode){ if(hist.mode===t.dataset.hmode) return; hist.mode=t.dataset.hmode; hist.limit=20; renderHistory(); return; }
   if(t.dataset.hteam){ if(hist.team===+t.dataset.hteam) return; hist.team=+t.dataset.hteam; hist.limit=20; renderHistory(); return; }
+  if(t.dataset.hdays){ if(hist.days===+t.dataset.hdays) return; hist.days=+t.dataset.hdays; hist.limit=20; renderHistory(); return; }
   if(t.dataset.wr){ weaponState().rar=+t.dataset.wr; saveBuildSoon(); renderCombat(); renderResults(); return; }
   if(t.dataset.atk){ if(t.disabled) return; weaponState().atk=t.dataset.atk; saveBuildSoon(); renderResults(); return; }
   if(t.dataset.enp){ enemyState().players=+t.dataset.enp; saveBuildSoon(); renderEnemy(); renderCombat(); renderResults(); return; }
@@ -3465,6 +3503,9 @@ document.addEventListener('click', async ev=>{
   if(a==='prdel'){ normBuild(); const ch=build.char, id=build.activePreset[ch]; build.presets=build.presets.filter(p=>p.id!==id); build.activePreset[ch]=null; saveBuildSoon(); closeOv(); renderPresets(); toast('Preset deleted.'); return; }
   if(a==='loadsave'){ openSaveDlg({step:'intro'}); return; }
   if(a==='hmore'){ hist.limit+=20; renderRuns(); return; }
+  if(a==='hclear'){ hist.f={}; hist.limit=20; renderHistory(); return; }
+  if(a==='hgo'){ hist.f[t.dataset.f]=t.dataset.k; hist.limit=20; renderHistory();
+    if(curPage()!=='history'){ history.pushState(null,'',location.pathname+location.search+'#history'); showPage(); } window.scrollTo(0,0); return; }
   if(a==='hplayer'){ openPlayerDlg(+t.dataset.run,+t.dataset.p); return; }
   if(a==='hall'){ const k=t.dataset.k; hist.all[k]=!hist.all[k]; renderStats(); return; }
   if(a==='appsave'){ const x=appSaves[+t.dataset.i]; if(x) await loadAppSave(x.path); return; }
@@ -3526,6 +3567,7 @@ document.addEventListener('click', async ev=>{
 });
 document.addEventListener('change', ev=>{
   const t=ev.target;
+  if(t.dataset&&t.dataset.hf){ const id=t.id; hist.f[t.dataset.hf]=t.value; hist.limit=20; renderHistory(); const n=document.getElementById(id); if(n) n.focus(); return; }
   if(t.id==='savefile'){ const f=t.files&&t.files[0]; t.value=''; onSaveFile(f); return; }
   // Deep of Night on the Build card and the enemy's mode are one setting: keep them in step
   if(t.id==='don2'){ calcState().don=t.checked; const st=enemyState(); if(t.checked&&st.depth===0) st.depth=1; else if(!t.checked) st.depth=0;
