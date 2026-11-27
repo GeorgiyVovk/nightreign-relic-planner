@@ -759,7 +759,7 @@ select:hover{background-image:linear-gradient(to top right,transparent 50%,var(-
       </div>
     </section>
     <section class="panel grow">
-      <div class="ph"><h2>Slots</h2></div>
+      <div class="ph"><h2>Slots</h2><button class="btn sm ghost" id="slotclr" data-act="slotclear" hidden>Clear</button></div>
       <div id="slots"></div>
     </section>
   </div>
@@ -2407,9 +2407,13 @@ function shortName(n,ch){
      .replace(/\s+Equipped/i,'').replace(/ at start of expedition/i,' at start').replace(/\s+/g,' ').trim();
   return pre+t;
 }
+let slotUndo=null, slotUndoT=null;
 function renderSlots(){
   { const dn=$('#don'); if(dn) dn.checked=!!build.don; }
   const code=vesselCode(build.char,curVessel()), slots=curSlots();
+  // Clear empties all six slots; for 10 s after, the same button puts them back
+  { const b=$('#slotclr'); if(b){ const undo=slotUndo&&slotUndo.k===slotKey()&&Date.now()<slotUndo.until; b.hidden=!undo&&!slots.some(Boolean);
+      b.textContent=undo?'Undo':'Clear'; b.dataset.act=undo?'slotundo':'slotclear'; b.title=undo?'Put the relics back':'Take every relic out of the slots'; } }
   const seen=new Map(), seenG=new Map(), dead={};
   slots.forEach((rid,i)=>{ const r=rid?relicById(rid):null; if(!r || !slotOk(code,i,r)) return;
     (r.effects||[]).forEach((eid,j)=>{ const e=EBY[eid]; let why='';
@@ -3554,6 +3558,11 @@ document.addEventListener('click', async ev=>{
   const a=t.dataset.act; if(!a) return;
   if(a==='pick'){ openSlotPick(+t.dataset.slot); return; }
   if(a==='pmore'){ ui.plimit+=60; renderSlotPick(); return; }
+  if(a==='slotclear'){ const sl=curSlots(); slotUndo={k:slotKey(),was:sl.slice(),until:Date.now()+10000}; sl.fill(null);
+    clearTimeout(slotUndoT); slotUndoT=setTimeout(()=>{ slotUndo=null; renderSlots(); },10000);
+    saveBuildSoon(); renderSlots(); renderLibrary(); renderCombat(); renderResults(); return; }
+  if(a==='slotundo'){ if(slotUndo&&slotUndo.k===slotKey()){ const sl=curSlots(); slotUndo.was.forEach((x,i)=>sl[i]=x); } slotUndo=null; clearTimeout(slotUndoT);
+    saveBuildSoon(); renderSlots(); renderLibrary(); renderCombat(); renderResults(); return; }
   if(a==='unslot'){ curSlots()[+t.dataset.slot]=null; saveBuildSoon(); renderSlots(); renderLibrary(); renderCombat(); renderResults(); return; }
   if(a==='place'){ placeRelic(t.dataset.id); return; }
   if(a==='new'){ openEditor(null); return; }
